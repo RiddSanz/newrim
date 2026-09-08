@@ -1,0 +1,112 @@
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
+export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+const pluginConfig = {
+name: "scanplugin",
+alias: ["checkplugin"],
+category: "owner",
+description: "Scan plugin error dan API mati",
+usage: ".scanplugin",
+isOwner: true,
+cooldown: 5,
+isEnabled: true
+}
+
+async function handler(m,{ sock }){
+
+const pluginsDir = path.join(process.cwd(),'plugins')
+
+let total = 0
+let errorPlugins = []
+let deadApi = []
+
+const folders = fs.readdirSync(pluginsDir)
+
+for (const folder of folders){
+
+const folderPath = path.join(pluginsDir,folder)
+
+if (!fs.statSync(folderPath).isDirectory()) continue
+
+const files = fs.readdirSync(folderPath).filter(v=>v.endsWith('.js'))
+
+for (const file of files){
+
+total++
+
+const filePath = path.join(folderPath,file)
+
+try{
+
+const code = fs.readFileSync(filePath,'utf8')
+
+/* cek syntax */
+new Function(code)
+
+/* cek api */
+const apiMatch = code.match(/https?:\/\/[^\s'"]+/g)
+
+if(apiMatch){
+
+for(const url of apiMatch){
+
+try{
+await axios.get(url,{timeout:4000})
+}catch{
+deadApi.push(`${folder}/${file}`)
+break
+}
+
+}
+
+}
+
+}catch{
+
+errorPlugins.push(`${folder}/${file}`)
+
+}
+
+}
+
+}
+
+let normal = total - errorPlugins.length - deadApi.length
+
+let text =
+`╭─〔 ❤️ RIMURU SCAN PLUGIN 〕
+│
+│ 📦 Total Plugin : ${total}
+│ ✅ Normal : ${normal}
+│ ❌ Error : ${errorPlugins.length}
+│ ☠️ API Mati : ${deadApi.length}
+│`
+
+if(errorPlugins.length){
+
+text += `
+
+├─ Plugin Error
+${errorPlugins.map(v=>`│ • ${v}`).join('\n')}`
+
+}
+
+if(deadApi.length){
+
+text += `
+
+├─ API Mati
+${deadApi.map(v=>`│ • ${v}`).join('\n')}`
+
+}
+
+text += `
+
+╰────────────`
+
+m.reply(text)
+
+}
+
+export { pluginConfig as config, handler };

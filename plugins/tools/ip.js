@@ -1,0 +1,29 @@
+export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+
+
+import safeJson from "../../src/lib/rimuru-safe-json.js";
+import fetch from 'node-fetch'
+
+const handler = async (m, { text, usedPrefix, command }) => {
+  if (!text) throw `*Example:* ${usedPrefix + command} 112.90.150.204`;
+  try {
+    let res = await safeJson(await fetch(`https://ipwho.is/${text}`), {});
+    await conn.sendMessage(m.chat, { location: { degreesLatitude: res.latitude, degreesLongitude: res.longitude }},{ ephemeralExpiration: 604800 });
+    await delay(2000);
+    conn.reply(m.chat, JSON.stringify(res, null, 2), m);  
+  } catch (e) { 
+    throw { error: `IP ${text} not found!` };
+  }
+}
+
+handler.command = handler.help = ['ip']
+handler.tags = ['tools']
+
+handler.limit = true
+handler.register = true
+
+export default handler
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

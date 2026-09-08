@@ -1,0 +1,49 @@
+import sharp from 'sharp';
+export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+
+
+import config from '../../config.js';
+const pluginConfig = {
+    name: 'burik',
+    alias: ['rusak', 'jelek'],
+    category: 'fun',
+    description: 'Membuat foto menjadi burik/rusak',
+    usage: '.burik (reply foto)',
+    example: '.burik (reply foto)',
+    isOwner: false,
+    isPremium: false,
+    isGroup: false,
+    isPrivate: false,
+    cooldown: 5,
+    energi: 1,
+    isEnabled: true
+}
+
+async function handler(m, { sock }) {
+    try {
+        const isQuotedImage = m.isQuoted && m.quoted?.isImage
+        const isDirectImage = m.isImage
+
+        if (!isQuotedImage && !isDirectImage) {
+            return await m.reply('❗ Reply atau kirim sebuah foto terlebih dahulu!')
+        }
+
+        await m.reply('⏳ Sedang memproses foto...')
+
+        const target = isQuotedImage ? m.quoted : m
+        const buffer = await target.download()
+        if (!buffer) return await m.reply('❌ Gagal mengunduh foto!')
+
+        const resultBuffer = await sharp(buffer)
+            .resize({ width: 100, height: 100, fit: 'inside' })
+            .jpeg({ quality: 15 })
+            .toBuffer()
+        await m.replyImage(resultBuffer, '📸 Foto burik berhasil dibuat!')
+
+    } catch (error) {
+        console.error('Burik Plugin Error:', error)
+        await m.reply(`❌ *GAGAL*\n\n> ${error.message}`)
+    }
+}
+
+export { pluginConfig as config, handler };

@@ -1,0 +1,63 @@
+export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+
+
+import sharp from 'sharp'
+import axios from 'axios'
+import FormData from 'form-data'
+
+async function toWebp(buffer) {
+  return await sharp(buffer)
+    .webp({ quality: 80 })
+    .toBuffer()
+}
+
+async function uploadUguu(buffer) {
+  let form = new FormData()
+  form.append('files[]', buffer, 'file.webp')
+
+  let res = await axios.post('https://uguu.se/upload.php', form, {
+    headers: form.getHeaders()
+  })
+
+  return res.data.files[0].url
+}
+
+let handler = async (m, { conn }) => {
+  try {
+    if (!m.quoted) return m.reply('Reply gambar / sticker')
+
+    let mime = m.quoted.mimetype || ''
+    if (!/image|webp/.test(mime)) {
+      return m.reply('Harus reply gambar atau sticker')
+    }
+
+    let media = await m.quoted.download()
+    let webp = await toWebp(media)
+    let url = await uploadUguu(webp)
+
+    if (typeof conn.sendStickerPack !== 'function') {
+      throw new Error('Fitur sticker pack tidak tersedia pada socket bot')
+    }
+
+    await conn.sendStickerPack(
+      m.chat,
+      [webp],
+      m,
+      {
+        name: 'Ryo Yamada',
+        publisher: 'Ryo Yamada',
+        description: 'ytta acumalaka'
+      }
+    )
+
+  } catch (e) {
+    console.error(e)
+    m.reply('Error bikin sticker pack')
+  }
+}
+
+handler.help = ['pack']
+handler.tags = ['sticker']
+handler.command = /^pack$/i
+
+export default handler
