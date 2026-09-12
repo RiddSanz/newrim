@@ -569,90 +569,118 @@ Tekan tombol dibawah untuk info lebih lanjut dan untuk memilih kategori
           await m.reply(text);
         }
         break;
-      case 2: {
-        // V2 — menu utama yang diminta: tampilan tetap sederhana,
-        // kategori tanpa jumlah command di body, dan jumlah hanya tampil
-        // setelah user membuka tombol "Pilih Menu".
-        const fixedCategories = [
-          "owner", "main", "utility", "tools", "fun", "game", "download",
-          "search", "sticker", "media", "ai", "group", "religi", "info", "cek",
-          "economy", "user", "canvas", "random", "premium", "ephoto", "jpm", "anime",
-          "asupan", "maker", "clan", "convert", "downloader", "downloads", "general",
-          "image", "berita", "islamic", "rpg", "test", "internet", "audio", "quran",
-          "quotes", "xp", "nsfw", "megami", "sound", "stalk", "voice", "music", "linode",
-          "primbon", "cecan", "stalker", "tts", "vps"
-        ];
+case 2: {
+  // V2 — menu utama yang diminta: tampilan tetap sederhana,
+  // kategori tanpa jumlah command di body, dan jumlah hanya tampil
+  // setelah user membuka tombol "Pilih Menu".
+  const fixedCategories = [
+    "owner", "main", "utility", "tools", "fun", "game", "download",
+    "search", "sticker", "media", "ai", "group", "religi", "info", "cek",
+    "economy", "user", "canvas", "random", "premium", "ephoto", "jpm", "anime",
+    "asupan", "maker", "clan", "convert", "downloader", "downloads", "general",
+    "image", "berita", "islamic", "rpg", "test", "internet", "audio", "quran",
+    "quotes", "xp", "nsfw", "megami", "sound", "stalk", "voice", "music", "linode",
+    "primbon", "cecan", "stalker", "tts", "vps"
+  ];
 
-        const categoryRows = [];
-        const categoryLines = [];
-        const commandsMap = getCommandsByCategory();
-        const casesMap = getCasesByCategory();
-        const allowed = getSortedCategories(m, botMode).sorted;
-        const available = new Map(allowed.map(item => [item.cat.toLowerCase(), item]));
+  const categoryRows = [];
+  const categoryLines = [];
+  const commandsMap = getCommandsByCategory();
+  const casesMap = getCasesByCategory();
+  const allowed = getSortedCategories(m, botMode).sorted;
+  const available = new Map(
+    allowed.map(item => [item.cat.toLowerCase(), item])
+  );
 
-        for (const cat of fixedCategories) {
-          const item = available.get(cat);
-          if (!item) continue;
-          const pluginCount = (commandsMap[item.cat] || []).length;
-          const caseCount = (casesMap[item.cat] || []).length;
-          const count = pluginCount + caseCount;
-          if (!count) continue;
+  for (const cat of fixedCategories) {
+    const item = available.get(cat);
+    if (!item) continue;
 
-          categoryLines.push(`┣➤ *${prefix}menucat ${cat}*`);
-          categoryRows.push({
-            title: cat.toUpperCase(),
-            description: `${count} command`,
-            id: `${prefix}menucat ${cat}`,
-          });
-        }
+    const pluginCount = (commandsMap[item.cat] || []).length;
+    const caseCount = (casesMap[item.cat] || []).length;
+    const count = pluginCount + caseCount;
 
-        // Semua informasi utama diambil dari konfigurasi/runtime, bukan ditulis manual.
-        const botName = RIMURU_CORE_CONFIG.bot?.name || "Rimuru-MD";
-        const botVersion = RIMURU_CORE_CONFIG.bot?.version || "1.0";
-        const botModeName = String(config.mode || "public").toUpperCase();
-        const userName = m.pushName || "User";
-        const featureCount = totalFeatures;
+    if (!count) continue;
 
-        const bodyLines = [
-          `✨━━━〔 *𝐌𝐞𝐧𝐮* 〕━━━✨`,
-          ``,
-          `➤ Nᴀᴍᴀ Bᴏᴛ : *${botName}*`,
-          `➤ Uѕᴇʀ : *${userName}*`,
-          `➤ Mᴏᴅᴇ : *${botModeName}*`,
-          `➤ Vᴇʀѕɪ : *${botVersion}*`,
-          `➤ Tᴏᴛᴀʟ Fɪᴛᴜʀ : *${featureCount} ғɪᴛᴜʀ*`,
-          ``,
-          `✨━━━〔 *No Spam* 〕━━━✨`,
-          ``,
-          `_ᴊᴀɴɢᴀɴ sᴘᴀᴍ ʏᴀ ᴋᴀᴋ 🐣_`,
-          `_ɢᴜɴᴀᴋᴀɴ ᴅᴇɴɢᴀɴ ʙɪᴊᴀᴋ_`,
-          ``,
-          `📚 *Pilih kategori dari tombol di bawah untuk membuka command.*`,
-          `${botName} • ◈ EXECUTIVE`,
-        ];
-        const body = bodyLines.join("\n");
+    categoryLines.push(`┣➤ *${prefix}menucat ${cat}*`);
 
-        const selectButton = {
-          name: "single_select",
-          buttonParamsJson: JSON.stringify({
-            title: "📚 Pilih Menu",
-            sections: [{
-              title: "Daftar Menu",
-              rows: categoryRows,
-            }],
-          }),
-        };
+    categoryRows.push({
+      title: cat.toUpperCase(),
+      description: `${count} command`,
+      id: `${prefix}menucat ${cat}`,
+    });
+  }
 
-        const imageBuffer = getAssetBuffer("rimuru-v2", config.assets);
-        if (!imageBuffer) throw new Error("Asset rimuru-v2 tidak tersedia");
-        await sock.sendMessage(m.chat, {
-          image: imageBuffer,
-          caption: body,
-          footer: `${botName} • ◈ EXECUTIVE`,
-          interactiveButtons: [selectButton],
-        }, { quoted: m });
-        break;
-      }
+  // Semua informasi utama diambil dari konfigurasi/runtime,
+  // bukan ditulis manual.
+  const botName = RIMURU_CORE_CONFIG.bot?.name || "Rimuru-MD";
+  const botVersion = RIMURU_CORE_CONFIG.bot?.version || "1.0";
+  const botModeName = String(config.mode || "public").toUpperCase();
+  const userName = m.pushName || "User";
+  const featureCount = totalFeatures;
+
+  const bodyLines = [
+    `✨━━━〔 *𝐌𝐞𝐧𝐮* 〕━━━✨`,
+    ``,
+    `➤ Nᴀᴍᴀ Bᴏᴛ : *${botName}*`,
+    `➤ Uѕᴇʀ : *${userName}*`,
+    `➤ Mᴏᴅᴇ : *${botModeName}*`,
+    `➤ Vᴇʀѕɪ : *${botVersion}*`,
+    `➤ Tᴏᴛᴀʟ Fɪᴛᴜʀ : *${featureCount} ғɪᴛᴜʀ*`,
+    ``,
+    `✨━━━〔 *No Spam* 〕━━━✨`,
+    ``,
+    `_ᴊᴀɴɢᴀɴ sᴘᴀᴍ ʏᴀ ᴋᴀᴋ 🐣_`,
+    `_ɢᴜɴᴀᴋᴀɴ ᴅᴇɴɢᴀɴ ʙɪᴊᴀᴋ_`,
+    ``,
+    `📚 *Pilih kategori dari tombol di bawah untuk membuka command.*`,
+    ``,
+    `[ 🌐 READY PANEL LEGAL ]`,
+    `▸ zanspiwpteroshoppanel.my.id`,
+    ``,
+    `${botName} • ◈ EXECUTIVE`,
+  ];
+
+  const body = bodyLines.join("\n");
+
+  const selectButton = {
+    name: "single_select",
+    buttonParamsJson: JSON.stringify({
+      title: "📚 Pilih Menu",
+      sections: [{
+        title: "Daftar Menu",
+        rows: categoryRows,
+      }],
+    }),
+  };
+
+  const panelButton = {
+    name: "cta_url",
+    buttonParamsJson: JSON.stringify({
+      display_text: "📢 Panel Legal",
+      url: "https://whatsapp.com/channel/0029VbD6XZW3AzNITBzI7c2L",
+      merchant_url: "https://whatsapp.com/channel/0029VbD6XZW3AzNITBzI7c2L",
+    }),
+  };
+
+  const imageBuffer = getAssetBuffer("rimuru-v2", config.assets);
+
+  if (!imageBuffer) {
+    throw new Error("Asset rimuru-v2 tidak tersedia");
+  }
+
+  await sock.sendMessage(m.chat, {
+    image: imageBuffer,
+    caption: body,
+    footer: `${botName} • ◈ EXECUTIVE`,
+    interactiveButtons: [
+      selectButton,
+      panelButton,
+    ],
+  }, { quoted: m });
+
+  break;
+}
       default:
         await m.reply(text);
     }

@@ -731,6 +731,14 @@ async function serialize(sock, msg, store = {}) {
       if (isLid(m.sender) || isLidConverted(m.sender)) {
         m.sender = resolveAnyLidToJid(m.sender, m.groupMembers);
         m.senderNumber = m.sender ? m.sender.replace(/@.+/g, "") : "";
+
+        // Rehitung status akses setelah LID berhasil dikonversi ke nomor/JID asli.
+        // Sebelumnya m.isOwner dihitung sebelum konversi LID, sehingga owner
+        // yang datang sebagai @lid bisa salah terbaca sebagai bukan owner.
+        m.isOwner = m.isNewsletter || m.fromMe ? true : isOwner(m.sender);
+        m.isPartner = m.isNewsletter || m.fromMe ? true : isPartner(m.sender);
+        m.isPremium = m.isNewsletter || m.fromMe ? true : isPremium(m.sender);
+        m.isBanned = m.isNewsletter || m.fromMe ? false : isBanned(m.sender);
       }
 
       if (m.mentionedJid && m.mentionedJid.length > 0) {

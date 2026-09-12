@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+import https from 'https';
 import { logger } from './rimuru-logger.js';
 import config from '../../config.js';
 
@@ -12,21 +13,75 @@ function isRemoteUrl(value) {
   return typeof value === 'string' && /^https?:\/\//i.test(value);
 }
 
-async function fetchRemoteBuffer(url, timeout = 30000) {
-  if (!isRemoteUrl(url)) return null;
-  if (remoteCache.has(url)) return remoteCache.get(url);
+const httpsAgent = new https.Agent({
+  family: 4,
+  keepAlive: true,
+});
 
+const RETRYABLE_ERRORS = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'ENETUNREACH',
+  'EHOSTUNREACH',
+]);
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function requestRemoteBuffer(url, timeout) {
   const response = await axios.get(url, {
     responseType: 'arraybuffer',
     timeout,
     maxContentLength: 50 * 1024 * 1024,
     maxBodyLength: 50 * 1024 * 1024,
+    proxy: false,
+    httpsAgent,
     headers: { 'User-Agent': 'Mozilla/5.0 Rimuru-MD AssetLoader' },
+    validateStatus: status => status >= 200 && status < 300,
   });
 
-  const buffer = Buffer.from(response.data);
-  remoteCache.set(url, buffer);
-  return buffer;
+  return Buffer.from(response.data);
+}
+
+async function fetchRemoteBuffer(url, timeout = 30000) {
+  if (!isRemoteUrl(url)) return null;
+  if (remoteCache.has(url)) return remoteCache.get(url);
+
+  let lastError;
+
+  // Direct request first. Retries handle transient Catbox/DNS/socket failures.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const buffer = await requestRemoteBuffer(url, timeout);
+      remoteCache.set(url, buffer);
+      return buffer;
+    } catch (e) {
+      lastError = e;
+      const code = e?.code || e?.cause?.code;
+      if (!RETRYABLE_ERRORS.has(code) && attempt === 0) break;
+      if (attempt < 2) await sleep(750 * (attempt + 1));
+    }
+  }
+
+  // Image-only fallback: let a public image proxy fetch the original URL.
+  // This keeps the configured asset URL unchanged and only activates when
+  // the origin itself cannot be reached from the bot host.
+  if (/^https?:\/\/files\.catbox\.moe\//i.test(url) &&
+      /\.(?:jpe?g|png|webp|gif)(?:\?.*)?$/i.test(url)) {
+    const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+    try {
+      const buffer = await requestRemoteBuffer(proxyUrl, timeout);
+      remoteCache.set(url, buffer);
+      return buffer;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  throw lastError || new Error('Remote asset request failed');
 }
 
 /**
