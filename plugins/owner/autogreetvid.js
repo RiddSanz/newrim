@@ -1,6 +1,5 @@
 import { getDatabase } from '../../src/lib/rimuru-database.js';
 import config from '../../config.js';
-import fs from 'fs';
 
 const pluginConfig = {
     name: ['autogreetvid', 'autovideo', 'greetvideo'],
@@ -20,8 +19,8 @@ const pluginConfig = {
 
 // Lokasi video
 const VIDEO = {
-    pagi: './assets/video/rimuru-pagi.mp4',
-    malam: './assets/video/rimuru-malam.mp4'
+    pagi: 'https://files.catbox.moe/xqrex2.mp4',
+    malam: 'https://files.catbox.moe/roo141.mp4'
 };
 
 // Waktu default
@@ -210,12 +209,12 @@ async function sendGreet(sock, jid, type) {
     const isPagi = type === 'pagi';
     const videoPath = isPagi ? VIDEO.pagi : VIDEO.malam;
     
-    if (!fs.existsSync(videoPath)) {
-        throw new Error(`File video ${videoPath} tidak ditemukan!`);
+    if (!videoPath) {
+        throw new Error(`URL video ${type} tidak tersedia!`);
     }
 
     await sock.sendMessage(jid, {
-        video: fs.readFileSync(videoPath),
+        video: { url: videoPath },
         caption: getCaption(type),
         mimetype: 'video/mp4'
     });

@@ -1,11 +1,8 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from 'axios'
 import config from '../../config.js'
 import { f } from '../../src/lib/rimuru-http.js'
 import te from '../../src/lib/rimuru-error.js'
-const NEOXR_APIKEY = config.APIkey?.neoxr || 'Milik-Bot-rimuruMD'
+const NEOXR_APIKEY = config.APIkey?.neoxr || 'Milik-Bot-RimuruMD'
 
 const pluginConfig = {
     name: 'meme',
@@ -26,9 +23,7 @@ const pluginConfig = {
 async function handler(m, { sock }) {
     m.react('🕕') 
     try {
-        const result = await f(`https://api.neoxr.eu/api/meme?apikey=${NEOXR_APIKEY}`)
-        const data = result?.data
-        if (!data?.url) throw new Error("API tidak mengembalikan meme")
+        const { data } = await f(`https://api.neoxr.eu/api/meme?apikey=${NEOXR_APIKEY}`)
         await sock.sendMedia(m.chat, data.url, data.title, m, {
             type: 'image'
         })

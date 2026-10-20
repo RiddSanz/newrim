@@ -18,7 +18,6 @@ const config = {
     isEnabled: true
 }
 
-
 const BASE = "https://quillbot.com";
 const CATEGORY = "Auto";
 const ASPECT_RATIO = "1:1";

@@ -1,9 +1,7 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import config from "../../config.js";
 import path from "path";
+import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 import fs from "fs";
 const pluginConfig = {
   name: "jodoh",
@@ -23,13 +21,7 @@ const pluginConfig = {
 
 let thumbFun = null;
 try {
-  const thumbPath = path.join(
-    process.cwd(),
-    "assets",
-    "images",
-    "rimuru-games.jpg",
-  );
-  if (fs.existsSync(thumbPath)) thumbFun = fs.readFileSync(thumbPath);
+  thumbFun = getAssetBuffer("rimuru-games");
 } catch (e) {}
 
 const loveQuotes = [

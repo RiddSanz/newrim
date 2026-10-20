@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import FormData from "form-data";
 import QRCode from "qrcode";
@@ -10,7 +7,7 @@ const pluginConfig = {
     name: 'qrcodefile',
     alias: ['qrfile', 'fileqr', 'filetoqr', 'qruguu'],
     category: 'tools',
-    description: 'Mengupload media/file ke Uguu.se dan membuat QR Code berisi URL file tersebut',
+    description: 'Mengupload media/file ke hosting cadangan dan membuat QR Code berisi URL file tersebut',
     usage: '.qrcodefile (kirim dengan caption atau reply media/file/viewonce/dokumen)',
     example: '.qrcodefile',
     isOwner: false,
@@ -22,47 +19,90 @@ const pluginConfig = {
     isEnabled: true
 };
 
-const API = "https://uguu.se/upload.php";
 const SIZE = 1024;
 const FOREGROUND = "#000000";
 const BACKGROUND = "#FFFFFF";
 const UA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36";
 
 async function uploadFile(buffer, filename, mimeType) {
-  const form = new FormData();
-  form.append("files[]", buffer, {
-    filename: filename,
-    contentType: mimeType
-  });
-
-  const res = await axios.post(API, form, {
-    timeout: 120000,
-    maxBodyLength: Infinity,
-    maxContentLength: Infinity,
-    validateStatus: () => true,
-    headers: {
-      ...form.getHeaders(),
-      accept: "*/*",
-      origin: "https://uguu.se",
-      referer: "https://uguu.se/",
-      "user-agent": UA,
-      "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-      "sec-ch-ua-mobile": "?1",
-      "sec-ch-ua-platform": '"Android"',
-      "sec-fetch-site": "same-origin",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-dest": "empty",
-      "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
+  const attempts = [
+    {
+      name: 'Catbox',
+      run: async () => {
+        const form = new FormData();
+        form.append('reqtype', 'fileupload');
+        form.append('fileToUpload', buffer, {
+          filename,
+          contentType: mimeType || 'application/octet-stream'
+        });
+        const res = await axios.post('https://catbox.moe/user/api.php', form, {
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          headers: form.getHeaders()
+        });
+        const url = typeof res.data === 'string' ? res.data.trim() : '';
+        if (!/^https?:\/\//i.test(url)) throw new Error('Respons Catbox tidak berisi URL');
+        return url;
+      }
+    },
+    {
+      name: 'Qu.ax',
+      run: async () => {
+        const form = new FormData();
+        form.append('file', buffer, {
+          filename,
+          contentType: mimeType || 'application/octet-stream'
+        });
+        const res = await axios.post('https://qu.ax/upload.php', form, {
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          headers: { ...form.getHeaders(), accept: '*/*' }
+        });
+        const url = res.data?.files?.[0]?.url || null;
+        if (res.data?.success !== true || !url) throw new Error('Respons Qu.ax tidak valid');
+        return String(url).replaceAll('\\/', '/');
+      }
+    },
+    {
+      name: 'Uguu',
+      run: async () => {
+        const form = new FormData();
+        form.append('files[]', buffer, {
+          filename,
+          contentType: mimeType || 'application/octet-stream'
+        });
+        const res = await axios.post('https://uguu.se/upload.php', form, {
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          headers: {
+            ...form.getHeaders(),
+            accept: '*/*',
+            origin: 'https://uguu.se',
+            referer: 'https://uguu.se/',
+            'user-agent': UA
+          }
+        });
+        const url = res.data?.files?.[0]?.url || null;
+        if (res.data?.success !== true || !url) throw new Error('Respons Uguu tidak valid');
+        return String(url).replaceAll('\\/', '/');
+      }
     }
-  });
+  ];
 
-  const url = res.data?.files?.[0]?.url || null;
-
-  if (res.status !== 200 || res.data?.success !== true || !url) {
-    throw new Error(res.data?.message || `Upload gagal dengan status HTTP ${res.status}`);
+  const failures = [];
+  for (const attempt of attempts) {
+    try {
+      return await attempt.run();
+    } catch (error) {
+      const status = error?.response?.status;
+      failures.push(`${attempt.name}: ${status ? `HTTP ${status}` : (error?.message || 'gagal')}`);
+      console.warn(`[QRCodeFile] Upload ${attempt.name} gagal:`, status || error?.message || error);
+    }
   }
-
-  return url;
+  throw new Error(`Semua server upload gagal. ${failures.join(' | ')}`);
 }
 
 async function makeQrBuffer(url) {
@@ -150,7 +190,7 @@ async function handler(m, { usedPrefix, prefix, command, sock, conn }) {
     caption += `🔗 *URL File:* ${uploadedUrl}\n`;
     caption += `📁 *MIME Type:* ${mimeType || 'unknown'}\n\n`;
     caption += `────────────────────────────\n`;
-    caption += `💡 *Catatan:* QR Code di atas berisi URL download dari file kamu. File di Uguu.se disimpan secara sementara (temporary).`;
+    caption += `💡 *Catatan:* QR Code berisi URL file yang diunggah. Masa penyimpanan mengikuti kebijakan server upload yang berhasil digunakan.`;
 
     await clientBot.sendMessage(
       m.chat,

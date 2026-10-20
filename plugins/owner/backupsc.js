@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import moment from "moment-timezone";
 import fs from "fs";
 import path from "path";
@@ -107,7 +103,7 @@ async function handler(m, { sock }) {
     const projectRoot = process.cwd();
     const timestamp = moment().tz("Asia/Jakarta").format("YYYY-MM-DD_HH-mm-ss");
     const botName =
-      RIMURU_CORE_CONFIG.bot?.name?.replace(/[^a-zA-Z0-9]/g, "") || "rimuruBot";
+      config.bot?.name?.replace(/[^a-zA-Z0-9]/g, "") || "RimuruBot";
     const zipFileName = `${botName}_backup_${timestamp}.zip`;
     const backupDir = getBackupOutputDir(projectRoot);
     const zipFilePath = path.join(backupDir, zipFileName);
@@ -187,8 +183,8 @@ async function handler(m, { sock }) {
 
     const stats = fs.statSync(zipFilePath);
     const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
     await sock.sendMessage(
       m.chat,

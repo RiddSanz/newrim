@@ -10,7 +10,24 @@ ini wm gw cok jan di hapus
 
 import fetch from "node-fetch";
 
-let handler = async (m, { args, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "tran",
+  alias: ["slate", "tr"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { args, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
 	let lang, text;
 	if (args.length >= 2) {
 		(lang = args[0] ? args[0] : "id"), (text = args.slice(1).join(" "));
@@ -55,11 +72,6 @@ let handler = async (m, { args, usedPrefix, command }) => {
 		await m.reply(eror);
 	}
 };
-handler.help = ["translate"].map((v) => v + " *ᴛᴇxᴛ*");
-handler.tags = ['tools'];
-handler.command = /^(tran(slate)|tr?)$/i
-
-export default handler;
 
 async function langList() {
 	let data = await fetch(
@@ -89,3 +101,5 @@ async function translate(query = "", lang) {
 		throw err;
 	}
 }
+
+export { pluginConfig as config, handler };

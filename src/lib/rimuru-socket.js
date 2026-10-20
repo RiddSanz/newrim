@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import axios from "axios";
 let _sharp = null;
 async function getSharp() {
@@ -15,7 +14,7 @@ import {
   proto,
   areJidsSameUser,
   generateForwardMessageContent,
-} from "ourin";
+} from "rimuru";
 import {
   isLid,
   isLidConverted,
@@ -25,7 +24,7 @@ import {
 
 import fs from "fs";
 import path from "path";
-import { downloadMediaMessage, getContentType } from "ourin";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import { addExifToWebp, DEFAULT_METADATA } from "./rimuru-exif.js";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import ffmpeg from "fluent-ffmpeg";
@@ -190,7 +189,6 @@ async function simpleImageToWebp(buffer) {
 
 async function extendSocket(sock) {
   const _originalSendMessage = sock.sendMessage.bind(sock);
-
   sock.sendMessage = async (jid, content, options) => {
     try {
       return await _originalSendMessage(jid, content, options);
@@ -300,7 +298,7 @@ async function extendSocket(sock) {
     if (!stickers || !stickers.length) throw new Error("No stickers provided");
 
     const packname = options.name ?? options.packname ?? "Sticker Pack";
-    const publisher = options.publisher ?? options.author ?? "rimuru-AI";
+    const publisher = options.publisher ?? options.author ?? "Rimuru-AI";
     const packDescription = options.description || "";
     const stickerPackId = options.id || crypto.randomUUID();
     const emojis = options.emojis || ["\uD83C\uDFA8"];
@@ -539,7 +537,7 @@ async function extendSocket(sock) {
     if (text !== null) msg.caption = text;
     if (options.footer) msg.footer = options.footer;
     if (options.buttons) msg.interactiveButtons = options.buttons;
-    if (!options.footer) msg.footer = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    if (!options.footer) msg.footer = config.bot?.name || "Rimuru-AI";
     if (source) {
       let data = source;
       const mediaType = options.type || options.mediaType || "image";

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from "fs";
 import path from "path";
 import te from "../../src/lib/rimuru-error.js";
@@ -72,15 +69,14 @@ async function handler(m, { sock, isOwner }) {
 
     if (!caption) {
       caption = 
-        `⭐ *PRICE LIST SEWA BOT TENDOU* ⭐\n\n` +
+        `⭐ *PRICE LIST SEWA BOT ANITA* ⭐\n\n` +
         `*1 Hari* ➔ *Rp1.000* ✨\n` +
-        `*2 Hari* ➔ *Rp2.000* ✨\n` +
-        `*3 Hari* ➔ *Rp3.000* ✨\n` +
-        `*5 Hari* ➔ *Rp5.000* ✨\n` +
-        `*7 Hari* ➔ *Rp7.500* ✨\n` +
-        `*30 Hari* ➔ *Rp15.000 FREE PREMIUM BOT* ✨\n\n` +
-        `📌 *Minat? Chat Owner ya!*\n` +
-        `Terima kasih telah menggunakan Tendou Bot ❤️`;
+        `*5 Hari* ➔ *Rp2.000* ✨\n` +
+        `*10 Hari* ➔ *Rp3.000* ✨\n` +
+        `*Permanen* ➔ *Rp5.000* ✨\n` +
+        `*Permanen* ➔ *Rp10.000 FREE PREMIUM BOT* ✨\n\n` +
+        `📌 *Minat? Chat .owner ya!*\n` +
+        `Terima kasih telah menggunakan Rimuru Bot ❤️`;
     }
 
     await m.react("✅");

@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "berdagang",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
     let amount = Math.floor(Math.random() * 50000)
     let who = m.isGroup ? m.mentionedJid[0] : m.chat
 
@@ -54,15 +71,8 @@ Penghasilan dagang @${who.replace(/@.+/, '')} didapatkan *+${toRupiah(profit)} M
     intervals.forEach(interval => setTimeout(sendResult, interval))
 }
 
-handler.help = ['berdagang']
-handler.tags = ['rpg']
-handler.command = /^(berdagang)$/
 handler.register = true
-handler.group = true
-handler.rpg = true
 handler.energy = 5
-export default handler
-
 function clockString(ms) {
     let h = Math.floor(ms / 3600000)
     let m = Math.floor(ms / 60000) % 60
@@ -71,3 +81,5 @@ function clockString(ms) {
 }
 
 let toRupiah = number => parseInt(number).toLocaleString().replace(/,/g, ".")
+
+export { pluginConfig as config, handler };

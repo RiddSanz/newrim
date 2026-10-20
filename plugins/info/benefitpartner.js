@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 const pluginConfig = {
     name: 'benefitpartner',
@@ -24,7 +20,7 @@ async function handler(m) {
     const prefix = m.prefix || '.'
 
     let txt = `🤝 *BENEFIT PARTNER*\n\n`
-    txt += `Keuntungan menjadi partner ${RIMURU_CORE_CONFIG.bot?.name || 'Bot'}:\n\n`
+    txt += `Keuntungan menjadi partner ${config.bot?.name || 'Bot'}:\n\n`
 
     txt += `🔓 *Akses Fitur*\n`
     txt += `├ Semua fitur premium terbuka\n`

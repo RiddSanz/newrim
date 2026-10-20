@@ -1,6 +1,5 @@
 import { getDatabase } from '../../src/lib/rimuru-database.js';
 import config from '../../config.js';
-import fs from 'fs';
 
 const pluginConfig = {
     name: ['autogreet2', 'autosiangsore'],
@@ -20,8 +19,8 @@ const pluginConfig = {
 
 // Gambar
 const IMAGE = {
-    siang: './assets/images/rimuru-siang.jpg',
-    sore: './assets/images/rimuru-sore.jpg'
+    siang: 'https://files.catbox.moe/tfkuf4.jpg',
+    sore: 'https://files.catbox.moe/tfkuf4.jpg'
 };
 
 // Waktu default
@@ -206,14 +205,16 @@ async function handler(m, { sock }) {
 }
 
 async function sendGreet(sock, jid, type) {
-    const imagePath = IMAGE[type];
-    
-    if (!fs.existsSync(imagePath)) {
-        throw new Error(`File gambar ${imagePath} tidak ditemukan!`);
-    }
+    const imageUrl = IMAGE[type];
+    const response = await fetch(imageUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error(`Gagal memuat gambar (${response.status})`);
 
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
     await sock.sendMessage(jid, {
-        image: fs.readFileSync(imagePath),
+        image: imageBuffer,
         caption: getCaption(type)
     });
 }

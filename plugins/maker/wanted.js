@@ -1,34 +1,123 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import axios from 'axios'
-
-let handler = async (m, { conn, args }) => {
-  if (!args || args.length === 0) {
-    return m.reply('Usage: .wanted <image_url>')
-  }
-  const imageUrl = args[0]
-  const API_KEY = 'LznycxShadow'
-  const apiUrl = `https://api.lolhuman.xyz/api/creator1/wanted?apikey=${API_KEY}&img=${encodeURIComponent(imageUrl)}`
-
-  try {
-    const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
-
-    await conn.sendMessage(m.chat, {
-      image: Buffer.from(response.data),
-      caption: '*done buat wanted!*'
-    }, { quoted: m })
-  } catch (err) {
-    console.error('Error wanted:', err.response?.data || err.message)
-    if (err.response && err.response.data && err.response.data.message) {
-      return m.reply(`❌ ${err.response.data.message}`)
-    }
-    m.reply('❌ Terjadi kesalahan saat memproses Wanted effect.')
-  }
+import axios from 'axios';
+import FormData from 'form-data';
+import config from '../../config.js';
+const pluginConfig = {
+    name: 'wanted',
+    alias: ['wantedposter'],
+    category: 'maker',
+    description: 'Efek poster wanted',
+    usage: '.wanted (reply foto)',
+    example: '.wanted',
+    isOwner: false,
+    isPremium: false,
+    isGroup: false,
+    isPrivate: false,
+    cooldown: 5,
+    energi: 1,
+    isEnabled: true
 }
 
-handler.help = ['wanted <image_url>']
-handler.tags = ['maker']
-handler.command = /^wanted$/i
+async function uploadToTmpFiles(buffer) {
 
-export default handler
+    try {
+
+        const form = new FormData()
+
+        form.append('file', buffer, {
+            filename: 'image.jpg',
+            contentType: 'image/jpeg'
+        })
+
+        const response = await axios.post(
+            'https://tmpfiles.org/api/v1/upload',
+            form,
+            {
+                headers: form.getHeaders()
+            }
+        )
+
+        return response.data.data.url
+            .replace('tmpfiles.org/', 'tmpfiles.org/dl/')
+
+    } catch (e) {
+
+        console.log('Upload Error:', e)
+
+        return null
+    }
+}
+
+async function handler(m, { sock }) {
+
+    try {
+
+        let buffer = null
+
+        // reply image
+        if (
+            m.quoted &&
+            (
+                m.quoted.mimetype?.includes('image') ||
+                m.quoted.type === 'imageMessage'
+            )
+        ) {
+
+            buffer = await m.quoted.download()
+
+        }
+
+        // direct image
+        else if (
+            m.mimetype?.includes('image')
+        ) {
+
+            buffer = await m.download()
+        }
+
+        if (!buffer) {
+
+            return await m.reply(
+                `❌ Reply / kirim gambar\n\nContoh:\n${pluginConfig.example}`
+            )
+        }
+
+        const uploaded =
+            await uploadToTmpFiles(buffer)
+
+        if (!uploaded) {
+
+            return await m.reply(
+                '❌ Upload gambar gagal'
+            )
+        }
+
+        // API Wanted
+        const api =
+            `https://api.popcat.xyz/wanted?image=${encodeURIComponent(uploaded)}`
+
+        const response = await axios.get(api, {
+            responseType: 'arraybuffer'
+        })
+
+        const image = Buffer.from(response.data)
+
+        await sock.sendMessage(
+            m.chat,
+            {
+                image,
+                caption: '🤠 *WANTED POSTER*'
+            },
+            { quoted: m }
+        )
+
+    } catch (error) {
+
+        console.error('Wanted Error:', error)
+
+        await m.reply(
+            `❌ *GAGAL*\n\n> ${error.message}`
+        )
+    }
+}
+
+export { pluginConfig as config, handler };

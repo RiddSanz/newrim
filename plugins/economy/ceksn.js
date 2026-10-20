@@ -1,3 +1,19 @@
+const pluginConfig = {
+  name: "ceksn",
+  alias: [],
+  category: "economy",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
@@ -10,8 +26,6 @@ let handler = async function (m, { conn, text, usedPrefix }) {
 m.reply(`*📮 SN:* ${sn}`)
 }
 
-handler.help = ['ceksn']
-handler.tags = ['info']
-handler.command = /^(ceksn)$/i
 handler.register = true
-export default handler
+
+export { pluginConfig as config, handler };

@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, args, isOwner, command }) => {
+const pluginConfig = {
+  name: "resetbansos",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, args, isOwner, command }) {
+    const conn = sock;
     if (!isOwner) return m.reply('❌ Hanya owner yang bisa mereset bansos!');
 
     if (!args[0]) return m.reply(`Gunakan: *.${command} 628xxx*`);
@@ -15,9 +32,4 @@ let handler = async (m, { conn, args, isOwner, command }) => {
     m.reply(`✅ Bansos untuk ${args[0]} telah di-reset. Mereka bisa klaim ulang sekarang.`);
 };
 
-handler.help = ['resetbansos <nomor>'];
-handler.tags = ['rpg'];
-handler.command = /^resetbansos$/i;
-handler.owner = true;
-
-export default handler;
+export { pluginConfig as config, handler };

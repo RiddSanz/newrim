@@ -1,24 +1,21 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import * as _canvas from '@napi-rs/canvas';
-import axios from "axios";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
+import axios from "axios";
 
 const pluginConfig = {
   name: "angelnick",
   alias: [],
   category: "canvas",
-  description: "Membuat banner nama bertema Angel",
+  description: "Bikin card angel nick dari fotomu",
   usage: ".angelnick <teks> (reply/kirim foto)",
-  example: ".angelnick Misaki",
+  example: ".angelnick Fauzan",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
 
@@ -37,6 +34,7 @@ function drawCircularText(ctx, text, centerX, centerY, radius) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle - Math.PI / 2);
+    ctx.strokeText(char, 0, 0);
     ctx.fillText(char, 0, 0);
     ctx.restore();
   }
@@ -45,36 +43,30 @@ function drawCircularText(ctx, text, centerX, centerY, radius) {
 async function handler(m, { sock }) {
   const text = m.text?.trim();
   if (!text) {
-    return m.reply(`🎮 *ᴀɴɢᴇʟ ɴɪᴄᴋ*\n\n> Masukkan teks untuk banner\n\n*ᴄᴀʀᴀ ᴘᴀᴋᴀɪ:*\n> 1. Kirim foto + caption \`${m.prefix}angelnick <teks>\`\n> 2. Reply foto dengan \`${m.prefix}angelnick <teks>\``);
+    return m.reply(`⚠️ Harap masukkan teksnya!\nContoh: \`${m.prefix}${m.command} Halo\``);
   }
 
-  let buffer = null;
-  if (m.quoted && (m.quoted.type === "imageMessage" || m.quoted.mtype === "imageMessage")) {
-    try { buffer = await m.quoted.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else if (m.isMedia && m.type === "imageMessage") {
-    try { buffer = await m.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else {
-    try {
-      let teUrl = await sock.profilePictureUrl(m.sender, "image");
-      buffer = Buffer.from((await axios.get(teUrl, { responseType: "arraybuffer" })).data);
-    } catch (error) {
-      buffer = getAssetBuffer("pp-kosong");
-    }
+  let media = null;
+  const msgObj = m.quoted?.message ? m.quoted : m;
+  const type = getContentType(msgObj.message);
+
+  if (!type || type !== "imageMessage") {
+    return m.reply(`⚠️ Harap kirim atau reply foto dengan perintah \`${m.prefix}${m.command} <teks>\``);
   }
-
-  if (!buffer) return m.reply(`❌ Kirim/reply gambar untuk dijadikan avatar!`);
-
-  m.react("🕕");
-
+  
+  await m.react("🕕");
+  
   try {
-    const bgURL = "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1771170750646.jpeg";
+    media = await downloadMediaMessage(msgObj, "buffer", {});
+    if (!media) throw new Error("Gagal membaca media");
 
-    const userImg = await _canvas.loadImage(buffer);
-    const bg = await _canvas.loadImage(bgURL);
+    const bgUrl = "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1771170750646.jpeg";
+    const bgBuffer = await axios.get(bgUrl, { responseType: "arraybuffer" }).then(r => r.data);
 
-    const canvas = _canvas.createCanvas(bg.width, bg.height);
+    const bg = await loadImage(Buffer.from(bgBuffer));
+    const userImg = await loadImage(media);
+    const canvas = createCanvas(bg.width, bg.height);
     const ctx = canvas.getContext("2d");
-
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
     const circleSize = 95;
@@ -87,18 +79,11 @@ async function handler(m, { sock }) {
     ctx.closePath();
     ctx.clip();
 
-    // calculate crop for userImg to fill circle
-    const aspect = userImg.width / userImg.height;
-    let sw = userImg.width, sh = userImg.height, sx = 0, sy = 0;
-    if (aspect > 1) {
-        sw = userImg.height;
-        sx = (userImg.width - sw) / 2;
-    } else {
-        sh = userImg.width;
-        sy = (userImg.height - sh) / 2;
-    }
+    const minSide = Math.min(userImg.width, userImg.height);
+    const cropX = (userImg.width - minSide) / 2;
+    const cropY = (userImg.height - minSide) / 2;
 
-    ctx.drawImage(userImg, sx, sy, sw, sh, centerX - circleSize, centerY - circleSize, circleSize * 2, circleSize * 2);
+    ctx.drawImage(userImg, cropX, cropY, minSide, minSide, centerX - circleSize, centerY - circleSize, circleSize * 2, circleSize * 2);
     ctx.restore();
 
     ctx.beginPath();
@@ -112,22 +97,22 @@ async function handler(m, { sock }) {
     const minFontSize = 25;
     let fontSize = maxFontSize;
     if (text.length > 10) fontSize = Math.max(minFontSize, maxFontSize - (text.length - 10) * 2);
-    
     ctx.font = `bold ${fontSize}px serif`;
-    ctx.fillStyle = "#000";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
 
     const radius = circleSize + 70;
     drawCircularText(ctx, text.toUpperCase(), centerX, centerY - 15, radius);
     ctx.restore();
 
-    const finalBuffer = await canvas.encode("png");
-    await sock.sendMedia(m.chat, finalBuffer, null, m, { type: "image" });
-    m.react("✅");
-  } catch (error) {
-    m.react("❌");
-    m.reply(`❌ Terjadi kesalahan saat memproses gambar.`);
+    const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "👼 *Angel Nick*" }, { quoted: m });
+    await m.react("✅");
+
+  } catch (err) {
+    await m.react("☢");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

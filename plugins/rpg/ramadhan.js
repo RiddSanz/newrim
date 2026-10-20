@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
-import { generateWAMessageFromContent, proto, prepareWAMessageMedia } from '@itsliaaa/baileys';
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
+import { generateWAMessageFromContent, proto, prepareWAMessageMedia } from 'rimuru';
+import { RIMURU_CORE_CONFIG } from "../../config.js";
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
@@ -9,7 +9,7 @@ import { getDatabase } from '../../src/lib/rimuru-database.js';
 import { addExpWithLevelCheck } from '../../src/lib/rimuru-level.js';
 const pluginConfig = {
     name: 'ramadhan',
-    alias: ['puasa', 'bukapuasa', 'ngabuburit', 'tadarusan', 'teraweh', 'perangsarung', 'belitakjil', 'petasan', 'mokel', 'bangunin', 'bukber', 'kelilingsahur', 'patrol', 'sedekah', 'thr', 'wartakjil', 'bukawarung', 'tod'],
+    alias: ['bukapuasa', 'ngabuburit', 'tadarusan', 'teraweh', 'belitakjil', 'petasan', 'mokel', 'bangunin', 'bukber', 'kelilingsahur', 'patrol', 'sedekah', 'thr', 'wartakjil', 'bukawarung'],
     category: 'rpg',
     description: 'Fitur RPG Spesial Ramadhan',
     usage: '.sahur | .bukapuasa | .ngabuburit | ...',
@@ -75,26 +75,6 @@ let WAR_TAKJIL_STOCK = {
     items: {}
 }
 
-const TOD_QUESTIONS = {
-    truth: [
-        "Pernah batal puasa diam-diam gak? Jujur!",
-        "Siapa orang yang paling pengen kamu ajak bukber tahun ini?",
-        "Jujur, tarawih full apa bolong-bolong?",
-        "Pernah pura-pura puasa padahal udah makan siang?",
-        "Apa dosa yang paling sering kamu lakukan pas puasa?",
-        "Surat Al-Quran apa yang terakhir kamu baca?",
-        "Berapa nominal sedekah paling sedikit yang pernah kamu kasih?"
-    ],
-    dare: [
-        "Kirim VN baca surah Al-Fatihah sekarang!",
-        "Update status WhatsApp: 'Aku berjanji tidak akan mokel hari ini'",
-        "Sholawat Nabi 3x di Voice Note",
-        "Chat salah satu admin grup: 'Maaf zahir batin ya kak'",
-        "Kirim foto menu bukasamu hari ini (atau kemarin)",
-        "Ganti bio WhatsApp jadi: 'Otw Tobat 🤲'"
-    ]
-}
-
 const NGABUBURIT_EVENTS = [
     { text: 'Jalan-jalan sore ketemu Pak Ustadz, dikasih nasehat.', reward: { pahala: 50 }, type: 'good' },
     { text: 'Nemu takjil gratis di masjid!', reward: { item: 'takjil_gratis', qty: 1 }, type: 'good' },
@@ -127,7 +107,7 @@ async function handler(m, { sock }) {
     const reply = (text) => m.reply(text)
     const formatRp = (n) => n.toLocaleString('id-ID')
     
-    if (cmd === 'ramadhan' || cmd === 'ramadan') {
+    if ((cmd === 'ramadhan' || cmd === 'ramadan') && !m.args[0]) {
         
         const headerTxt = `🌙 *RAMADHAN TIME*
 
@@ -147,7 +127,6 @@ Hai *${m.pushName}*, Selamat menunaikan ibadah puasa yak
             {
                 title: "🕌 IBADAH HARIAN",
                 rows: [
-                     { header: "🍽️ SAHUR", title: "Makan Sahur", description: "Isi energi sebelum puasa (02:00 - 04:30)", id: `${m.prefix}sahur` },
                      { header: "🤲 BUKA PUASA", title: "Berbuka", description: "Batalkan puasa saat maghrib (17:30 - 18:30)", id: `${m.prefix}bukapuasa` },
                      { header: "📖 TADARUSAN", title: "Baca Al-Quran", description: "Tambah pahala & exp (Input Juz/Ayat)", id: `${m.prefix}tadarusan` },
                      { header: "🕌 TERAWEH", title: "Sholat Teraweh", description: "Ibadah malam berjamaah (19:00 - 22:00)", id: `${m.prefix}teraweh` },
@@ -172,11 +151,9 @@ Hai *${m.pushName}*, Selamat menunaikan ibadah puasa yak
                 rows: [
                      { header: "🚶 NGABUBURIT", title: "Jalan-jalan Sore", description: "Cari takjil atau event random (15:00 - 17:30)", id: `${m.prefix}ngabuburit` },
                      { header: "⚔️ WAR TAKJIL", title: "Warung Takjil", description: "Rebutan Takjil Limited Stock! (16:00 - 18:00)", id: `${m.prefix}wartakjil` },
-                     { header: "⚔️ PERANG SARUNG", title: "Duel PvP", description: "Ajak user lain duel! (Butuh Sarung)", id: `${m.prefix}perangsarung` },
                      { header: "🎆 MAIN PETASAN", title: "Prank", description: "Lempar petasan ke grup", id: `${m.prefix}petasan` },
                      { header: "🌏 BANGUNIN SAHUR", title: "Keliling", description: "Bangunin se komplek buat sahur", id: `${m.prefix}kelilingsahur` },
                      { header: "🍕 BUKA BERSAMA", title: "Bukber", description: "Buka bersama pada waktunya", id: `${m.prefix}bukber` },
-                     { header: "❓ TOD ISLAMI", title: "Truth or Dare", description: "Pertanyaan jujur/tantangan edisi Ramadhan", id: `${m.prefix}tod` },
                 ]
             },
             {
@@ -211,7 +188,7 @@ Hai *${m.pushName}*, Selamat menunaikan ibadah puasa yak
             ]
         }, { quoted: m })
     }
-    if (cmd === 'sahur') {
+    if (cmd === 'ramadhan' && m.args[0]?.toLowerCase() === 'sahur') {
         if (!checkTime(TIMES.SAHUR.start, TIMES.SAHUR.end)) {
             return reply(`⚠️ *Belum Waktunya Sahur!*\n\n> Sahur dimulai pukul ${TIMES.SAHUR.start} - ${TIMES.SAHUR.end} WIB`)
         }
@@ -431,34 +408,6 @@ Hai *${m.pushName}*, Selamat menunaikan ibadah puasa yak
         return reply(`🎇 *MAIN PETASAN*\n\n> ${sound}\n> Tetangga kaget! 🤣`)
     }
     
-    // 9. PERANG SARUNG
-    if (cmd === 'perangsarung') {
-        if ((user.inventory.sarung || 0) < 1) return reply(`⚠️ Kamu butuh item *Sarung* untuk perang sarung! Beli di \`${m.prefix}belitakjil\``)
-        
-        const target = m.mentionedJid[0]
-        if (!target) return reply(`⚠️ Tag lawanmu! Contoh: \`${m.prefix}perangsarung @user\``)
-        
-        if (target === m.sender) return reply(`⚠️ Gak bisa perang sama bayangan sendiri.`)
-        
-        // Simulation logic
-        const win = Math.random() > 0.5
-        const expGain = 2000
-        const moneyGain = 10000
-        
-        if (win) {
-            await addExpWithLevelCheck(sock, m, db, user, expGain)
-            user.koin += moneyGain
-            stats.pahala -= 50 
-            
-            db.save()
-            return reply(`⚔️ *PERANG SARUNG WON!* ⚔️\n\n> Kamu menyabet sarungmu dengan teknik *Ulti Sarung Gajah Duduk*!\n> Lawan K.O!\n\n💰 +Rp ${formatRp(moneyGain)}\n🧠 +${expGain} Exp\n⚠️ Pahala -50 (Kekerasan)`)
-        } else {
-            user.energi = Math.max(0, (user.energi || 0) - 20)
-            db.save()
-            return reply(`⚔️ *PERANG SARUNG LOST...* ⚔️\n\n> Kamu kena sabetan *Sarung Wadimor* lawan.\n> Benjol segede bakpao.\n\n🤕 Energi -20`)
-        }
-    }
-    
     // 10. BANGUNIN SAHUR
     if (cmd === 'bangunin') {
         if (!checkTime(TIMES.SAHUR.start, TIMES.SAHUR.end)) {
@@ -647,14 +596,6 @@ Hai *${m.pushName}*, Selamat menunaikan ibadah puasa yak
         list += `\nKetik: \`${m.prefix}wartakjil beli [nama_item_key]\`\nContoh: \`${m.prefix}wartakjil beli es_buah\``
         return reply(list)
     }
-    if (cmd === 'tod') {
-        const type = Math.random() > 0.5 ? 'Truth' : 'Dare'
-        const q = type === 'Truth' ? TOD_QUESTIONS.truth : TOD_QUESTIONS.dare
-        const pick = q[Math.floor(Math.random() * q.length)]
-        
-        return reply(`🎲 *TOD ISLAMI*\n\n🅰️ *${type.toUpperCase()}*\n"${pick}"\n\nJawab jujur atau lakukan tantangan!`)
-    }
-    
     if (cmd === 'sedekah') {
          const target = m.mentionedJid[0]
          const amount = parseInt(m.args[1])

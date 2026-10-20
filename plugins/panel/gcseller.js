@@ -1,10 +1,8 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs'
 import path from 'path'
 import config from '../../config.js'
 import { isLid, lidToJid } from '../../src/lib/rimuru-lid.js'
+import { cleanNumber } from '../../src/lib/rimuru-roles-cpanel.js'
 const CPANEL_DIR = path.join(process.cwd(), 'database', 'cpanel')
 const VALID_SERVERS = ['v1', 'v2', 'v3', 'v4', 'v5']
 
@@ -59,7 +57,7 @@ const pluginConfig = {
     description: 'Daftarkan grup sebagai GC Seller panel (akses command create server)',
     usage: '.addgcsellerv1 (di dalam grup)',
     example: '.addgcsellerv1',
-    isOwner: true,
+    isOwner: false,
     isGroup: true,
     cooldown: 5,
     energi: 0,
@@ -70,9 +68,15 @@ function hasAccess(senderJid, isOwner) {
     if (isOwner) return true
     let jid = senderJid
     if (isLid(jid)) jid = lidToJid(jid)
-    const number = jid?.replace(/@.*$/, '')
-    const ownerPanels = config.pterodactyl?.ownerPanels || []
-    return ownerPanels.includes(number)
+    const number = cleanNumber(jid)
+    let storedOwnerPanels = []
+    try {
+        const legacyPath = path.join(process.cwd(), 'database', 'cpanel', 'legacy_sellers.json')
+        const legacyData = JSON.parse(fs.readFileSync(legacyPath, 'utf8'))
+        storedOwnerPanels = Array.isArray(legacyData?.ownerPanels) ? legacyData.ownerPanels.map(cleanNumber).filter(Boolean) : []
+    } catch { }
+    const ownerPanels = [...storedOwnerPanels, ...(config.pterodactyl?.ownerPanels || []).map(cleanNumber).filter(Boolean)]
+    return Boolean(number && ownerPanels.includes(number))
 }
 
 function parseCommand(cmd) {

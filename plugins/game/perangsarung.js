@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "perangsarung",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   if (!m.mentionedJid[0]) return conn.reply(m.chat, `Tag 1 orang untuk menantangnya bermain perang sarung!`, m)
 
   let target = m.mentionedJid[0]
@@ -35,15 +52,11 @@ let handler = async (m, { conn, text }) => {
   await conn.reply(m.chat, `🏆 *Pemenangnya adalah:* ${winner.name.toUpperCase()}!`, m)
 }
 
-handler.help = ['perangsarung @user']
-handler.tags = ['game']
-handler.command = /^(perangsarung)$/i
-handler.group = true
 handler.register = true
-
-export default handler
 
 /*
 SCRIPT BY © VYNAA VALERIE 
 Modifikasi: By ZenzXD
 */
+
+export { pluginConfig as config, handler };

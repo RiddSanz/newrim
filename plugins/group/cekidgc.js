@@ -1,11 +1,7 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import sharp from "sharp";
 import config from "../../config.js";
 import axios from "axios";
-import { generateWAMessageFromContent, proto } from "ourin";
+import { generateWAMessageFromContent, proto } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
 
 const pluginConfig = {
@@ -122,8 +118,8 @@ async function handler(m, { sock }) {
       }
     } catch {}
 
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
     const infoText =
       `── .✦ 𝗚𝗥𝗢𝗨𝗣 𝗜𝗡𝗙𝗢 ✦. ── 𝜗ৎ\n\n` +
@@ -140,7 +136,7 @@ async function handler(m, { sock }) {
       `│  ✦ ᴊᴏɪɴ ᴍᴏᴅᴇ  : *${joinMode}*\n` +
       `│  ✦ ᴅᴇsᴋʀɪᴘsɪ  : ${descPreview}\n` +
       `╰──────────────⬣\n\n` +
-      `.☘︎ ݁˖ © ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"}`;
+      `.☘︎ ݁˖ © ${config.bot?.name || "Rimuru-AI"}`;
 
     const buttons = [
       {
@@ -179,7 +175,7 @@ async function handler(m, { sock }) {
                   text: infoText,
                 }),
                 footer: proto.Message.InteractiveMessage.Footer.fromObject({
-                  text: `© ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"}`,
+                  text: `© ${config.bot?.name || "Rimuru-AI"}`,
                 }),
                 header: proto.Message.InteractiveMessage.Header.fromObject({
                   hasMediaAttachment: !!headerMedia,
@@ -222,7 +218,7 @@ async function handler(m, { sock }) {
                   text: infoText,
                 }),
                 footer: proto.Message.InteractiveMessage.Footer.fromObject({
-                  text: `© ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"}`,
+                  text: `© ${config.bot?.name || "Rimuru-AI"}`,
                 }),
                 nativeFlowMessage:
                   proto.Message.InteractiveMessage.NativeFlowMessage.fromObject(

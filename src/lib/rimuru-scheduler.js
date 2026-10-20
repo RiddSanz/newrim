@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import { getDatabase } from "./rimuru-database.js";
 import { logger } from "./rimuru-logger.js";
 import { CronJob } from "cron";
@@ -698,8 +697,8 @@ function startAutoBioChecker(sock) {
 
       const clock = moment().tz(TZ).format("HH:mm");
       const runtime = formatUptime(process.uptime());
-      const botname = RIMURU_CORE_CONFIG.bot?.name || "Bot";
-      const version = RIMURU_CORE_CONFIG.bot?.version || "1.0.0";
+      const botname = config.bot?.name || "Bot";
+      const version = config.bot?.version || "1.0.0";
 
       const newBio = template
         .replace(/{clock}/gi, clock)

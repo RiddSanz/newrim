@@ -22,7 +22,24 @@ async function uploadUguu(buffer) {
   return res.data.files[0].url
 }
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "pack",
+  alias: [],
+  category: "sticker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   try {
     if (!m.quoted) return m.reply('Reply gambar / sticker')
 
@@ -56,8 +73,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['pack']
-handler.tags = ['sticker']
-handler.command = /^pack$/i
-
-export default handler
+export { pluginConfig as config, handler };

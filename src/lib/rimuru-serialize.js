@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG, RIMURU_DEVELOPER } from "../../rimuru.js";
 import {
   downloadContentFromMessage,
   getContentType,
@@ -8,7 +7,7 @@ import {
   generateWAMessage,
   areJidsSameUser,
   normalizeMessageContent,
-} from "ourin";
+} from "rimuru";
 import { writeFileSync, mkdirSync, existsSync, unlinkSync } from "fs";
 import { join } from "path";
 import config, {
@@ -65,6 +64,37 @@ function invalidatePrefixCache() {
   _prefixCache = null;
   _prefixCacheTime = 0;
 }
+
+const SRT_REMOTE_IMAGES = [
+  "https://files.catbox.moe/w6r2br.jpeg",
+  "https://files.catbox.moe/fvvfm4.jpeg",
+  "https://files.catbox.moe/ovxdbt.jpeg",
+  "https://files.catbox.moe/k5liod.jpeg",
+  "https://files.catbox.moe/nshdh2.jpeg",
+  "https://files.catbox.moe/my8n2o.jpeg",
+  "https://files.catbox.moe/ube9yw.jpeg",
+  "https://files.catbox.moe/ovxdbt.jpeg",
+  "https://files.catbox.moe/6n5aeo.jpeg",
+  "https://files.catbox.moe/44ukhh.jpeg",
+  "https://files.catbox.moe/9rxvd2.jpeg",
+  "https://files.catbox.moe/zl5s6j.jpeg",
+  "https://files.catbox.moe/nwklig.jpeg",
+  "https://files.catbox.moe/3uzlqa.jpeg",
+  "https://files.catbox.moe/ejuxcf.jpeg",
+  "https://files.catbox.moe/0nf24t.jpeg",
+  "https://files.catbox.moe/igv7ov.jpeg",
+  "https://files.catbox.moe/oo60rt.jpeg",
+  "https://files.catbox.moe/azj7fh.jpeg",
+  "https://files.catbox.moe/ug8szr.jpeg",
+  "https://files.catbox.moe/7m8s7c.jpeg",
+  "https://files.catbox.moe/rh8evw.jpeg",
+  "https://files.catbox.moe/5oo90e.jpeg",
+  "https://files.catbox.moe/6aj3ns.jpeg",
+  "https://files.catbox.moe/xit8mz.jpeg",
+  "https://files.catbox.moe/6dpbl9.jpg",
+  "https://files.catbox.moe/jx4guq.jpg",
+  "https://files.catbox.moe/270vo4.jpg",
+];
 
 const _thumbCache = {};
 async function getCachedThumb(filePath) {
@@ -422,12 +452,6 @@ async function serializeQuotedMessage(
     isSticker: quotedType === "stickerMessage",
     isDocument: quotedType === "documentMessage",
     isViewOnce: isViewOnce,
-    // Expose media metadata on quoted messages so plugins can reliably
-    // detect images/documents/files regardless of the message wrapper.
-    mimetype: quotedMessage[quotedType]?.mimetype || "",
-    fileName: quotedMessage[quotedType]?.fileName || "",
-    filename: quotedMessage[quotedType]?.fileName || "",
-    fileLength: quotedMessage[quotedType]?.fileLength || 0,
   };
 
   quoted.download = async (filename = null) => {
@@ -480,7 +504,7 @@ function createContextInfo(jid, text, title = "", body = "", thumbnail = null) {
       conversation: text,
     };
     contextInfo.participant = jid;
-    contextInfo.stanzaId = "rimuruAI" + Date.now();
+    contextInfo.stanzaId = "RIMURUAI" + Date.now();
   }
 
   return contextInfo;
@@ -731,14 +755,6 @@ async function serialize(sock, msg, store = {}) {
       if (isLid(m.sender) || isLidConverted(m.sender)) {
         m.sender = resolveAnyLidToJid(m.sender, m.groupMembers);
         m.senderNumber = m.sender ? m.sender.replace(/@.+/g, "") : "";
-
-        // Rehitung status akses setelah LID berhasil dikonversi ke nomor/JID asli.
-        // Sebelumnya m.isOwner dihitung sebelum konversi LID, sehingga owner
-        // yang datang sebagai @lid bisa salah terbaca sebagai bukan owner.
-        m.isOwner = m.isNewsletter || m.fromMe ? true : isOwner(m.sender);
-        m.isPartner = m.isNewsletter || m.fromMe ? true : isPartner(m.sender);
-        m.isPremium = m.isNewsletter || m.fromMe ? true : isPremium(m.sender);
-        m.isBanned = m.isNewsletter || m.fromMe ? false : isBanned(m.sender);
       }
 
       if (m.mentionedJid && m.mentionedJid.length > 0) {
@@ -773,7 +789,7 @@ async function serialize(sock, msg, store = {}) {
   m.to = m.chat;
   m.botNumber = decodeJid(sock.user?.id)?.replace(/@.+/g, "") || "";
   m.botJid = decodeJid(sock.user?.id) || "";
-  m.botName = sock.user?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+  m.botName = sock.user?.name || config.bot?.name || "Rimuru-AI";
   m.messageId = m.id;
   m.chatId = m.chat;
   m.senderId = m.sender;
@@ -836,8 +852,17 @@ async function serialize(sock, msg, store = {}) {
     let srtImage = null;
     try {
       if (db?.setting?.('srtEnabled')) {
-        const { getRandomShuffleAssetBuffer } = await import('./rimuru-asset-manager.js');
-        srtImage = await getRandomShuffleAssetBuffer(config.assets?.shuffleUrls);
+        const shuffleDir = join(process.cwd(), 'assets', 'image', 'shuffle');
+        const localImages = existsSync(shuffleDir)
+          ? fsc.readdirSync(shuffleDir)
+              .filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg'))
+              .map(f => join(shuffleDir, f))
+          : [];
+        const candidates = [...localImages, ...SRT_REMOTE_IMAGES];
+        if (candidates.length > 0) {
+          const randFile = candidates[Math.floor(Math.random() * candidates.length)];
+          srtImage = await getCachedThumb(randFile);
+        }
       }
     } catch (e) { }
 
@@ -869,7 +894,7 @@ async function serialize(sock, msg, store = {}) {
         },
         message: {
           contactMessage: {
-            displayName: `🪸 ${RIMURU_CORE_CONFIG.bot?.name}`,
+            displayName: `🪸 ${config.bot?.name}`,
             vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;ttname,;;;\nFN:ttname\nitem1.TEL;waid=13135550002:+1 (313) 555-0002\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
             sendEphemeral: true,
           },
@@ -883,7 +908,7 @@ async function serialize(sock, msg, store = {}) {
             await getCachedThumb(join(process.cwd(), "package.json")) ||
             fsc.readFileSync(join(process.cwd(), "package.json")),
           mimetype: "image/png",
-          fileName: RIMURU_CORE_CONFIG.bot.name,
+          fileName: config.bot.name,
           fileLength: 99999999999999,
           jpegThumbnail: srtImage ? await sharp(srtImage).resize(300, 300).toBuffer() : await sharp(getAssetBuffer("rimuru2"))
             .resize(300, 300)
@@ -920,9 +945,9 @@ async function serialize(sock, msg, store = {}) {
         {
           caption: `${config.info?.website}\n\n${text}`,
           url: config.info?.website || "https://github.com",
-          title: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+          title: config.bot?.name || "Rimuru-AI",
           description:
-            `Pengembang: ${RIMURU_DEVELOPER} | Versi: ${RIMURU_CORE_CONFIG.bot.version}` ||
+            `Pengembang: ${config.bot.developer} | Versi: ${config.bot.version}` ||
             "WhatsApp Bot",
           image: thumbnail,
           previewType: 0,
@@ -934,8 +959,8 @@ async function serialize(sock, msg, store = {}) {
             isForwarded: true,
             forwardingScore: 9,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: RIMURU_CORE_CONFIG.saluran?.id,
-              newsletterName: RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+              newsletterJid: config.saluran?.id,
+              newsletterName: config.saluran?.name || config.bot?.name || "Rimuru-AI",
               serverMessageId: Math.floor(Math.random() * 1000000),
             },
           },
@@ -955,7 +980,7 @@ async function serialize(sock, msg, store = {}) {
             itemCount: 999,
             status: 1,
             surface: 1,
-            message: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+            message: config.bot?.name || "Rimuru-AI",
             orderTitle: "System Notification",
             sellerJid: "0@s.whatsapp.net",
             token: "ARU1+",
@@ -985,7 +1010,7 @@ async function serialize(sock, msg, store = {}) {
             await getCachedThumb(join(process.cwd(), "package.json")) ||
             fsc.readFileSync(join(process.cwd(), "package.json")),
           mimetype: "image/png",
-          fileName: RIMURU_CORE_CONFIG.bot.name,
+          fileName: config.bot.name,
           fileLength: 99999999999999,
           jpegThumbnail: srtImage ? await sharp(srtImage).resize(300, 300).toBuffer() : await sharp(getAssetBuffer("rimuru2"))
             .resize(300, 300)
@@ -1011,7 +1036,7 @@ async function serialize(sock, msg, store = {}) {
                 locationMessage: {
                   degreesLatitude: 0,
                   degreesLongitude: 0,
-                  name: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+                  name: config.bot?.name || "Rimuru-AI",
                   address: "Bot Wa Multi Device",
                   jpegThumbnail: await sharp(thumbnailBuf).resize(300, 300).toBuffer(),
                 }
@@ -1142,8 +1167,17 @@ async function serialize(sock, msg, store = {}) {
       const getRandomSrtImage = async () => {
         try {
           if (db?.setting?.('srtEnabled')) {
-            const { getRandomShuffleAssetBuffer } = await import('./rimuru-asset-manager.js');
-            return await getRandomShuffleAssetBuffer(config.assets?.shuffleUrls);
+            const shuffleDir = join(process.cwd(), 'assets', 'image', 'shuffle');
+            const localImages = existsSync(shuffleDir)
+              ? fsc.readdirSync(shuffleDir)
+                  .filter(f => f.match(/\.(jpg|jpeg|png)$/i))
+                  .map(f => join(shuffleDir, f))
+              : [];
+            const candidates = [...localImages, ...SRT_REMOTE_IMAGES];
+            if (candidates.length > 0) {
+              const randFile = candidates[Math.floor(Math.random() * candidates.length)];
+              return await getCachedThumb(randFile);
+            }
           }
         } catch (e) { }
         return null;
@@ -1151,7 +1185,7 @@ async function serialize(sock, msg, store = {}) {
 
       const randomImg = await getRandomSrtImage();
       const thumbnailBuf = randomImg || srtImage || await getAssetBuffer("rimuru");
-      const { prepareWAMessageMedia } = await import("ourin");
+      const { prepareWAMessageMedia } = await import("rimuru");
 
       const thumbBuf1280 = await sharp(thumbnailBuf).resize(300, 300).jpeg().toBuffer();
       const favBuf512 = await sharp(thumbnailBuf).resize(512, 512).jpeg().toBuffer();
@@ -1159,7 +1193,7 @@ async function serialize(sock, msg, store = {}) {
       const uploadMedia = await prepareWAMessageMedia({ image: thumbBuf1280 }, { upload: sock.waUploadToServer, mediaTypeOverride: "thumbnail-link" });
       const uploadFav = await prepareWAMessageMedia({ image: favBuf512 }, { upload: sock.waUploadToServer, mediaTypeOverride: "thumbnail-link" });
 
-      const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+      const botName = config.bot?.name || "Rimuru-AI";
       const senderNum = m.sender.split('@')[0];
 
       const msg = generateWAMessageFromContent(m.chat, {
@@ -1184,8 +1218,8 @@ async function serialize(sock, msg, store = {}) {
             isForwarded: true,
             forwardingScore: 999,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: RIMURU_CORE_CONFIG.saluran?.id,
-              newsletterName: RIMURU_CORE_CONFIG.saluran?.name
+              newsletterJid: config.saluran?.id,
+              newsletterName: config.saluran?.name
             }
           }
         }

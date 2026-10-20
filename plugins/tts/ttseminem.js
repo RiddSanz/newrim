@@ -2,7 +2,6 @@ import axios from 'axios';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 const pluginConfig = {
     name: 'ttseminem',
     alias: ['eminemtts'],

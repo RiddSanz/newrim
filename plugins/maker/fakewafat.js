@@ -77,7 +77,24 @@ async function fakewafat({ fotourl, nama, lahir, wafat }) {
   return canvas.toBuffer('image/png')
 }
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "fakewafat",
+  alias: [],
+  category: "maker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   if (!text) throw `Contoh:\n.fakewafat Nama|1995|2026\n\nReply foto`
 
   let [nama, lahir, wafat] = text.split('|')
@@ -111,9 +128,4 @@ let handler = async (m, { conn, text }) => {
   }, { quoted: m })
 }
 
-handler.help = ['fakewafat']
-handler.tags = ['maker']
-handler.command = /^fakewafat$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

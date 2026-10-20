@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import crypto from "crypto";
 import axios from "axios";
 import yts from "yt-search";
@@ -74,7 +71,7 @@ function generateWaveform(audioBuf, samples = 64) {
 async function handler(m, { sock }) {
   const raw = m.text?.trim() || "";
   let chId = config?.saluran?.id;
-  let chName = config?.saluran?.name || config?.bot?.name || "rimuru-AI";
+  let chName = config?.saluran?.name || config?.bot?.name || "Rimuru-AI";
   let q = raw;
 
   const idchMatch = raw.match(/--idch\s+(\S+)/);

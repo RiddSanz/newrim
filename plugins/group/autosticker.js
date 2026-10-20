@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { getDatabase } from '../../src/lib/rimuru-database.js'
 const pluginConfig = {
@@ -96,7 +93,7 @@ async function autoStickerHandler(m, sock) {
         
         if (isImage) {
             await sock.sendImageAsSticker(m.chat, buffer, m, {
-                packname: config.sticker?.packname || 'rimuru',
+                packname: config.sticker?.packname || 'Rimuru',
                 author: config.sticker?.author || 'Bot'
             })
         } else if (isVideo) {
@@ -105,7 +102,7 @@ async function autoStickerHandler(m, sock) {
             if (duration > 10) return false
             
             await sock.sendVideoAsSticker(m.chat, buffer, m, {
-                packname: config.sticker?.packname || 'rimuru',
+                packname: config.sticker?.packname || 'Rimuru',
                 author: config.sticker?.author || 'Bot'
             })
         }

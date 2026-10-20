@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from '../../src/lib/rimuru-database.js'
 const pluginConfig = {
     name: 'botmode',
@@ -24,7 +21,7 @@ const MODES = {
         name: 'Multi-Device',
         desc: 'Mode default dengan semua fitur standar',
         allowedCategories: null,
-        excludeCategories: ['cpanel', 'pushkontak', 'store']
+        excludeCategories: ['panel', 'pushkontak', 'store', 'otp']
     },
     all: {
         name: 'All Features',

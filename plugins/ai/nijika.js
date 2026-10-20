@@ -5,7 +5,25 @@ import fetch from 'node-fetch'
 
 let sessions = {}
 
-let handler = async (m, { text, usedPrefix, command, conn }) => {
+const pluginConfig = {
+  name: "nijika",
+  alias: ["nijikaai"],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command, sock }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(
       `🥁 *Nijika Ijichi AI*\n\nContoh:\n${usedPrefix + command} halo nijika`
@@ -66,9 +84,4 @@ User adalah cowok yang kamu ajak ngobrol dengan ramah.
   }
 }
 
-handler.help = ['nijika <teks>']
-handler.tags = ['ai']
-handler.command = /^(nijika|nijikaai)$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

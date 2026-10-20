@@ -5,8 +5,25 @@ import fetch from 'node-fetch'
 /**
  * @type {import('@adiwajshing/baileys')}
  */
-const { getBinaryNodeChild, getBinaryNodeChildren } = (await import('@itsliaaa/baileys')).default
-let handler = async (m, { conn, text, participants }) => {
+const { getBinaryNodeChild, getBinaryNodeChildren } = (await import('rimuru')).default
+const pluginConfig = {
+  name: "oadd",
+  alias: [],
+  category: "owner",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, participants }) {
+    const conn = sock;
     let _participants = participants.map(user => user.id)
     let users = (await Promise.all(
         text.split(',')
@@ -46,14 +63,7 @@ let handler = async (m, { conn, text, participants }) => {
         await conn.sendGroupV4Invite(m.chat, jid, invite_code, invite_code_exp, await conn.getName(m.chat), 'Invitation to join my WhatsApp group', jpegThumbnail)
     }
 }
-handler.help = ['add', '+'].map(v => 'o' + v + ' @user')
-handler.tags = ['owner']
-handler.command = /^(oadd|o\+)$/i
 
-handler.owner = true
-handler.group = true
 handler.botAdmin = true
 
-
-export default handler
-
+export { pluginConfig as config, handler };

@@ -1,12 +1,9 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import {
   generateWAMessage,
   generateWAMessageFromContent,
   jidNormalizedUser,
-} from "ourin";
+} from "rimuru";
+import { pinterest } from "btch-downloader";
 import axios from "axios";
 import crypto from "crypto";
 import te from "../../src/lib/rimuru-error.js";
@@ -28,7 +25,60 @@ const pluginConfig = {
   isEnabled: true,
 };
 
-async function handler(m, { sock }) {
+function getResults(data) {
+  const candidates = [
+    data?.result?.result?.result,
+    data?.result?.result,
+    data?.result,
+    data?.data?.results,
+    data?.results,
+  ];
+
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value;
+  }
+
+  return [];
+}
+
+function getImageUrl(item) {
+  if (typeof item === "string") return item;
+  return (
+    item?.image_url ||
+    item?.image ||
+    item?.images?.orig?.url ||
+    item?.images?.['736x']?.url ||
+    item?.images?.['564x']?.url ||
+    item?.url ||
+    item?.thumbnail ||
+    null
+  );
+}
+
+async function searchPinterest(query) {
+  // btch-downloader already exists in this SC and supports Pinterest search queries.
+  // Use it first because the old Cuki response schema is no longer reliable.
+  try {
+    const data = await pinterest(query);
+    const results = getResults(data).filter((item) => getImageUrl(item));
+    if (results.length) return results;
+  } catch (err) {
+    console.log("[Pins] btch-downloader gagal, mencoba fallback:", err.message);
+  }
+
+  // Keep the previous API as a fallback so the command still has a second provider.
+  try {
+    const data = await f(
+      `https://api.cuki.biz.id/api/search/pinterest?apikey=cuki-x&query=${encodeURIComponent(query)}&type=image`,
+    );
+    return getResults(data).filter((item) => getImageUrl(item));
+  } catch (err) {
+    console.log("[Pins] Fallback Pinterest API gagal:", err.message);
+    return [];
+  }
+}
+
+async function handler(m, { sock, config }) {
   const query = m.text?.trim();
   if (!query) {
     return m.reply(
@@ -40,12 +90,8 @@ async function handler(m, { sock }) {
   m.react("🕕");
 
   try {
-    const data = await f(
-      `https://api.cuki.biz.id/api/search/pinterest?apikey=cuki-x&query=${encodeURIComponent(query)}&type=image`
-    );
-
-    const results = data?.data?.results?.filter(item => item.image_url)?.slice(0, 10);
-    if (!results || results.length === 0) {
+    const results = (await searchPinterest(query)).slice(0, 10);
+    if (!results.length) {
       m.react("❌");
       return m.reply(`❌ Tidak ditemukan hasil untuk: ${query}`);
     }
@@ -53,13 +99,14 @@ async function handler(m, { sock }) {
     const mediaList = [];
 
     for (const item of results) {
-      const imageUrl = item.image_url;
+      const imageUrl = getImageUrl(item);
       if (!imageUrl) continue;
 
       try {
         const imgRes = await axios.get(imageUrl, {
           responseType: "arraybuffer",
           timeout: 15000,
+          maxContentLength: 15 * 1024 * 1024,
         });
         const imgBuffer = Buffer.from(imgRes.data);
 
@@ -71,7 +118,7 @@ async function handler(m, { sock }) {
       }
     }
 
-    if (mediaList.length === 0) {
+    if (!mediaList.length) {
       m.react("❌");
       return m.reply("❌ Gagal memuat gambar");
     }
@@ -119,9 +166,9 @@ async function handler(m, { sock }) {
     } catch (albumErr) {
       console.log("[Pins] Album gagal, kirim satu-satu:", albumErr.message);
 
-      const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
+      const saluranId = config.saluran?.id || "120363412350560864@newsletter";
       const saluranName =
-        RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+        config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
       for (const content of mediaList) {
         await sock.sendMessage(
@@ -142,17 +189,11 @@ async function handler(m, { sock }) {
         );
       }
     }
-    m.react("✅");
   } catch (err) {
     console.error("[Pins] Error:", err.message);
     m.react("☢");
     m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
-
-// Compatibility metadata for loaders that still inspect handler.command/help/tags.
-handler.command = /^(pin|pinsearch|pinterestsearch|pins)$/i;
-handler.help = ["pin <query>"];
-handler.tags = ["search"];
 
 export { pluginConfig as config, handler };

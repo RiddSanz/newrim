@@ -1,3 +1,31 @@
+/*
+╔══════════════════════════════════════════════╗
+║       👑  𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 〽️                        ║
+╚══════════════════════════════════════════════╝
+
+🪽 𝑵𝒐𝒕𝒆 :
+Rimuru MD adalah SC hasil rename dari SC Ourin MD.
+
+╭─────────────「 🜲 𝑰𝑵𝑭𝑶 𝑶𝑼𝑹𝑰𝑵 」─────────────╮
+│ 👤 Developer : 𝑯𝒚𝒖𝒖 / 𝒁𝒂𝒏𝒏
+│ 🎵 TikTok    : https://tiktok.com/@ourinmd
+│ 📢 WhatsApp  : https://whatsapp.com/channel/0029VbB37bgBfxoAmAlsgE0t
+╰─────────────────────────────────────────────╯
+
+╭────────────「 ✦ 𝑰𝑵𝑭𝑶 𝑹𝑰𝑴𝑼𝑹𝑼 ✦ 」────────────╮
+│ 👤 Developer Pihak Ketiga : 𝑨𝒏𝒊𝒕𝒂 𝑷𝒖𝒕𝒓𝒊 𝑨𝒛𝒛𝒂𝒉𝒓𝒂
+│ 🎵 TikTok                 : https://tiktok.com/@anita.putri.azzah1
+│ 📸 Instagram              : anit_aputriazzahrah
+│ 📢 Saluran                : https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P
+│ ▶️ YouTube                : https://youtube.com/@rimurumd
+╰─────────────────────────────────────────────╯
+
+        ⚠️ 𝑫𝑶 𝑵𝑶𝑻 𝑹𝑬𝑴𝑶𝑽𝑬 𝑪𝑹𝑬𝑫𝑰𝑻 ⚠️
+              ❖ 𝐉𝐚𝐧𝐠𝐚𝐧 𝐡𝐚𝐩𝐮𝐬 𝐜𝐫𝐞𝐝𝐢𝐭 ❖
+
+                 「 👑 𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 👑 」
+*/
+
 import { randomUUID } from 'crypto'
 
 const DASH_HTML = `<style>
@@ -28,7 +56,7 @@ canvas{width:100%;display:block;touch-action:none}
 <div class="gw"><canvas id="cv" width="404" height="300"></canvas></div>
 <div class="pads"><button class="pd" id="boostB">⚡ BOOST</button><button class="pd" id="jumpB">⤒ JUMP</button></div>
 <div class="hint">Lompat saat garis merah LASER kedip cepat! · kena musuh = ring turun 10% saja · tiap 50 ring = BOSS! · 🔊 = sound</div>
-<div class="credit">Fitur by: Anita Putri Azzahra · Saluran: <a href="https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P" target="_blank" rel="noopener noreferrer">WhatsApp Channel</a></div>
+<div class="credit">Fitur by: Anita Putri Azzahra Anita Putri Azzahra · Saluran: <a href="https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P" target="_blank" rel="noopener noreferrer">WhatsApp Channel</a></div>
 </div>
 <script>
 window.onerror=function(m,s,l){var e=document.getElementById('hint');if(e){e.textContent='⚠ '+m+' @'+l;e.style.color='#ff7a8a'}};
@@ -942,6 +970,102 @@ perfN++;lastT=t;
 update();draw();requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+})();
+\n/* RIMURU LIGHT SFX: procedural WebAudio, no external audio asset */
+(function(){
+  if (window.__RIMURU_LIGHT_SFX__) return;
+  var ac=null, master=null, last=0;
+  function init(){
+    try{
+      if(!ac){
+        var C=window.AudioContext||window.webkitAudioContext;
+        if(!C) return null;
+        ac=new C();
+        master=ac.createGain();
+        master.gain.value=0.055;
+        master.connect(ac.destination);
+      }
+      if(ac.state==='suspended') ac.resume();
+      return ac;
+    }catch(_){ return null; }
+  }
+  function tone(freq,dur,type,vol,when){
+    var c=init(); if(!c||!master) return;
+    var now=c.currentTime+(when||0), o=c.createOscillator(), g=c.createGain();
+    o.type=type||'sine';
+    o.frequency.setValueAtTime(freq,now);
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001,vol||0.12),now+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+(dur||0.07));
+    o.connect(g); g.connect(master); o.start(now); o.stop(now+(dur||0.07)+0.015);
+  }
+  function cool(now){
+    var t=Date.now(); if(t-last<now) return false; last=t; return true;
+  }
+  var api={
+    init:init,
+    tap:function(){ if(cool(28)) tone(520,0.045,'square',0.055); },
+    move:function(){ if(cool(24)) tone(300,0.035,'triangle',0.045); },
+    rotate:function(){ if(cool(24)) tone(430,0.05,'triangle',0.05); },
+    drop:function(){ if(cool(20)) tone(180,0.055,'square',0.05); },
+    score:function(){ if(cool(18)) { tone(660,0.055,'sine',0.055); tone(880,0.055,'sine',0.04,0.045); } },
+    line:function(){ if(cool(35)) { tone(740,0.06,'sine',0.06); tone(1040,0.09,'sine',0.045,0.05); } },
+    win:function(){ if(cool(60)) { tone(523,0.08,'sine',0.06); tone(659,0.08,'sine',0.05,0.07); tone(784,0.12,'sine',0.045,0.14); } },
+    over:function(){ if(cool(60)) { tone(392,0.09,'sawtooth',0.055); tone(294,0.12,'sawtooth',0.04,0.08); } }
+  };
+  window.__RIMURU_LIGHT_SFX__=api;
+
+  function num(el){
+    var s=(el.textContent||'').replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);
+    return s?Number(s[0]):null;
+  }
+  function bindValue(el){
+    var lastVal=num(el);
+    var mo=new MutationObserver(function(){
+      var n=num(el);
+      if(n===null || lastVal===null){ lastVal=n; return; }
+      if(n>lastVal){
+        var id=((el.id||'')+' '+(el.className||'')).toLowerCase();
+        if(/line|combo|clear|level|stage/.test(id)) api.line(); else api.score();
+      } else if(n<lastVal && /life|hp|health|lives|heart/.test(((el.id||'')+' '+(el.className||'')).toLowerCase())) api.over();
+      lastVal=n;
+    });
+    mo.observe(el,{subtree:true,childList:true,characterData:true});
+  }
+  function bindState(el){
+    var prev=(el.textContent||'').toLowerCase(), prevCls=el.className||'';
+    var mo=new MutationObserver(function(){
+      var txt=(el.textContent||'').toLowerCase(), cls=el.className||'';
+      var joined=txt+' '+cls.toLowerCase();
+      if(joined!==prev+' '+prevCls.toLowerCase()){
+        if(/game over|gameover|kalah|selesai|you lose|lose|mati|gagal|over/.test(joined)) api.over();
+        else if(/menang|menang!|you win|winner|victory|berhasil|selamat/.test(joined)) api.win();
+        prev=txt; prevCls=cls;
+      }
+    });
+    mo.observe(el,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden','aria-hidden']});
+  }
+  document.addEventListener('pointerdown',function(){ api.init(); api.tap(); },{passive:true,capture:true});
+  document.addEventListener('keydown',function(e){
+    api.init();
+    var k=e.key;
+    if(/^Arrow(Left|Right|Up|Down)$/.test(k) || /^(a|d|w|s)$/i.test(k)) api.move();
+    else if(k===' ' || k==='Enter') api.tap();
+  },{passive:true,capture:true});
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('[id]').forEach(function(el){
+      var id=((el.id||'')+' '+(el.className||'')).toLowerCase();
+      if(/score|points|lines|combo|level|stage|best|coin/.test(id)) bindValue(el);
+      if(/over|result|status|message|state|win|lose|modal/.test(id)) bindState(el);
+    });
+  });
+  if(document.readyState!=='loading'){
+    document.querySelectorAll('[id]').forEach(function(el){
+      var id=((el.id||'')+' '+(el.className||'')).toLowerCase();
+      if(/score|points|lines|combo|level|stage|best|coin/.test(id)) bindValue(el);
+      if(/over|result|status|message|state|win|lose|modal/.test(id)) bindState(el);
+    });
+  }
 })();
 </script>`
 

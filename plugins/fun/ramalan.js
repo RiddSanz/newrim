@@ -1,7 +1,23 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "ramal",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
   const nama = text || m.pushName || 'Kamu'
 
   const ramalan = [
@@ -21,9 +37,4 @@ let handler = async (m, { text }) => {
   m.reply(`🔮 *Ramalan Masa Depan*\n\n${nama}, ${hasil}`)
 }
 
-handler.help = ['ramal <nama opsional>']
-handler.tags = ['fun']
-handler.command = /^ramal$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

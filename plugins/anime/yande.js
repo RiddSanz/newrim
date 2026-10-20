@@ -54,7 +54,24 @@ ID : ${img.id}`,
   }, { quoted: m })
 }
 
-let handler = async (m, { conn, args }) => {
+const pluginConfig = {
+  name: "yande",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, args }) {
+    const conn = sock;
   try {
 
     if (!args[0]) {
@@ -89,9 +106,4 @@ let handler = async (m, { conn, args }) => {
   }
 }
 
-handler.command = /^yande$/i
-handler.help = ['yande', 'yande random', 'yande <tag>', 'yande id <id>']
-handler.tags = ['anime']
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

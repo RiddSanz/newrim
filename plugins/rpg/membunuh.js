@@ -1,7 +1,25 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "membunuh",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     let dapat = (Math.floor(Math.random() * 100000))
     let healtu = (Math.floor(Math.random() * 100))
     let nomors = m.sender
@@ -43,14 +61,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         conn.reply(m.chat, `ᴛᴀʀɢᴇᴛ ʙᴇʀʜᴀꜱɪʟ ᴅɪ ʙᴜɴᴜʜ ᴅᴀɴ ᴋᴀᴍᴜ ᴍᴇɴɢᴀᴍʙɪʟ ᴍᴏɴᴇʏ ᴛᴀʀɢᴇᴛ ꜱᴇʙᴇꜱᴀʀ\n💰${dapat} ᴍᴏɴᴇʏ\nᴅᴀʀᴀʜ ᴛᴀʀɢᴇᴛ ʙᴇʀᴋᴜʀᴀɴɢ -${healtu} ʜᴇᴀʟᴛʜ❤`, m)
     } else conn.reply(m.chat, `Anda Sudah Membunuh Dan Berhasil Sembunyi, tunggu ${timers} untuk membunuh lagi`, m)
 }
-handler.help = ['membunuh *@tag*']
-handler.tags = ['rpg']
-handler.command = /^membunuh$/
 handler.register = true
-handler.group = true
-handler.rpg = true
-export default handler
-
 function pickRandom(list) {
     return list[Math.floor(Math.random() * list.length)]
 }
@@ -60,3 +71,5 @@ function clockString(ms) {
     let s = Math.floor(ms / 1000) % 60
     return [h, m, s].map(v => v.toString().padStart(2, 0)).join(':')
 }
+
+export { pluginConfig as config, handler };

@@ -8,7 +8,25 @@ let timeout = 120000
 let poin = 4999
 const threshold = 0.72
 
-let handler = async (m, { conn, usedPrefix }) => {
+const pluginConfig = {
+  name: "lengkapikalimat",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   conn.lengkapikalimat = conn.lengkapikalimat ? conn.lengkapikalimat : {}
 
   let id = m.chat
@@ -47,12 +65,6 @@ Ketik *nyerah* untuk menyerah
   ]
 }
 
-handler.help = ['lengkapikalimat']
-handler.tags = ['game']
-handler.command = /^lengkapikalimat$/i
-handler.limit = true
-
-export default handler
 
 handler.before = async function (m, { conn }) {
   conn.lengkapikalimat = conn.lengkapikalimat ? conn.lengkapikalimat : {}
@@ -88,3 +100,5 @@ handler.before = async function (m, { conn }) {
 
   return true
 }
+
+export { pluginConfig as config, handler };

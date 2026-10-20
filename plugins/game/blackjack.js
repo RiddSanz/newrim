@@ -307,6 +307,22 @@ Type *\`${usedPrefix + command} stand\`* to end your turn.`;
     return message;
 }
 
+const pluginConfig = {
+  name: "blackjack",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, usedPrefix, command, args }) => {
     conn.blackjack = conn.blackjack || {};
     let [aksi, argumen] = args;
@@ -380,8 +396,4 @@ const handler = async (m, { conn, usedPrefix, command, args }) => {
     }
 }
 
-handler.command = ['blackjack'];
-handler.tags = ['game'];
-handler.help = ['blackjack'];
-
-export default handler;
+export { pluginConfig as config, handler };

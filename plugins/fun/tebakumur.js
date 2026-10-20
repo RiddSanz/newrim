@@ -1,16 +1,28 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async(m, { conn, text }) => {
+const pluginConfig = {
+  name: "tebakumur",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
     if (!text) return conn.reply(m.chat, 'Masukan Namamu', m)
     let age = umur.getRandom()
     m.reply(`Nama Kamu: ${text}\nUmur ${age}`)
 }
-handler.help = ['tebakumur'].map(v => v + ' <name>')
-handler.tags = ['fun']
-handler.command = /^(tebakumur)$/i
-export default handler
-
 const umur = [
 '12 Tahun, Masih Bocil',
 '11 Tahun, Bocilll',
@@ -24,3 +36,5 @@ const umur = [
 '17 Tahun',
 '18 Tahun, Udah Balig Nih'
 ]
+
+export { pluginConfig as config, handler };

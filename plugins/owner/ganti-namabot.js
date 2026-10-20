@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs'
 import path from 'path'
 import te from '../../src/lib/rimuru-error.js'
@@ -11,7 +7,7 @@ const pluginConfig = {
     category: 'owner',
     description: 'Ganti nama bot di config.js',
     usage: '.ganti-namabot <nama baru>',
-    example: '.ganti-namabot rimuru',
+    example: '.ganti-namabot Rimuru MD',
     isOwner: true,
     isPremium: false,
     isGroup: false,
@@ -25,7 +21,7 @@ async function handler(m, { sock, config }) {
     const newName = m.args.join(' ')
     
     if (!newName) {
-        return m.reply(`🤖 *ɢᴀɴᴛɪ ɴᴀᴍᴀ ʙᴏᴛ*\n\n> Nama saat ini: *${RIMURU_CORE_CONFIG.bot?.name || '-'}*\n\n*Penggunaan:*\n\`${m.prefix}ganti-namabot <nama baru>\``)
+        return m.reply(`🤖 *ɢᴀɴᴛɪ ɴᴀᴍᴀ ʙᴏᴛ*\n\n> Nama saat ini: *${config.bot?.name || '-'}*\n\n*Penggunaan:*\n\`${m.prefix}ganti-namabot <nama baru>\``)
     }
     
     try {
@@ -39,7 +35,7 @@ async function handler(m, { sock, config }) {
         
         fs.writeFileSync(configPath, configContent)
         
-        RIMURU_CORE_CONFIG.bot.name = newName
+        config.bot.name = newName
         
         m.reply(`✅ *ʙᴇʀʜᴀsɪʟ*\n\n> Nama bot diganti ke: *${newName}*`)
         

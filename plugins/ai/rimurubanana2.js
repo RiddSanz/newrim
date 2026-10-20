@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { fluxImage } from "../../src/scraper/seaart.js";
 
 const pluginConfig = {
@@ -23,7 +20,7 @@ async function handler(m, { sock }) {
   const prompt = m.text;
   if (!prompt) {
     return m.reply(
-      `🍌 *rimuru BANANA SUPER 2*\n\n` +
+      `🍌 *RIMURU BANANA SUPER 2*\n\n` +
         `> Buat gambar dengan AI\n\n` +
         `\`Contoh: ${m.prefix}rimurubanana2 make a cat\``,
     );

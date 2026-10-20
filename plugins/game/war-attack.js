@@ -1,7 +1,25 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, usedPrefix, args, command }) => {
+const pluginConfig = {
+  name: "attack",
+  alias: ["atk"],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, args, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   conn.war = conn.war ? conn.war : {}
   conn.war2 = conn.war2 ? conn.war2 : {}
   // fungsi delay
@@ -364,14 +382,10 @@ let handler = async (m, { conn, usedPrefix, args, command }) => {
   }
 
 }
-handler.help = ['attack','atk']
-handler.tags = ['game']
-handler.command = /^(attack|atk)$/i
-handler.group = true
-export default handler
-
 function getRandom(min,max){
   min = Math.ceil(min)
   max = Math.floor(max)
   return Math.floor(Math.random()*(max-min+1)) + min
 }
+
+export { pluginConfig as config, handler };

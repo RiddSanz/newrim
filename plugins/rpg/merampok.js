@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "merampok",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
     let who = m.mentionedJid?.[0]
 
     if (!m.isGroup) return m.reply('Command ini hanya untuk grup.')
@@ -54,14 +71,7 @@ let handler = async (m, { conn }) => {
     )
 }
 
-handler.help = ['merampok @tag']
-handler.tags = ['rpg']
-handler.command = /^merampok$/i
-handler.group = true
 handler.register = true
-handler.rpg = true
-
-export default handler
 
 function clockString(ms) {
     let h = Math.floor(ms / 3600000)
@@ -72,3 +82,5 @@ function clockString(ms) {
         .map(v => v.toString().padStart(2, '0'))
         .join(':')
 }
+
+export { pluginConfig as config, handler };

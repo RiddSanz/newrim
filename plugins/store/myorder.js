@@ -2,6 +2,7 @@ import { getDatabase } from '../../src/lib/rimuru-database.js';
 import orderPoller from '../../src/lib/orderPoller.js';
 import path from 'path';
 import fs from 'fs';
+import { getAssetBuffer } from '../../src/lib/rimuru-asset-manager.js';
 
 const pluginConfig = {
     name: 'myorder',
@@ -22,7 +23,7 @@ const pluginConfig = {
 async function handler(m, { sock }) {
     const db = getDatabase()
     const groupData = db.getGroup(m.chat) || {}
-    const storeImage = path.join(process.cwd(), 'assets', 'images', 'rimuru-store.jpg')
+    const storeImage = getAssetBuffer('rimuru-store')
     
     if (groupData.botMode !== 'store') {
         return m.reply(`❌ Fitur ini hanya tersedia di mode *STORE*!`)
@@ -113,10 +114,7 @@ async function handler(m, { sock }) {
         })
     }
     
-    let thumbnail = null
-    if (fs.existsSync(storeImage)) {
-        thumbnail = fs.readFileSync(storeImage)
-    }
+    let thumbnail = storeImage || null
     
     return sock.sendMessage(m.chat, {
         text: txt.trim(),

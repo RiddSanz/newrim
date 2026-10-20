@@ -1,12 +1,9 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { downloadMediaMessage } from 'ourin'
+import { downloadMediaMessage } from 'rimuru'
 import config from '../../config.js'
 import te from '../../src/lib/rimuru-error.js'
 
@@ -57,7 +54,7 @@ function generateWaveform(audioBuf, samples = 64) {
 async function handler(m, { sock }) {
     const args = m.text?.replace(/^\.upch\s+/i, '').split(" ") || []
     const chId = args[0]?.includes("@newsletter") ? args.shift() : config?.saluran?.id
-    const chName = config?.saluran?.name || config?.bot?.name || "rimuru-AI"
+    const chName = config?.saluran?.name || config?.bot?.name || "Rimuru-AI"
     const caption = args.join(" ").trim()
 
     const quoted = m.quoted || m

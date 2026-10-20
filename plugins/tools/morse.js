@@ -43,7 +43,24 @@ const morseToText = (morse) => {
     }).join(' ');
 };
 
-let handler = async (m, { text, command, usedPrefix }) => {
+const pluginConfig = {
+  name: "morse",
+  alias: ["demorse"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text, command, prefix }) {
+    const usedPrefix = prefix || m.prefix || ".";
     const isEncode = command === 'morse';
     const inputText = text || (m.quoted && m.quoted.text) || '';
     
@@ -60,9 +77,4 @@ let handler = async (m, { text, command, usedPrefix }) => {
     }
 };
 
-handler.help = ['morse', 'demorse'];
-handler.tags = ['fun', 'tools'];
-handler.command = /^(morse|demorse)$/i;
-handler.limit = false;
-
-export default handler;
+export { pluginConfig as config, handler };

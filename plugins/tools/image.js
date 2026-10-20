@@ -1,14 +1,10 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 /*
 * Nama Fitur : Tools image
 * Type : Plugin Esm
-* Sumber : https://whatsapp.com/channel/0029Vb6Zs8yEgGfRQWWWp639
-* Sumber Skrep : https://whatsapp.com/channel/0029VbANq6v0VycMue9vPs3u
+* Sumber : https://whatsapp.com/channel/RIMURU_CHANNEL
+* Sumber Skrep : https://whatsapp.com/channel/RIMURU_CHANNEL
 * Author : ZenzzXD
 */
-
 
 import axios from 'axios'
 import * as cheerio from 'cheerio'

@@ -13,7 +13,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
   ✺ Note    : .market (buat menampilkan top 1-10) .market 11 atau 250 (buat nunjukin posisi market dengan rank 11 itu apa sampe seterusnya)
 */
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "market",
+  alias: [],
+  category: "info",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
     try {
         await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
@@ -79,10 +96,6 @@ let handler = async (m, { conn, text }) => {
     }
 };
 
-handler.help = ["market"];
-handler.tags = ["info"];
-handler.command = /^(market)$/i;
-handler.limit = true;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
-export default handler;
+export { pluginConfig as config, handler };

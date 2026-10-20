@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { getParticipantJids } from '../../src/lib/rimuru-lid.js'
 import te from '../../src/lib/rimuru-error.js'
@@ -44,7 +40,7 @@ async function handler(m, { sock }) {
                 remoteJid: 'status@broadcast'
             },
             message: {
-                conversation: RIMURU_CORE_CONFIG.bot?.name || 'rimuru'
+                conversation: config.bot?.name || 'Rimuru MD'
             }
         }
         if (m.quoted) {

@@ -8,7 +8,6 @@ const pluginConfig = {
     isEnabled: true
 }
 
-
 let cachedThumb = null
 try {
 

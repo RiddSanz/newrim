@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { live3d } from "../../src/scraper/seaart.js";
 const pluginConfig = {
   name: "rimurubanana",
@@ -22,7 +19,7 @@ async function handler(m, { sock }) {
   const prompt = m.args.join(" ");
   if (!prompt) {
     return m.reply(
-      `🍌 *rimuru BANANA SUPER*\n\n` +
+      `🍌 *RIMURU BANANA SUPER*\n\n` +
         `> Edit gambar dengan AI\n\n` +
         `\`Contoh: ${m.prefix}rimurubanana make it anime style\`\n\n` +
         `> Reply atau kirim gambar dengan caption`,

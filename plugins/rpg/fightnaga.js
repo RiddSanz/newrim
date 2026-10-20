@@ -1,7 +1,25 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, usedPrefix, participants }) => {
+const pluginConfig = {
+  name: "fightnaga",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, participants }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 
 conn.level = global.db.data.users[m.sender]
   conn.fightnaga = conn.fightnaga ? conn.fightnaga : {}
@@ -56,16 +74,11 @@ conn.level = global.db.data.users[m.sender]
 
   delete conn.fightnaga[m.sender]
 }
-handler.help = ['fightnaga']
-handler.tags = ['game']
-handler.command = /^(fightnaga)$/i
-handler.limit = true
-handler.group = true
-
-export default handler
 
 function Acakin(min,max){
   min = Math.ceil(min)
   max = Math.floor(max)
   return Math.floor(Math.random()*(max-min+1)) + min
 }
+
+export { pluginConfig as config, handler };

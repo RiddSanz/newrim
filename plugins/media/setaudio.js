@@ -4,7 +4,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import fs from 'fs'
 import path from 'path'
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "setaudio",
+  alias: [],
+  category: "media",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   try {
     const quoted = m.quoted || m
     const mime = quoted?.mimetype || ''
@@ -23,9 +41,4 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   }
 }
 
-handler.command = /^setaudio$/i
-handler.tags = ['owner']
-handler.help = ['setaudio']
-handler.owner = true
-
-export default handler
+export { pluginConfig as config, handler };

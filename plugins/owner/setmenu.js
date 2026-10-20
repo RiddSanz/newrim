@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 import fs from "fs";
 import config from "../../config.js";
@@ -10,8 +7,8 @@ const pluginConfig = {
   alias: ["menuvariant", "menustyle"],
   category: "owner",
   description: "Mengatur variant tampilan menu",
-  usage: ".setmenu <v1-v2>",
-  example: ".setmenu v2",
+  usage: ".setmenu <v1-v9>",
+  example: ".setmenu v8",
   isOwner: true,
   isPremium: false,
   isGroup: false,
@@ -25,14 +22,56 @@ const VARIANTS = {
   v1: {
     id: 1,
     name: "BASIC",
-    desc: "Tampilan basic bawaan Rimuru-MD",
+    desc: "",
     emoji: "🖼️",
   },
   v2: {
     id: 2,
-    name: "EXECUTIVE",
-    desc: "Menu Executive dengan daftar kategori dan tombol Pilih Menu",
-    emoji: "◈",
+    name: "PREMIUM",
+    desc: "",
+    emoji: "✅",
+  },
+  v3: {
+    id: 3,
+    name: "PREMIUM",
+    desc: "",
+    emoji: "✅",
+  },
+  v4: {
+    id: 4,
+    name: "LV",
+    desc: "",
+    emoji: "✅",
+  },
+  v5: {
+    id: 5,
+    name: "LV 2",
+    desc: "",
+    emoji: "✅",
+  },
+  v6: {
+    id: 6,
+    name: "LOCATION",
+    desc: "Location Message dengan Buttons",
+    emoji: "📍",
+  },
+  v7: {
+    id: 7,
+    name: "RA NGERTI",
+    desc: "Location Message dengan Buttons",
+    emoji: "📍",
+  },
+  v8: {
+    id: 8,
+    name: "THUMBNAIL",
+    desc: "Thumbnail Image",
+    emoji: "📍",
+  },
+  v9: {
+    id: 9,
+    name: "V5 — LV2 (DEFAULT)",
+    desc: "Tampilan default yang sekarang digunakan Rimuru MD",
+    emoji: "🌸",
   },
 };
 
@@ -42,7 +81,7 @@ async function handler(m, { sock, db }) {
   if (variant) {
     const selected = VARIANTS[variant];
     if (!selected) {
-      await m.reply(`❌ *VARIANT TIDAK VALID*\n\nGunakan: *v1* atau *v2*`);
+      await m.reply(`❌ *VARIANT TIDAK VALID*\n\nGunakan: *v1* s/d *v9*`);
       return;
     }
     db.setting("menuVariant", selected.id);
@@ -55,9 +94,7 @@ async function handler(m, { sock, db }) {
     return;
   }
 
-  const stored = Number(db.setting("menuVariant"));
-  const configured = Number(config.ui?.menuVariant);
-  const current = [1, 2].includes(stored) ? stored : ([1, 2].includes(configured) ? configured : 2);
+  const current = db.setting("menuVariant") || config.ui?.menuVariant || 9;
 
   const rows = [];
   for (const [key, val] of Object.entries(VARIANTS)) {
@@ -86,16 +123,10 @@ async function handler(m, { sock, db }) {
 
   await sock.sendButton(
     m.chat,
-    getAssetBuffer("rimuru-mp4"),
+    getAssetBuffer("rimuru"),
     bodyText,
     m,
-    {
-      type: "video",
-      mimetype: "video/mp4",
-      gifPlayback: true,
-      buttons,
-      footer: "Rimuru • Menu Variant Selector",
-    },
+    { buttons },
   );
 }
 

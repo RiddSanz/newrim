@@ -3,7 +3,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import { createCanvas } from '@napi-rs/canvas'
 
-let handler = async (m, { text, conn }) => {
+const pluginConfig = {
+  name: "sertifikatlemot",
+  alias: [],
+  category: "maker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text, sock }) {
+    const conn = sock;
   const nama = text || m.pushName || 'Orang Lemot'
 
   const alasan = pick([
@@ -57,9 +74,4 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-handler.help = ['sertifikatlemot <nama>']
-handler.tags = ['fun', 'maker']
-handler.command = /^sertifikatlemot$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

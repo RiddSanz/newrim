@@ -3,7 +3,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import axios from 'axios'
 
-let handler = async (m, { conn, args }) => {
+const pluginConfig = {
+  name: "sad",
+  alias: [],
+  category: "music",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, args }) {
+    const conn = sock;
   const sadNumber = parseInt(args[0] || '', 10)
 
   if (isNaN(sadNumber) || sadNumber < 1 || sadNumber > 34)
@@ -37,9 +54,4 @@ let handler = async (m, { conn, args }) => {
   }, { quoted: m })
 }
 
-handler.help = ['sad <nomor>']
-handler.tags = ['sound']
-handler.command = /^sad$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

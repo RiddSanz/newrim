@@ -6,7 +6,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 • Link Channel : https://whatsapp.com/channel/0029VbBt4432f3ENa8ULoM1J
 • Author : Z7
 */
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "copilot",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     throw `Please provide a message.\n\nExample: ${usedPrefix + command} Hello, what is a black hole?`;
   }
@@ -34,9 +52,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 };
 
-handler.command = /^(copilot)$/i;
-handler.tags = ['ai'];
-handler.help = [ 'copilot <message>'];
 handler.description = 'Chat with an AI using a randomly selected model (default, gpt-5, think-deeper).';
 
-export default handler;
+export { pluginConfig as config, handler };

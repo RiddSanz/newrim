@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import te from '../../src/lib/rimuru-error.js'
 const pluginConfig = {
@@ -45,7 +41,7 @@ async function handler(m, { sock }) {
         )
     }
     
-    const channelId = RIMURU_CORE_CONFIG.saluran?.id || '120363404849776664@newsletter'
+    const channelId = config.saluran?.id || '120363412350560864@newsletter'
     
     await m.reply(`🕕 *ᴍᴇɴɢɪʀɪᴍ ᴘᴛᴠ ᴋᴇ ᴄʜᴀɴɴᴇʟ...*`)
     

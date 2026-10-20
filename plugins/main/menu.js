@@ -1,34 +1,16 @@
-import { RIMURU_CORE_CONFIG, RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getCaseCount, getCasesByCategory } from "../../case/rimuru.js";
 import {
   prepareWAMessageMedia,
   generateWAMessageFromContent,
-  proto,
-} from "ourin";
-import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
-import _sharp from "sharp";
+} from "rimuru";
 import config from "../../config.js";
-import {
-  formatUptime,
-  getTimeGreeting,
-} from "../../src/lib/rimuru-formatter.js";
-import {
-  getCommandsByCategory,
-  getCategories,
-} from "../../src/lib/rimuru-plugins.js";
-import { getDatabase } from "../../src/lib/rimuru-database.js";
 import fs from "fs";
-import path from "path";
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-
-function getSharp() {
-  return _sharp;
-}
-import axios from "axios";
 import sharp from "sharp";
+import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
+import { getTimeGreeting, formatUptime } from "../../src/lib/rimuru-formatter.js";
+import { getCategories, getCommandsByCategory } from "../../src/lib/rimuru-plugins.js";
+import { getCasesByCategory } from "../../case/rimuru.js";
+import { legacyMenuHandler } from "./menu-variants.js";
+
 const pluginConfig = {
   name: "menu",
   alias: ["help", "bantuan", "commands", "m"],
@@ -44,864 +26,214 @@ const pluginConfig = {
   energi: 0,
   isEnabled: true,
 };
+
 const CATEGORY_EMOJIS = {
-  owner: "👑",
-  main: "🏠",
-  utility: "🔧",
-  tools: "🛠️",
-  fun: "🎮",
-  game: "🎯",
-  download: "📥",
-  downloader: "📥",
-  search: "🔍",
-  sticker: "🖼️",
-  media: "🎬",
-  ai: "🤖",
-  group: "👥",
-  religi: "☪️",
-  islamic: "🕌",
-  info: "ℹ️",
-  cek: "📁",
-  user: "📊",
-  canvas: "🎨",
-  random: "🎲",
-  ephoto: "🖌️",
-  jpm: "📨",
-  anime: "🍥",
-  asupan: "🎞️",
-  clan: "⚔️",
-  convert: "🔄",
-  berita: "📰",
-  rpg: "🗡️",
-  nsfw: "🔞",
-  linode: "☁️",
-  primbon: "🔮",
-  cecan: "💃",
-  stalker: "🕵️",
-  tts: "🗣️",
-  vps: "🌊",
-  panel: "🖥️"
+  owner: "👑", main: "🏠", utility: "🔧", tools: "🛠️", rich: "🧩", "rich features": "🧩", fun: "🎮", game: "🎯",
+  download: "📥", downloader: "📥", search: "🔍", sticker: "🖼️", media: "🎬",
+  ai: "🤖", group: "👥", religi: "☪️", islamic: "🕌", info: "ℹ️", cek: "📁",
+  user: "📊", canvas: "🎨", random: "🎲", ephoto: "🖌️", jpm: "📨", anime: "🍥",
+  asupan: "🎞️", clan: "⚔️", convert: "🔄", berita: "📰", rpg: "🗡️", nsfw: "🔞",
+  linode: "☁️", primbon: "🔮", cecan: "💃", stalker: "🕵️", tts: "🗣️", vps: "🌊",
+  economy: "💰", premium: "💎", pushkontak: "📨", panel: "🖥️", store: "🛍️",
 };
-function toSmallCaps(text) {
-  const smallCaps = {
-    a: "ᴀ",
-    b: "ʙ",
-    c: "ᴄ",
-    d: "ᴅ",
-    e: "ᴇ",
-    f: "ꜰ",
-    g: "ɢ",
-    h: "ʜ",
-    i: "ɪ",
-    j: "ᴊ",
-    k: "ᴋ",
-    l: "ʟ",
-    m: "ᴍ",
-    n: "ɴ",
-    o: "ᴏ",
-    p: "ᴘ",
-    q: "ǫ",
-    r: "ʀ",
-    s: "s",
-    t: "ᴛ",
-    u: "ᴜ",
-    v: "ᴠ",
-    w: "ᴡ",
-    x: "x",
-    y: "ʏ",
-    z: "ᴢ",
-  };
-  return text
-    .toLowerCase()
-    .split("")
-    .map((c) => smallCaps[c] || c)
-    .join("");
-}
-const toMonoUpperBold = (text) => {
-  const chars = {
-    A: "𝗔",
-    B: "𝗕",
-    C: "𝗖",
-    D: "𝗗",
-    E: "𝗘",
-    F: "𝗙",
-    G: "𝗚",
-    H: "𝗛",
-    I: "𝗜",
-    J: "𝗝",
-    K: "𝗞",
-    L: "𝗟",
-    M: "𝗠",
-    N: "𝗡",
-    O: "𝗢",
-    P: "𝗣",
-    Q: "𝗤",
-    R: "𝗥",
-    S: "𝗦",
-    T: "𝗧",
-    U: "𝗨",
-    V: "𝗩",
-    W: "𝗪",
-    X: "𝗫",
-    Y: "𝗬",
-    Z: "𝗭",
-  };
-  return text
-    .toUpperCase()
-    .split("")
-    .map((c) => chars[c] || c)
-    .join("");
+
+const CATEGORY_ORDER = [
+  "owner", "main", "utility", "tools", "premium", "rich", "fun", "game", "download", "search",
+  "sticker", "media", "ai", "group", "religi", "info", "cek", "economy", "user",
+  "canvas", "random", "ephoto", "jpm", "pushkontak", "panel", "store",
+  "music", "maker", "anime", "rpg", "asupan", "clan", "convert",
+];
+
+const FONT = {
+  A: "𝑨", B: "𝑩", C: "𝑪", D: "𝑫", E: "𝑬", F: "𝑭", G: "𝑮", H: "𝑯", I: "𝑰", J: "𝑱", K: "𝑲", L: "𝑳", M: "𝑴",
+  N: "𝑵", O: "𝑶", P: "𝑷", Q: "𝑸", R: "𝑹", S: "𝑺", T: "𝑻", U: "𝑼", V: "𝑽", W: "𝑾", X: "𝑿", Y: "𝒀", Z: "𝒁",
+  a: "𝒂", b: "𝒃", c: "𝒄", d: "𝒅", e: "𝒆", f: "𝒇", g: "𝒈", h: "𝒉", i: "𝒊", j: "𝒋", k: "𝒌", l: "𝒍", m: "𝒎",
+  n: "𝒏", o: "𝒐", p: "𝒑", q: "𝒒", r: "𝒓", s: "𝒔", t: "𝒕", u: "𝒖", v: "𝒗", w: "𝒘", x: "𝒙", y: "𝒚", z: "𝒛",
+  "0": "𝟎", "1": "𝟏", "2": "𝟐", "3": "𝟑", "4": "𝟒", "5": "𝟓", "6": "𝟔", "7": "𝟕", "8": "𝟖", "9": "𝟗",
 };
-function getSortedCategories(m, botMode) {
-  const categories = getCategories();
-  const commandsByCategory = getCommandsByCategory();
-  const categoryOrder = [
-    "owner",
-    "main",
-    "utility",
-    "tools",
-    "fun",
-    "game",
-    "download",
-    "search",
-    "sticker",
-    "media",
-    "ai",
-    "group",
-    "religi",
-    "info",
-    "cek",
-    "economy",
-    "user",
-    "canvas",
-    "random",
-    "premium",
-    "ephoto",
-    "jpm",
-    "pushkontak",
-    "panel",
-    "store"
-  ];
-  let modeAllowedMap = {
+const pretty = (value) => [...String(value)].map((c) => FONT[c] || c).join("");
+
+function sortedCategoryData(m, botMode) {
+  const pluginMap = getCommandsByCategory();
+  const caseMap = getCasesByCategory();
+  const categories = new Set([...getCategories(), ...Object.keys(pluginMap), ...Object.keys(caseMap)]);
+
+  const allowed = {
     md: null,
     cpanel: ["main", "group", "sticker", "owner", "tools", "panel"],
     store: ["main", "group", "sticker", "owner", "store"],
     pushkontak: ["main", "group", "sticker", "owner", "pushkontak"],
-  };
-  let modeExcludeMap = {
-    md: ["panel", "pushkontak", "store"],
-    cpanel: null,
-    store: null,
-    pushkontak: null,
-  };
-  const allowedCats = modeAllowedMap[botMode];
-  const excludeCats = modeExcludeMap[botMode] || [];
-  const sortedCats = [...categories].sort((a, b) => {
-    const indexA = categoryOrder.indexOf(a);
-    const indexB = categoryOrder.indexOf(b);
-    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-  });
-  const result = [];
-  let totalCmds = 0;
-  for (const cat of sortedCats) {
-    if (cat === "owner" && !m.isOwner) continue;
-    if (allowedCats && !allowedCats.includes(cat.toLowerCase())) continue;
-    if (excludeCats && excludeCats.includes(cat.toLowerCase())) continue;
-    const cmds = commandsByCategory[cat] || [];
-    if (cmds.length === 0) continue;
-    const emoji = CATEGORY_EMOJIS[cat] || "📁";
-    result.push({ cat, cmds, emoji });
-  }
-  for (const cat of categories) {
-    totalCmds += (commandsByCategory[cat] || []).length;
-  }
-  return { sorted: result, totalCmds, commandsByCategory };
-}
-async function formatTime(date) {
-  const timeHelper = await import("../../src/lib/rimuru-time.js");
-  return timeHelper.formatTime("HH:mm");
-}
-async function formatDateShort(date) {
-  const timeHelper = await import("../../src/lib/rimuru-time.js");
-  return timeHelper.formatFull("dddd, DD MMMM YYYY");
-}
-async function buildMenuText(
-  m,
-  botConfig,
-  db,
-  uptime,
-  botMode = "md",
-  useBracketBoxStyle = false,
-) {
-  const prefix = botConfig.command?.prefix || ".";
-  const user = db.getUser(m.sender);
-  const timeHelper = await import("../../src/lib/rimuru-time.js");
-  const timeStr = timeHelper.formatTime("HH:mm");
-  const dateStr = timeHelper.formatFull("dddd, DD MMMM YYYY");
-  const categories = getCategories();
-  const commandsByCategory = getCommandsByCategory();
-  let totalCommands = 0;
-  for (const category of categories) {
-    totalCommands += (commandsByCategory[category] || []).length;
-  }
-  const totalCases = getCaseCount();
-  const casesByCategory = getCasesByCategory();
-  const totalFeatures = totalCommands + totalCases;
-  let userRole = "User",
-    roleEmoji = "👤";
-  if (m.isOwner) {
-    userRole = "Owner";
-    roleEmoji = "👑";
-  } else if (m.isPremium) {
-    userRole = "Premium";
-    roleEmoji = "💎";
-  }
-  const greeting = getTimeGreeting();
-  const uptimeFormatted = formatUptime(uptime);
-  const totalUsers = db.getUserCount();
-  let txt = `${greeting}\n\n`;
-  txt += `      ${m.pushName || "User"}\n\n`;
-  txt += `Halo Kawan 🌱\n`;
-  txt += `Perkenalkan aku ${botConfig.bot?.name || "Denia Al"}, buatan ${botConfig.bot?.developer || "Alesha"} Saya siap membantu\n`;
-  txt += `kebutuhanmu, mulai dari download\n`;
-  txt += `video, main game, tanya jawab, nyari\n`;
-  txt += `info/sesuatu, bikin sticker, dan lain-lain.\n\n`;
+  }[botMode] ?? null;
+  const excluded = new Set(({
+    md: ["panel", "pushkontak", "store", "otp"],
+  }[botMode] ?? []));
 
-  txt += `    ᯓ INFO USER\n`;
-  txt += `╭   • Nama : ${m.pushName || "User"}\n`;
-  txt += `┆   • Status : ${userRole}\n`;
-  txt += `┆   • Mode : ${(botConfig.mode || "public").toUpperCase()}\n`;
-  txt += `┆   • Nomor : ${m.sender.split("@")[0]}\n`;
-  txt += `┆   • Waktu : ${timeStr} WIB\n`;
-  txt += `╰➤------------------------------\n`;
-
-  txt += `    ᯓ INFO BOT\n`;
-  txt += `╭  • Name : ${botConfig.bot?.name || "rimuru-AI"}\n`;
-  txt += `┆  • Author : ${botConfig.bot?.developer || "Owner"}\n`;
-  txt += `┆  • Versi : ${botConfig.bot?.version || "1.2.0"}\n`;
-  txt += `┆  • Type script : rimuru x ${botConfig.bot?.developer || "Owner"}\n`;
-  txt += `┆  • Uptime : ${uptimeFormatted}\n`;
-  txt += `╰➤------------------------------\n`;
-  const categoryOrder = [
-    "owner",
-    "main",
-    "utility",
-    "tools",
-    "fun",
-    "game",
-    "download",
-    "search",
-    "sticker",
-    "media",
-    "ai",
-    "group",
-    "religi",
-    "info",
-    "cek",
-    "economy",
-    "user",
-    "canvas",
-    "random",
-    "premium",
-    "ephoto",
-    "jpm",
-    "pushkontak",
-    "panel",
-    "store"
-  ];
-  const sortedCategories = [...categories].sort((a, b) => {
-    const indexA = categoryOrder.indexOf(a);
-    const indexB = categoryOrder.indexOf(b);
-    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-  });
-  let modeAllowedMap = {
-    md: null,
-    cpanel: ["main", "group", "sticker", "owner", "tools", "panel"],
-    store: ["main", "group", "sticker", "owner", "store"],
-    pushkontak: ["main", "group", "sticker", "owner", "pushkontak"],
-  };
-  let modeExcludeMap = {
-    md: ["panel", "pushkontak", "store"],
-    cpanel: null,
-    store: null,
-    pushkontak: null,
-  };
-  try {
-    const botmodePlugin = await import("../group/botmode.js");
-    if (botmodePlugin && botmodePlugin.MODES) {
-      const modes = botmodePlugin.MODES;
-      modeAllowedMap = {};
-      modeExcludeMap = {};
-      for (const [key, val] of Object.entries(modes)) {
-        modeAllowedMap[key] = val.allowedCategories;
-        modeExcludeMap[key] = val.excludeCategories;
-      }
-    }
-  } catch (e) { }
-  const allowedCategories = modeAllowedMap[botMode];
-  const excludeCategories = modeExcludeMap[botMode] || [];
-  const categoryLines = [];
-  for (const category of sortedCategories) {
-    if (category === "owner" && !m.isOwner) continue;
-    if (
-      allowedCategories &&
-      !allowedCategories.includes(category.toLowerCase())
-    )
-      continue;
-    if (excludeCategories && excludeCategories.includes(category.toLowerCase()))
-      continue;
-    const pluginCmds = commandsByCategory[category] || [];
-    const caseCmds = casesByCategory[category] || [];
-    const totalCmds = pluginCmds.length + caseCmds.length;
-    if (totalCmds === 0) continue;
-    const emoji = CATEGORY_EMOJIS[category] || "📁";
-    categoryLines.push(`${prefix}menucat ${category} ${emoji}`);
-  }
-  if (categoryLines.length > 0) {
-    txt += ` ✦ DAFTAR MENU ✦\n`;
-    txt += `╭   • ${categoryLines[0]}\n`;
-    for (let i = 1; i < categoryLines.length; i++) {
-      txt += `┆   • ${categoryLines[i]}\n`;
-    }
-    txt += `╰➤------------------------------\n`;
-  }
-  return txt;
+  return [...categories]
+    .map(String)
+    .filter((cat) => {
+      const key = cat.toLowerCase();
+      if (key === "owner" && !m.isOwner) return false;
+      if (allowed && !allowed.includes(key)) return false;
+      if (excluded.has(key)) return false;
+      return (pluginMap[cat]?.length || pluginMap[key]?.length || caseMap[cat]?.length || caseMap[key]?.length);
+    })
+    .sort((a, b) => {
+      const ai = CATEGORY_ORDER.indexOf(a.toLowerCase());
+      const bi = CATEGORY_ORDER.indexOf(b.toLowerCase());
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi) || a.localeCompare(b);
+    })
+    .map((cat) => {
+      const p = pluginMap[cat] || pluginMap[cat.toLowerCase()] || [];
+      const c = caseMap[cat] || caseMap[cat.toLowerCase()] || [];
+      return { cat, emoji: CATEGORY_EMOJIS[cat.toLowerCase()] || "📁", count: p.length + c.length };
+    });
 }
 
-function createBracketBox(title, lines = [], emoji = "🤖") {
-  let text = `╭─〔 ${emoji} \`${title}\`〕─⬣\n`;
-  for (const line of lines) {
-    text += `│ ✦ *${line}*\n`;
-  }
-  text += `╰─⬣\n\n`;
-  return text;
-}
-
-function getContextInfo(
-  botConfig,
-  m,
-  thumbBuffer,
-  renderLargerThumbnail = false,
-) {
-  const saluranId = botConfig.saluran?.id || "120363400911374213@newsletter";
-  const saluranName =
-    botConfig.saluran?.name || botConfig.bot?.name || "rimuru-AI";
-  const saluranLink = botConfig.saluran?.link || "";
-  const ctx = {
-    mentionedJid: [m.sender],
-    forwardingScore: 9,
-    isForwarded: true,
-    externalAdReply: {
-      title: botConfig.bot?.name || "rimuru-AI",
-      body: `BOT WHATSAPP MULTI DEVICE`,
-      sourceUrl: saluranLink,
-      previewType: "VIDEO",
-      showAdAttribution: false,
-      renderLargerThumbnail,
-    },
-  };
-  if (thumbBuffer) ctx.externalAdReply.thumbnail = thumbBuffer;
-  return ctx;
-}
-function getVerifiedQuoted(botConfig, m) {
-  if (m) {
-    return {
-      key: {
-        participant: `${m.sender}`,
-        remoteJid: `status@broadcast`,
-      },
-      message: {
-        contactMessage: {
-          displayName: `🍂 Yth. ${m.pushName}`,
-          vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;ttname,;;;\nFN:ttname\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
-          sendEphemeral: true,
-        },
-      },
-    };
-  }
-  return {
-    key: {
-      participant: `0@s.whatsapp.net`,
-      remoteJid: `status@broadcast`,
-    },
-    message: {
-      contactMessage: {
-        displayName: `🪸 ${botConfig.bot?.name}`,
-        vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;ttname,;;;\nFN:ttname\nitem1.TEL;waid=13135550002:+1 (313) 555-0002\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
-        sendEphemeral: true,
-      },
-    },
-  };
-}
-
-async function handler(m, { sock, config: botConfig, db, uptime }) {
-  const savedVariant = db.setting("menuVariant");
-  const menuVariant = [1, 2].includes(Number(savedVariant))
-    ? Number(savedVariant)
-    : ([1, 2].includes(Number(botConfig.ui?.menuVariant)) ? Number(botConfig.ui.menuVariant) : 2);
+async function defaultMenuHandler(m, { sock, config: botConfig, db, uptime }) {
   const groupData = m.isGroup ? db.getGroup(m.chat) || {} : {};
   const botMode = groupData.botMode || "md";
-  const text = await buildMenuText(
-    m,
-    botConfig,
-    db,
-    uptime,
-    botMode,
-    menuVariant === 9,
-  );
-
-  let imageBuffer = null;
-  let thumbBuffer = null;
-  let videoBuffer = null;
-
-  try {
-    imageBuffer = getAssetBuffer("rimuru", botConfig.assets)
-    thumbBuffer = getAssetBuffer("rimuru2", botConfig.assets)
-  } catch (e) {
-    console.error("Gagal load assets:", e.message);
-  }
+  const categories = sortedCategoryData(m, botMode);
   const prefix = botConfig.command?.prefix || ".";
-  const saluranId = botConfig.saluran?.id || "120363400911374213@newsletter";
-  const saluranName =
-    botConfig.saluran?.name || botConfig.bot?.name || "rimuru-AI";
-  const saluranLink =
-    botConfig.saluran?.link ||
-    "https://whatsapp.com/channel/0029VbB37bgBfxoAmAlsgE0t";
-  const {
-    sorted: menuSorted,
-    totalCmds,
-    commandsByCategory,
-  } = getSortedCategories(m, botMode);
-  const totalCases = getCaseCount();
-  const totalFeatures = totalCmds + totalCases;
+  const senderNo = String(m.sender || "").split("@")[0];
+  const user = (await db.getUser(m.sender)) || {};
+  const runtime = typeof uptime === "function" ? await uptime() : formatUptime(process.uptime());
   const greeting = getTimeGreeting();
-  const uptimeFormatted = formatUptime(uptime);
-  const user = await db.getUser(m.sender) || {}
+  const total = categories.reduce((n, x) => n + x.count, 0);
+  const role = m.isOwner ? "👑 Owner" : m.isPremium ? "💎 Premium" : "🏷️ Free";
+
+  let video;
   try {
-    const categories = getSortedCategories(m, botMode);
-    const zann_pengin_rehat = categories.sorted.map(({ cat, cmds, emoji }) => {
-      const caseCount = (getCasesByCategory()[cat] || []).length;
-      const total = cmds.length + caseCount;
-      return {
-        title: `${emoji} ${toMonoUpperBold(cat)}`,
-        description: `Command ini memiliki (${total}) Perintah`,
-        id: `${m.prefix}menucat ${cat}`,
-      };
-    });
-    switch (menuVariant) {
-      case 1:
-        if (imageBuffer) {
-          await sock.sendMessage(m.chat, {
-            image: imageBuffer,
-            caption: ``,
-            footer: `Hai @${m.pushName} 👋
-            
-🌿 Selamat datang di assistant ${RIMURU_CORE_CONFIG.bot?.name}
+    video = getAssetBuffer("rimuru-mp4", botConfig.assets);
+    if (!video) throw new Error("asset unavailable");
+  } catch {
+    return m.reply("❌ menu tidak ditemukan di assets.");
+  }
 
-╭┈┈⫹⫺ *INFORMASI BOT* ⫹⫺┈┈╮
-│ ◈ *Nama Bot* : *${RIMURU_CORE_CONFIG.bot?.name}*
-│ ◈ *Versi* : *${RIMURU_CORE_CONFIG.bot.version}*  
-│ ◈ *Pengembang* : *${RIMURU_DEVELOPER}*  
-│ ◈ *Pustaka* : \`rimuru-baileys\`
-╰┈┈┈┈┈┈┈┈
+  const thumbnail = await sharp(getAssetBuffer("rimuru", botConfig.assets))
+    .resize(300, 300)
+    .jpeg({ quality: 80 })
+    .toBuffer();
 
-╭┈┈⫹⫺ *INFORMASI PENGGUNA* ⫹⫺┈┈╮
-│ ◈ *Nama* : *${m.pushName}*
-│ ◈ *Member?* : *${m?.isOwner ? "Bukan, tapi Owner" : m?.isPremium ? "Bukan, tapi Premium" : "Iyapp"}*
-│ ◈ *Level* : *${user.level || 0}*
-│ ◈ *Exp* : *${user.exp || 0}* 
-│ ◈ *Energi* : *${user.energi || 0}*
-│ ◈ *Koin* : *${user.koin || 0}*
-│ ◈ *Register* : *${user.isRegistered ? "Sudah" : "Belum"}*
-│ ◈ *Energi* : *${user.energi || 0}*
-╰┈┈┈┈┈┈┈┈
+  const categoryRows = categories.map(({ cat, emoji, count }) => ({
+    title: `${emoji} ${pretty(cat.toUpperCase())}`,
+    description: `${count} perintah • buka daftar menu`,
+    id: `${prefix}menucat ${cat}`,
+  }));
 
-Tekan tombol dibawah untuk info lebih lanjut dan untuk memilih kategori
-`,
-            interactiveButtons: [
+    const bodyText =
+`${pretty("RIMURU MD")}  ✦  ${pretty("V5 — LV 2")}\n\n` +
+`${pretty(greeting)} ${m.pushName || "Kawan"} ✨\n` +
+`_${botConfig.bot?.body || "Siap membantu kebutuhan kamu di WhatsApp."}_\n\n` +
+`┏━━ ${pretty("USER INFO")} ━━┓\n` +
+`┃  ${pretty("Nama")}   : ${m.pushName || "User"}\n` +
+`┃  ${pretty("Status")} : ${role}\n` +
+`┃  ${pretty("Mode")}   : ${(botConfig.mode || "public").toUpperCase()}\n` +
+`┃  ${pretty("Nomor")}  : +${senderNo}\n` +
+`┗━━━━━━━━━━━━━━━━━━┛\n\n` +
+`┏━━ ${pretty("BOT INFO")} ━━┓\n` +
+`┃  ${pretty("Bot")}     : ${botConfig.bot?.name || "Rimuru MD"}\n` +
+`┃  ${pretty("Author")}  : Anita Putri Azzahra\n` +
+`┃  ${pretty("OwnerBot")}  : ${botConfig.bot?.developer || "Anita Putri Azzahra"}\n` +
+`┃  ${pretty("Versi")}   : ${botConfig.bot?.version || "-"}\n` +
+`┃  ${pretty("Uptime")}  : ${runtime}\n` +
+`┗━━━━━━━━━━━━━━━━━━┛\n\n` +
+`┏━━ ${pretty("READY PANEL LEGAL")} ━━┓\n` +
+`┃ zanspiwptero.shoppanel.my.id\n` +
+`┗━━━━━━━━━━━━━━━━━━━━━━┛\n\n` +
+`╭─ ${pretty("MENU UTAMA")} ─╮\n` +
+`│ ✦ Pilih kategori lewat tombol di bawah.\n` +
+`│ ✦ Setiap kategori langsung membuka ${pretty(".menucat")} .\n` +
+`╰──────────────────╯`;
+  const media = await prepareWAMessageMedia({
+    video,
+    gifPlayback: true,
+  }, { upload: sock.waUploadToServer });
+
+  const newsletterId = botConfig.saluran?.id || "120363412350560864@newsletter";
+  const newsletterName = botConfig.saluran?.name || botConfig.bot?.name || "Rimuru MD";
+
+  const message = generateWAMessageFromContent(m.chat, {
+    viewOnceMessage: {
+      message: {
+        messageContextInfo: {},
+        interactiveMessage: {
+          header: {
+            title: `${botConfig.bot?.name || "Rimuru MD"} • V5 — LV 2`,
+            subtitle: "Menu utama",
+            hasMediaAttachment: true,
+            videoMessage: media.videoMessage,
+          },
+          body: { text: bodyText },
+          footer: { text: "Rimuru MD • pilih kategori untuk melihat command" },
+          contextInfo: {
+            mentionedJid: [m.sender],
+            isForwarded: true,
+            forwardingScore: 9,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: newsletterId,
+              newsletterName,
+              serverMessageId: 143,
+            },
+          },
+          nativeFlowMessage: {
+            messageParamsJson: JSON.stringify({
+              bottom_sheet: {
+                in_thread_buttons_limit: 2,
+                divider_indices: [1, 2, 3, 4, 5, 999],
+                list_title: "Pilih kategori menu",
+                button_title: "🌸 PILIH MENU",
+              },
+            }),
+            buttons: [
               {
                 name: "single_select",
                 buttonParamsJson: JSON.stringify({
-                  title: "🍃 Menu Utama",
-                  sections: [
-                    {
-                      title: "Berikut adalah pilihan nya",
-                      rows: zann_pengin_rehat
-                    }
-                  ],
-                  icon: "DEFAULT"
-                })
+                  title: "🌸 Pilih Menu",
+                  sections: [{
+                    title: "Kategori Rimuru MD",
+                    rows: categoryRows,
+                  }],
+                }),
               },
               {
-                name: "single_select",
+                name: "quick_reply",
                 buttonParamsJson: JSON.stringify({
-                  title: "Selengkapnya",
-                  sections: [
-                    {
-                      title: "Berikut adalah pilihan nya",
-                      rows: [
-                        {
-                          title: "🍔 Lihat semua menu yang ada di bot ini",
-                          description: "Silahkan tap lalu kirim",
-                          id: `${m.prefix}sc`
-                        },
-                        {
-                          title: "🥰 Kamu mau samaan kayak bot ini?",
-                          description: "Silahkan tap lalu kirim, nanti bot akan mengirimkan sebuah link download",
-                          id: `${m.prefix}sc`
-                        },
-                        {
-                          title: "🌾 Siapakah owner dari bot ini?",
-                          description: "Tap dan klik kirim untuk melanjutkan",
-                          id: `${m.prefix}owner`
-                        },
-                      ]
-                    }
-                  ],
-                  icon: "REVIEW"
-                })
+                  display_text: "📜 Peraturan",
+                  id: `${prefix}rules`,
+                }),
               },
-            ]
-          }, {
-            quoted: getVerifiedQuoted(botConfig, m),
-          })
-        } else {
-          await m.reply(text);
-        }
-        break;
-case 2: {
-  // V2 — menu utama yang diminta: tampilan tetap sederhana,
-  // kategori tanpa jumlah command di body, dan jumlah hanya tampil
-  // setelah user membuka tombol "Pilih Menu".
-  const fixedCategories = [
-    "owner", "main", "utility", "tools", "fun", "game", "download",
-    "search", "sticker", "media", "ai", "group", "religi", "info", "cek",
-    "economy", "user", "canvas", "random", "premium", "ephoto", "jpm", "anime",
-    "asupan", "maker", "clan", "convert", "downloader", "downloads", "general",
-    "image", "berita", "islamic", "rpg", "test", "internet", "audio", "quran",
-    "quotes", "xp", "nsfw", "megami", "sound", "stalk", "voice", "music", "linode",
-    "primbon", "cecan", "stalker", "tts", "vps"
-  ];
+            ],
+          },
+        },
+      },
+    },
+  }, {
+    quoted: {
+      key: { fromMe: false, participant: "0@s.whatsapp.net", remoteJid: m.sender },
+      message: {
+        locationMessage: {
+          degreesLatitude: 0,
+          degreesLongitude: 0,
+          name: `${botConfig.bot?.name || "Rimuru MD"} • ${pretty("V5 — LV 2")}`,
+          jpegThumbnail: thumbnail,
+        },
+      },
+    },
+    userJid: sock.user.jid,
+  });
 
-  const categoryRows = [];
-  const categoryLines = [];
-  const commandsMap = getCommandsByCategory();
-  const casesMap = getCasesByCategory();
-  const allowed = getSortedCategories(m, botMode).sorted;
-  const available = new Map(
-    allowed.map(item => [item.cat.toLowerCase(), item])
-  );
-
-  for (const cat of fixedCategories) {
-    const item = available.get(cat);
-    if (!item) continue;
-
-    const pluginCount = (commandsMap[item.cat] || []).length;
-    const caseCount = (casesMap[item.cat] || []).length;
-    const count = pluginCount + caseCount;
-
-    if (!count) continue;
-
-    categoryLines.push(`┣➤ *${prefix}menucat ${cat}*`);
-
-    categoryRows.push({
-      title: cat.toUpperCase(),
-      description: `${count} command`,
-      id: `${prefix}menucat ${cat}`,
-    });
-  }
-
-  // Semua informasi utama diambil dari konfigurasi/runtime,
-  // bukan ditulis manual.
-  const botName = RIMURU_CORE_CONFIG.bot?.name || "Rimuru-MD";
-  const botVersion = RIMURU_CORE_CONFIG.bot?.version || "1.0";
-  const botModeName = String(config.mode || "public").toUpperCase();
-  const userName = m.pushName || "User";
-  const featureCount = totalFeatures;
-
-  const bodyLines = [
-    `✨━━━〔 *𝐌𝐞𝐧𝐮* 〕━━━✨`,
-    ``,
-    `➤ Nᴀᴍᴀ Bᴏᴛ : *${botName}*`,
-    `➤ Uѕᴇʀ : *${userName}*`,
-    `➤ Mᴏᴅᴇ : *${botModeName}*`,
-    `➤ Vᴇʀѕɪ : *${botVersion}*`,
-    `➤ Tᴏᴛᴀʟ Fɪᴛᴜʀ : *${featureCount} ғɪᴛᴜʀ*`,
-    ``,
-    `✨━━━〔 *No Spam* 〕━━━✨`,
-    ``,
-    `_ᴊᴀɴɢᴀɴ sᴘᴀᴍ ʏᴀ ᴋᴀᴋ 🐣_`,
-    `_ɢᴜɴᴀᴋᴀɴ ᴅᴇɴɢᴀɴ ʙɪᴊᴀᴋ_`,
-    ``,
-    `📚 *Pilih kategori dari tombol di bawah untuk membuka command.*`,
-    ``,
-    `[ 🌐 READY PANEL LEGAL ]`,
-    `▸ zanspiwpteroshoppanel.my.id`,
-    ``,
-    `${botName} • ◈ EXECUTIVE`,
-  ];
-
-  const body = bodyLines.join("\n");
-
-  const selectButton = {
-    name: "single_select",
-    buttonParamsJson: JSON.stringify({
-      title: "📚 Pilih Menu",
-      sections: [{
-        title: "Daftar Menu",
-        rows: categoryRows,
-      }],
-    }),
-  };
-
-  const panelButton = {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "📢 Panel Legal",
-      url: "https://whatsapp.com/channel/0029VbD6XZW3AzNITBzI7c2L",
-      merchant_url: "https://whatsapp.com/channel/0029VbD6XZW3AzNITBzI7c2L",
-    }),
-  };
-
-  const imageBuffer = getAssetBuffer("rimuru-v2", config.assets);
-
-  if (!imageBuffer) {
-    throw new Error("Asset rimuru-v2 tidak tersedia");
-  }
-
-  await sock.sendMessage(m.chat, {
-    image: imageBuffer,
-    caption: body,
-    footer: `${botName} • ◈ EXECUTIVE`,
-    interactiveButtons: [
-      selectButton,
-      panelButton,
-    ],
-  }, { quoted: m });
-
-  break;
+  await sock.relayMessage(m.chat, message.message, { messageId: message.key.id });
 }
-      default:
-        await m.reply(text);
-    }
-    const audioEnabled = db.setting("audioMenu") !== false;
-    if (audioEnabled) {
-      const audioUrl = botConfig.assets["rimuru-mp3"];
-      try {
-        switch (menuVariant) {
-          case 1:
-            try {
-              const oggPath = await (async () => {
-                const tempDir = path.join(process.cwd(), "temp");
-                if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-                const destPath = path.join(tempDir, "menu_audio_hq_opus.ogg");
-                if (fs.existsSync(destPath)) return destPath;
-                const mp3Path = path.join(tempDir, "menu_audio.mp3");
-                const res = await axios.get(audioUrl, { responseType: "arraybuffer" });
-                fs.writeFileSync(mp3Path, Buffer.from(res.data));
-                const { spawn } = await import("child_process");
-                return new Promise((resolve, reject) => {
-                  const ffmpeg = spawn("ffmpeg", ["-y", "-i", mp3Path, "-c:a", "libopus", "-b:a", "256k", "-vbr", "on", "-compression_level", "10", "-ac", "2", "-ar", "48000", destPath]);
-                  ffmpeg.on("close", (code) => {
-                    if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
-                    if (code === 0) resolve(destPath);
-                    else reject(new Error("FFmpeg error"));
-                  });
-                  ffmpeg.on("error", (err) => {
-                    if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
-                    reject(err);
-                  });
-                });
-              })();
-              await sock.sendMessage(m.chat, {
-                audio: { url: oggPath },
-                mimetype: "audio/ogg; codecs=opus",
-                ptt: true,
-              }, { quoted: m });
-            } catch (err) {
-              await sock.sendMessage(m.chat, {
-                audio: { url: audioUrl },
-                mimetype: "audio/mpeg",
-                ptt: false,
-              }, { quoted: m });
-            }
-            break;
-          case 2: {
-            const qpoll = {
-              key: { participant: "0@s.whatsapp.net" },
-              message: {
-                pollCreationMessage: {
-                  name: RIMURU_CORE_CONFIG.bot.name
-                }
-              }
-            };
-            try {
-              const oggPath = await (async () => {
-                const tempDir = path.join(process.cwd(), "temp");
-                if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-                const destPath = path.join(tempDir, "menu_audio_hq_opus.ogg");
-                if (fs.existsSync(destPath)) return destPath;
-                const mp3Path = path.join(tempDir, "menu_audio.mp3");
-                const res = await axios.get(audioUrl, { responseType: "arraybuffer" });
-                fs.writeFileSync(mp3Path, Buffer.from(res.data));
-                const { spawn } = await import("child_process");
-                return new Promise((resolve, reject) => {
-                  const ffmpeg = spawn("ffmpeg", ["-y", "-i", mp3Path, "-c:a", "libopus", "-b:a", "256k", "-vbr", "on", "-compression_level", "10", "-ac", "2", "-ar", "48000", destPath]);
-                  ffmpeg.on("close", (code) => {
-                    if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
-                    if (code === 0) resolve(destPath);
-                    else reject(new Error("FFmpeg error"));
-                  });
-                  ffmpeg.on("error", (err) => {
-                    if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
-                    reject(err);
-                  });
-                });
-              })();
-              await sock.sendMessage(m.chat, {
-                audio: { url: oggPath },
-                mimetype: "audio/ogg; codecs=opus",
-                ptt: true,
-              }, { quoted: qpoll });
-            } catch (err) {
-              await sock.sendMessage(m.chat, {
-                audio: fs.readFileSync(config.assets["rimuru-mp3"]),
-                mimetype: "audio/mpeg",
-                ptt: false,
-              }, { quoted: qpoll });
-            }
-            break;
-          }
-          case 3: {
-            const qtext = {
-              key: {
-                fromMe: false,
-                participant: m.sender,
-              },
-              message: {
-                conversation: "setelin musiknya nya bang"
-              }
-            };
-            await sock.sendMessage(m.chat, {
-              audio: fs.readFileSync(config.assets["rimuru-mp3"]),
-              mimetype: "audio/mpeg",
-              ptt: false,
-            }, { quoted: qtext });
-            break;
-          }
-          case 7: {
-            const qChannel = {
-              key: {
-                fromMe: false,
-                participant: "0@s.whatsapp.net",
-                remoteJid: typeof saluranId !== "undefined" ? saluranId : "120363294025983803@newsletter",
-              },
-              message: {
-                conversation: "🔊 Playing Audio Menu..."
-              }
-            };
-            try {
-              const oggPath = await (async () => {
-                const tempDir = path.join(process.cwd(), "temp");
-                if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-                const destPath = path.join(tempDir, "menu_audio_hq_opus.ogg");
-                if (fs.existsSync(destPath)) return destPath;
-                const { spawn } = await import("child_process");
-                return new Promise((resolve, reject) => {
-                  const ffmpeg = spawn("ffmpeg", ["-y", "-i", audioUrl, "-c:a", "libopus", "-b:a", "256k", "-vbr", "on", "-compression_level", "10", "-ac", "2", "-ar", "48000", destPath]);
-                  ffmpeg.on("close", (code) => {
-                    if (code === 0) resolve(destPath);
-                    else reject(new Error("FFmpeg error"));
-                  });
-                  ffmpeg.on("error", (err) => {
-                    reject(err);
-                  });
-                });
-              })();
-              await sock.sendMessage(m.chat, {
-                audio: { url: oggPath },
-                mimetype: "audio/ogg; codecs=opus",
-                ptt: true,
-              }, { quoted: qChannel });
-            } catch (err) {
-              await sock.sendMessage(m.chat, {
-                audio: { url: audioUrl },
-                mimetype: "audio/mpeg",
-                ptt: false,
-              }, { quoted: qChannel });
-            }
-            break;
-          }
-          case 4:
-          default: {
-            const ftroliQuoted = {
-              key: {
-                fromMe: false,
-                participant: "0@s.whatsapp.net",
-                remoteJid: "status@broadcast",
-              },
-              message: {
-                orderMessage: {
-                  orderId: "44444444444444",
-                  thumbnail:
-                    (thumbBuffer || imageBuffer ? await (await getSharp())(thumbBuffer || imageBuffer)
-                      .resize({ width: 300, height: 300 })
-                      .toBuffer() : null),
-                  itemCount: totalCmds,
-                  status: "INQUIRY",
-                  surface: "CATALOG",
-                  message: `★ ${RIMURU_CORE_CONFIG.bot.name}`,
-                  orderTitle: `📋 ${totalCmds} Commands`,
-                  sellerJid: botConfig.botNumber
-                    ? `${botConfig.botNumber}@s.whatsapp.net`
-                    : m.sender,
-                  token: "rimuru-menu-v8",
-                  totalAmount1000: 3333333,
-                  totalCurrencyCode: "IDR",
-                  contextInfo: {
-                    isForwarded: true,
-                    forwardingScore: 9,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: saluranId,
-                      newsletterName: saluranName,
-                      serverMessageId: 127,
-                    },
-                  },
-                },
-              },
-            };
-            try {
-              await sock.sendMessage(
-                m.chat,
-                {
-                  audio: fs.readFileSync(config.assets["rimuru-mp3"]),
-                  mimetype: "audio/mpeg",
-                },
-                { quoted: ftroliQuoted },
-              );
-            } catch (ffmpegErr) {
-              await sock.sendMessage(
-                m.chat,
-                {
-                  audio: fs.readFileSync(config.assets["rimuru-mp3"]),
-                  mimetype: "audio/mpeg",
-                  contextInfo: getContextInfo(botConfig, m, thumbBuffer),
-                },
-                { quoted: getVerifiedQuoted(botConfig) },
-              );
-            }
-            break;
-          }
-        }
-      } catch (e) {
-        console.error("[Menu] Error sending dynamic audio:", e.message);
-      }
-    }
-  } catch (error) {
-    console.error("[Menu] Error on command execution:", error.message);
+
+
+async function handler(m, { sock, config: botConfig, db, uptime }) {
+  const selected = Number(db.setting("menuVariant") || botConfig.ui?.menuVariant || 9);
+  if (selected >= 1 && selected <= 8) {
+    await legacyMenuHandler(m, { sock, config: botConfig, db, uptime });
+    return;
   }
+  // V9 is the current default V5 — LV2 design.
+  await defaultMenuHandler(m, { sock, config: botConfig, db, uptime });
 }
-export default {
-  config: pluginConfig,
-  handler,
-};
+
+export { pluginConfig as config, handler };

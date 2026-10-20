@@ -389,7 +389,7 @@ function getRandomBodyItems() {
 }
 
 // Main handler function
-const handler = async (m, { conn, args, command, text }) => {
+const handler = async (m, { sock, args, command, text }) => {
   // Load user data
   const users = loadUsers()
   const sender = m.sender.split("@")[0]
@@ -430,7 +430,7 @@ const handler = async (m, { conn, args, command, text }) => {
       }
 
       // Show prologue
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `🏝️ *ISLAND SURVIVAL* 🏝️\n\n` +
           `*PROLOGUE*\n\n` +
@@ -533,7 +533,7 @@ const handler = async (m, { conn, args, command, text }) => {
       saveIsland(islandData)
 
       // Show starting message
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `🏝️ *ISLAND SURVIVAL* 🏝️\n\n` +
           `You regain consciousness on a ${startingTerrain === "forest" ? "forested area" : "beach"} of the island.\n\n` +
@@ -604,7 +604,7 @@ const handler = async (m, { conn, args, command, text }) => {
       saveIsland(islandData)
 
       // Describe the new location
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `${DIRECTION_EMOJI[direction]} You move ${direction}.\n\n` +
           (eventOccurred ? "" : describeLocation(users[sender].survival, islandData, sender)),
@@ -725,7 +725,7 @@ const handler = async (m, { conn, args, command, text }) => {
         responseText += `\n${describeLocation(survival, islandData, sender)}`
       }
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text: responseText,
       })
 
@@ -781,7 +781,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
       responseText += `\n${describeLocation(survival, islandData, sender)}`
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text: responseText,
       })
 
@@ -810,7 +810,7 @@ const handler = async (m, { conn, args, command, text }) => {
       saveUsers(users)
       saveIsland(islandData)
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text: `✅ You collected: ${items.join(", ")}\n\n` + describeLocation(survival, islandData, sender),
       })
 
@@ -855,7 +855,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
         craftableText += `Use .survival craft [emoji] to craft an item.`
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text: craftableText,
         })
 
@@ -931,7 +931,7 @@ const handler = async (m, { conn, args, command, text }) => {
       saveUsers(users)
       saveIsland(islandData)
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `🛠️ You successfully crafted ${itemEmoji} ${isStructure ? STRUCTURES[itemEmoji].name : ITEMS[itemEmoji].name}!\n\n` +
           describeLocation(survival, islandData, sender),
@@ -1001,7 +1001,7 @@ const handler = async (m, { conn, args, command, text }) => {
         if (rescueRoll < survival.rescueChance + 30) {
           // Flare gun gives +30% chance
           // Rescued!
-          await conn.sendMessage(m.chat, {
+          await sock.sendMessage(m.chat, {
             text:
               responseText +
               `🚁 *RESCUE HELICOPTER SPOTTED!* 🚁\n\n` +
@@ -1036,7 +1036,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
       saveUsers(users)
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text: responseText,
       })
 
@@ -1078,7 +1078,7 @@ const handler = async (m, { conn, args, command, text }) => {
         survival.equippedWeapon = itemEmoji
         inventory.splice(itemIndex, 1)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text: `🔪 You equipped ${itemEmoji} ${item.name} as your weapon.\n` + `Damage: +${item.damage}`,
         })
       } else if (item.type === "clothing") {
@@ -1090,7 +1090,7 @@ const handler = async (m, { conn, args, command, text }) => {
         survival.equippedClothing = itemEmoji
         inventory.splice(itemIndex, 1)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text: `👕 You equipped ${itemEmoji} ${item.name}.\n` + `Warmth: +${item.warmth}`,
         })
       } else {
@@ -1152,7 +1152,7 @@ const handler = async (m, { conn, args, command, text }) => {
         saveUsers(users)
         saveIsland(islandData)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `⚔️ You attack the ${animal.emoji} ${animal.name} and deal ${playerDamage} damage!\n\n` +
             `🎯 You defeated the ${animal.emoji} ${animal.name}!\n` +
@@ -1181,7 +1181,7 @@ const handler = async (m, { conn, args, command, text }) => {
       // Check if player is defeated
       if (survival.health <= 0) {
         // Player died
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `⚔️ You attack the ${animal.emoji} ${animal.name} and deal ${playerDamage} damage!\n\n` +
             `💥 The ${animal.emoji} ${animal.name} attacks you and deals ${animalDamage} damage!\n\n` +
@@ -1208,7 +1208,7 @@ const handler = async (m, { conn, args, command, text }) => {
       saveUsers(users)
       saveIsland(islandData)
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `⚔️ You attack the ${animal.emoji} ${animal.name} and deal ${playerDamage} damage!\n\n` +
           `💥 The ${animal.emoji} ${animal.name} attacks you and deals ${animalDamage} damage!\n\n` +
@@ -1253,7 +1253,7 @@ const handler = async (m, { conn, args, command, text }) => {
         saveUsers(users)
         saveIsland(islandData)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🏃 You run away from the ${animal.emoji} ${animal.name} and manage to escape!\n\n` +
             describeLocation(survival, islandData, sender),
@@ -1270,7 +1270,7 @@ const handler = async (m, { conn, args, command, text }) => {
         // Check if player is defeated
         if (survival.health <= 0) {
           // Player died
-          await conn.sendMessage(m.chat, {
+          await sock.sendMessage(m.chat, {
             text:
               `🏃 You try to run away from the ${animal.emoji} ${animal.name} but it catches you!\n\n` +
               `💥 The ${animal.emoji} ${animal.name} attacks you and deals ${animalDamage} damage!\n\n` +
@@ -1297,7 +1297,7 @@ const handler = async (m, { conn, args, command, text }) => {
         saveUsers(users)
         saveIsland(islandData)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🏃 You try to run away from the ${animal.emoji} ${animal.name} but it catches you!\n\n` +
             `💥 The ${animal.emoji} ${animal.name} attacks you and deals ${animalDamage} damage!\n\n` +
@@ -1354,7 +1354,7 @@ const handler = async (m, { conn, args, command, text }) => {
         saveUsers(users)
         saveIsland(islandData)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🏹 You successfully hunted the ${animal.emoji} ${animal.name}!\n` +
             `You collected ${animal.meat}x 🥩 Meat and ${animal.hide}x 🧵 Hide.\n\n` +
@@ -1373,7 +1373,7 @@ const handler = async (m, { conn, args, command, text }) => {
         saveUsers(users)
         saveIsland(islandData)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🏹 You tried to hunt the ${animal.emoji} ${animal.name}, but it got away!\n\n` +
             describeLocation(survival, islandData, sender),
@@ -1441,7 +1441,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
         // Check if player died
         if (survival.health <= 0) {
-          await conn.sendMessage(m.chat, {
+          await sock.sendMessage(m.chat, {
             text:
               `😴 You ${subCommand === "rest" ? "rest" : "sleep"} for ${restHours} hours...\n\n` +
               eventText +
@@ -1464,7 +1464,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
       saveUsers(users)
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `😴 You ${subCommand === "rest" ? "rest" : "sleep"} for ${restHours} hours...\n\n` +
           eventText +
@@ -1551,7 +1551,7 @@ const handler = async (m, { conn, args, command, text }) => {
           rescueMethod = "helicopter"
         }
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🆘 You try to signal for help using your ${signalMethod}...\n\n` +
             `🚁 *${rescueMethod.toUpperCase()} SPOTTED!* 🚁\n\n` +
@@ -1575,7 +1575,7 @@ const handler = async (m, { conn, args, command, text }) => {
 
         saveUsers(users)
 
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
           text:
             `🆘 You try to signal for help using your ${signalMethod}...\n\n` +
             `You wait anxiously, but no rescue arrives.\n\n` +
@@ -1642,7 +1642,7 @@ const handler = async (m, { conn, args, command, text }) => {
         inventoryText += `Clothing: None\n`
       }
 
-      await conn.sendMessage(m.chat, { text: inventoryText })
+      await sock.sendMessage(m.chat, { text: inventoryText })
 
       return
     }
@@ -1665,7 +1665,7 @@ const handler = async (m, { conn, args, command, text }) => {
         `🗺️ Current position: (${survival.position.x}, ${survival.position.y})\n` +
         `🏞️ Terrain: ${TERRAIN_EMOJI[survival.currentLocation.type]} ${survival.currentLocation.type}`
 
-      await conn.sendMessage(m.chat, { text: statusText })
+      await sock.sendMessage(m.chat, { text: statusText })
 
       return
     }
@@ -1706,7 +1706,7 @@ const handler = async (m, { conn, args, command, text }) => {
         `🏢 Bunker\n` +
         `⬛ Unexplored`
 
-      await conn.sendMessage(m.chat, { text: mapText })
+      await sock.sendMessage(m.chat, { text: mapText })
 
       return
     }
@@ -1715,7 +1715,7 @@ const handler = async (m, { conn, args, command, text }) => {
     if (subCommand === "exit") {
       const survival = users[sender].survival
 
-      await conn.sendMessage(m.chat, {
+      await sock.sendMessage(m.chat, {
         text:
           `🚪 You have exited the survival game.\n\n` +
           `You survived for ${survival.gameTime.days} days and ${survival.gameTime.hours} hours on the island.\n\n` +
@@ -1756,7 +1756,7 @@ const handler = async (m, { conn, args, command, text }) => {
         `*.survival exit* - Exit the game\n\n` +
         `Good luck surviving! 🏝️`
 
-      await conn.sendMessage(m.chat, { text: helpText })
+      await sock.sendMessage(m.chat, { text: helpText })
 
       return
     }
@@ -1815,7 +1815,7 @@ function checkForRandomEvents(survival, islandData, sender) {
       const isBeach = survival.currentLocation.type === "beach"
       const rescueMethod = isBeach && Math.random() < 0.5 ? "ship" : "helicopter"
 
-      conn.sendMessage(sender + "@s.whatsapp.net", {
+      sock.sendMessage(sender + "@s.whatsapp.net", {
         text:
           `🚨 *RESCUE OPPORTUNITY!* 🚨\n\n` +
           `You spot a ${rescueMethod} in the distance! This might be your chance to be rescued!\n\n` +
@@ -1844,7 +1844,7 @@ function checkForRandomEvents(survival, islandData, sender) {
           weatherEffect = `You're getting wet and cold without proper clothing. (-5 health)\n`
         }
 
-        conn.sendMessage(sender + "@s.whatsapp.net", {
+        sock.sendMessage(sender + "@s.whatsapp.net", {
           text:
             `🌧️ It starts to rain heavily.\n\n` +
             `You collect some rainwater. (+20 thirst)\n` +
@@ -1865,7 +1865,7 @@ function checkForRandomEvents(survival, islandData, sender) {
           weatherEffect = `Without shelter, you're exposed to the elements. (-15 health)\n`
 
           if (survival.health <= 0) {
-            conn.sendMessage(sender + "@s.whatsapp.net", {
+            sock.sendMessage(sender + "@s.whatsapp.net", {
               text:
                 `🌩️ A violent storm hits the island!\n\n` +
                 weatherEffect +
@@ -1888,7 +1888,7 @@ function checkForRandomEvents(survival, islandData, sender) {
           weatherEffect = `Thankfully, you have shelter and remain safe during the storm.\n`
         }
 
-        conn.sendMessage(sender + "@s.whatsapp.net", {
+        sock.sendMessage(sender + "@s.whatsapp.net", {
           text:
             `🌩️ A violent storm hits the island!\n\n` +
             weatherEffect +
@@ -1901,7 +1901,7 @@ function checkForRandomEvents(survival, islandData, sender) {
         // Fog makes it harder to be rescued
         survival.rescueChance = Math.max(0, survival.rescueChance - 5)
 
-        conn.sendMessage(sender + "@s.whatsapp.net", {
+        sock.sendMessage(sender + "@s.whatsapp.net", {
           text:
             `🌫️ A thick fog descends on the island.\n\n` +
             `Visibility is severely reduced. Rescue chance decreased by 5%.\n` +
@@ -1922,7 +1922,7 @@ function checkForRandomEvents(survival, islandData, sender) {
           weatherEffect += `You're becoming dehydrated. (-10 health)\n`
 
           if (survival.health <= 0) {
-            conn.sendMessage(sender + "@s.whatsapp.net", {
+            sock.sendMessage(sender + "@s.whatsapp.net", {
               text:
                 `☀️ A scorching heat wave hits the island!\n\n` +
                 weatherEffect +
@@ -1943,7 +1943,7 @@ function checkForRandomEvents(survival, islandData, sender) {
           }
         }
 
-        conn.sendMessage(sender + "@s.whatsapp.net", {
+        sock.sendMessage(sender + "@s.whatsapp.net", {
           text:
             `☀️ A scorching heat wave hits the island!\n\n` +
             weatherEffect +
@@ -2036,9 +2036,20 @@ function getTimeOfDay(hour) {
   if (hour >= 20 && hour < 22) return "Dusk"
   return "Night"
 }
+const pluginConfig = {
+  name: 'survival',
+  alias: ['sv2'],
+  category: 'game',
+  description: 'Game survival lengkap dari Tensura.',
+  usage: '.survival <start|...>',
+  example: '.survival <start|...>',
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 5,
+  energi: 1,
+  isEnabled: true,
+};
 
-handler.help = ["survival"]
-handler.tags = ["rpg", "game"]
-handler.command = ["survival", "sv"]
-handler.group = true;
-export default handler
+export { pluginConfig as config, handler };

@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "creatett",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
     let who = m.sender;
     const user = global.db.data.users[who];
 
@@ -35,8 +52,4 @@ let handler = async (m, { text, usedPrefix, command }) => {
 `);
 };
 
-handler.help = ['creatett <username>'];
-handler.tags = ['rpg'];
-handler.command = /^(creatett)$/i;
-
-export default handler;
+export { pluginConfig as config, handler };

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from 'axios'
 import FormData from 'form-data'
 import * as cheerio from 'cheerio'
@@ -55,7 +52,7 @@ const pluginConfig = {
     category: 'ephoto',
     description: 'Buat efek text keren dengan berbagai style',
     usage: '.<effect> <text>',
-    example: '.glitchtext rimuru-AI',
+    example: '.glitchtext Rimuru-AI',
     isOwner: false,
     isPremium: false,
     isGroup: false,
@@ -123,12 +120,12 @@ async function handler(m, { sock }) {
             `🎨 *ᴇᴘʜᴏᴛᴏ ᴇꜰꜰᴇᴄᴛs*\n\n` +
             `> Buat efek text keren!\n\n` +
             `╭┈┈⬡「 📋 *ᴅᴀꜰᴛᴀʀ ᴇꜰᴇᴋ* 」\n${effectList}\n╰┈┈┈┈┈┈┈┈⬡\n\n` +
-            `> *Contoh:* ${m.prefix}glitchtext rimuru-AI`
+            `> *Contoh:* ${m.prefix}glitchtext Rimuru-AI`
         )
     }
     
     if (!text) {
-        return m.reply(`❌ *ᴇʀʀᴏʀ*\n\n> Masukkan text!\n> *Contoh:* ${m.prefix}${command} rimuru-AI`)
+        return m.reply(`❌ *ᴇʀʀᴏʀ*\n\n> Masukkan text!\n> *Contoh:* ${m.prefix}${command} Rimuru-AI`)
     }
     
     const effectUrl = EFFECT_URLS[command]

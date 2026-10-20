@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import config from "../../config.js";
 
 const EXP_PER_LEVEL = 10000;
@@ -127,7 +126,7 @@ async function checkAndNotifyLevelUp(sock, m, db, user, oldExp, newExp) {
     ctx.fillText(xpInfo, barX + 15, barY + 21);
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.font = "12px sans-serif";
-    ctx.fillText(RIMURU_CORE_CONFIG.bot.name, 230, 245);
+    ctx.fillText(config.bot.name, 230, 245);
     return canvas.toBuffer("image/png");
   }
   const oldLevel = calculateLevel(oldExp);
@@ -149,9 +148,9 @@ async function checkAndNotifyLevelUp(sock, m, db, user, oldExp, newExp) {
     }
 
     const role = getRole(newLevel);
-    const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || botName;
+    const botName = config.bot?.name || "Rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || botName;
 
     let ppBuffer = null;
     try {

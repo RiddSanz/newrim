@@ -102,7 +102,24 @@ async function live3d(buffer, prompt) {
   }
 }
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "editimg2",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   try {
     const q    = m.quoted ? m.quoted : m
     const mime = (q.msg || q).mimetype || ''
@@ -129,8 +146,4 @@ let handler = async (m, { conn, text }) => {
   }
 }
 
-handler.help    = ['editimg2 <prompt>']
-handler.tags    = ['ai']
-handler.command = /^editimg2$/i
-
-export default handler
+export { pluginConfig as config, handler };

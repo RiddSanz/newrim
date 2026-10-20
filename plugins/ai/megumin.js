@@ -3,7 +3,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch'
 
-let handler = async (m, { text, usedPrefix, command, conn }) => {
+const pluginConfig = {
+  name: "meguminai",
+  alias: ["megu"],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command, sock }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(
       `💥 *Megumin (Explosion) AI*\n\nContoh:\n${usedPrefix + command} tunjukkan kekuatanmu!`
@@ -62,9 +80,4 @@ Gunakan kata-kata dramatis seperti "Waga na wa Megumin!", "Explosion!", atau "Ke
   }
 }
 
-handler.help = ['meguminai']
-handler.tags = ['ai']
-handler.command = /^(meguminai|megu)$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

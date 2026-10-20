@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG, RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import path from 'path'
 import fs from 'fs'
@@ -23,16 +19,16 @@ const pluginConfig = {
 }
 
 async function handler(m, { sock }) {
-    const botName = RIMURU_CORE_CONFIG.bot?.name || 'rimuru-AI'
-    const version = RIMURU_CORE_CONFIG.bot?.version || '1.0.0'
-    const developer = RIMURU_DEVELOPER || 'Lucky Archz'
+    const botName = config.bot?.name || 'Rimuru-AI'
+    const version = config.bot?.version || '1.0.0'
+    const developer = config.bot?.developer || 'Lucky Archz'
 
     const credits = [
         { name: 'hyuuOkkotsuX', role: 'Lead Staff', icon: '👨‍💻' },
-        { name: 'Zann', role: 'Creator rimuru dan APK Stardem rimuru', icon: '👨‍💻' },
-        { name: 'SenzOkkotsu', role: 'Developer', icon: '😎' },
+        { name: 'Zann', role: 'Creator Rimuru MD dan APK Stardem Rimuru', icon: '👨‍💻' },
+        { name: 'SenzOkkotsu', role: 'Developer', icon: '👨‍💻' },
         { name: 'Ell', role: 'Developer', icon: '👨‍💻' },
-        { name: 'Aqell', role: 'Developer SC BUG rimuru Glitch', icon: '👨‍💻' },
+        { name: 'Aqell', role: 'Developer SC BUG Rimuru Glitch', icon: '👨‍💻' },
         { name: 'Mobbc', role: 'Staff', icon: '👨‍💻' },
         { name: 'Raka', role: 'Staff', icon: '👨‍💻' },
         { name: 'Sanxz', role: 'Tangan Kanan', icon: '👨‍💻' },
@@ -42,7 +38,7 @@ async function handler(m, { sock }) {
         { name: 'Sabila', role: 'Tangan Kanan', icon: '👩‍💻' },
         { name: 'Syura Store', role: 'Tangan Kanan', icon: '👩‍💻' },
         { name: 'Xero', role: 'Tangan Kanan', icon: '👩‍💻' },
-        { name: 'Aji', role: 'Tangan Kanan', icon: '👩‍💻' },
+        { name: 'Anita', role: 'Tangan Kanan', icon: '👩‍💻' },
         { name: 'Lyoraaa', role: 'Owner', icon: '👩‍💻' },
         { name: 'Danzzz', role: 'Owner', icon: '👨‍💻' },
         { name: 'Muzan', role: 'Owner', icon: '👨‍💻' },
@@ -84,6 +80,7 @@ async function handler(m, { sock }) {
         { name: 'Taka', role: 'Partner', icon: '🛒' },
         { name: 'Tatskuyy', role: 'Partner', icon: '🛒' },
         { name: 'Yann', role: 'Partner', icon: '🛒' },
+        { name: 'Zanspiw', role: 'Youtuber', icon: '🌐' },
         { name: 'Danzz Nano', role: 'Youtuber', icon: '🌐' },
         { name: 'Youtuber Lain yang udah review', role: 'Youtuber', icon: '🌐' },
         { name: 'Kalian Semua', role: 'Best', icon: '🌐' },
@@ -94,7 +91,7 @@ async function handler(m, { sock }) {
     const headers = ['No', 'Nama', 'Role / Tier']
     const rows = credits.map((c, i) => [i + 1, c.name, c.role])
 
-    await m.reply(`✨ *Berikut ini adalah orang orang yang sudah berkontribusi di bot ini (Senz Ganteng jir) ${RIMURU_CORE_CONFIG.bot.name}*
+    await m.reply(`🍟 *Berikut ini adalah orang orang yang sudah berkontribusi di bot ${config.bot.name}*
         
 ${credits.map((c, i) => `*${i + 1}*. *${c.name}* [ ${c.icon} ${c.role} ]`).join('\n')}}`)
 }

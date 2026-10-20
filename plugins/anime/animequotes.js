@@ -32,7 +32,24 @@ async function animequote() {
   }
 }
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "animequotes",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   try {
     let data = await animequote()
     let res = data[Math.floor(Math.random() * data.length)]
@@ -53,9 +70,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['animequotes']
-handler.tags = ['anime']
-handler.command = /^animequotes$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

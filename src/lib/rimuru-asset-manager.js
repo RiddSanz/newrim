@@ -1,176 +1,104 @@
 import fs from 'fs';
 import path from 'path';
-import axios from 'axios';
-import https from 'https';
 import { logger } from './rimuru-logger.js';
-import config from '../../config.js';
 
-// Memory cache for both local and remote assets.
-const assetCache = Object.create(null);
-const remoteCache = new Map();
-
-function isRemoteUrl(value) {
-  return typeof value === 'string' && /^https?:\/\//i.test(value);
-}
-
-const httpsAgent = new https.Agent({
-  family: 4,
-  keepAlive: true,
-});
-
-const RETRYABLE_ERRORS = new Set([
-  'ECONNREFUSED',
-  'ECONNRESET',
-  'ETIMEDOUT',
-  'EAI_AGAIN',
-  'ENETUNREACH',
-  'EHOSTUNREACH',
-]);
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function requestRemoteBuffer(url, timeout) {
-  const response = await axios.get(url, {
-    responseType: 'arraybuffer',
-    timeout,
-    maxContentLength: 50 * 1024 * 1024,
-    maxBodyLength: 50 * 1024 * 1024,
-    proxy: false,
-    httpsAgent,
-    headers: { 'User-Agent': 'Mozilla/5.0 Rimuru-MD AssetLoader' },
-    validateStatus: status => status >= 200 && status < 300,
-  });
-
-  return Buffer.from(response.data);
-}
-
-async function fetchRemoteBuffer(url, timeout = 30000) {
-  if (!isRemoteUrl(url)) return null;
-  if (remoteCache.has(url)) return remoteCache.get(url);
-
-  let lastError;
-
-  // Direct request first. Retries handle transient Catbox/DNS/socket failures.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const buffer = await requestRemoteBuffer(url, timeout);
-      remoteCache.set(url, buffer);
-      return buffer;
-    } catch (e) {
-      lastError = e;
-      const code = e?.code || e?.cause?.code;
-      if (!RETRYABLE_ERRORS.has(code) && attempt === 0) break;
-      if (attempt < 2) await sleep(750 * (attempt + 1));
-    }
-  }
-
-  // Image-only fallback: let a public image proxy fetch the original URL.
-  // This keeps the configured asset URL unchanged and only activates when
-  // the origin itself cannot be reached from the bot host.
-  if (/^https?:\/\/files\.catbox\.moe\//i.test(url) &&
-      /\.(?:jpe?g|png|webp|gif)(?:\?.*)?$/i.test(url)) {
-    const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
-    try {
-      const buffer = await requestRemoteBuffer(proxyUrl, timeout);
-      remoteCache.set(url, buffer);
-      return buffer;
-    } catch (e) {
-      lastError = e;
-    }
-  }
-
-  throw lastError || new Error('Remote asset request failed');
-}
+// Memory cache for all local assets
+const assetCache = {};
 
 /**
- * Preload all configured single-file assets into memory. Remote URLs are fetched
- * once at startup so existing synchronous consumers can keep receiving Buffers.
+ * Preload all assets into memory at startup.
+ * @param {Object} configAssets - botConfig.assets or config.assets object
  */
 export async function preloadAssets(configAssets) {
   if (!configAssets) return;
 
-  const entries = Object.entries(configAssets);
-  for (const [key, value] of entries) {
-    try {
-      if (typeof value === 'string' && isRemoteUrl(value)) {
-        const buffer = await fetchRemoteBuffer(value);
-        if (buffer) {
-          assetCache[key] = buffer;
-          logger.system('CACHE', `Loaded remote: ${key}`);
-        }
-        continue;
-      }
+  await Promise.all(
+    Object.entries(configAssets).map(async ([key, filepath]) => {
+      try {
+        if (typeof filepath !== "string") return;
 
-      if (typeof value === 'string') {
-        const fullPath = path.resolve(process.cwd(), value);
+        if (filepath.startsWith("http://") || filepath.startsWith("https://")) {
+          try {
+            const response = await fetch(filepath, {
+              headers: { "User-Agent": "Mozilla/5.0" },
+              signal: AbortSignal.timeout(15000),
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const buf = Buffer.from(await response.arrayBuffer());
+            assetCache[key] = buf;
+            logger.system("CACHE", `Loaded: ${key}`);
+            return;
+          } catch (remoteError) {
+            // Keep a local fallback when the remote asset cannot be reached.
+            const filename = path.basename(new URL(filepath).pathname);
+            const fallbackPath = path.resolve(process.cwd(), "assets", "image", filename);
+            if (fs.existsSync(fallbackPath)) {
+              assetCache[key] = fs.readFileSync(fallbackPath);
+              logger.warn("CACHE", `Remote unavailable for ${key}, using local fallback`);
+            } else {
+              logger.warn("CACHE", `Failed to load ${key}: ${remoteError.message}`);
+            }
+            return;
+          }
+        }
+
+        const fullPath = path.resolve(process.cwd(), filepath);
         if (fs.existsSync(fullPath)) {
           assetCache[key] = fs.readFileSync(fullPath);
-          logger.system('CACHE', `Loaded: ${key}`);
+          logger.system("CACHE", `Loaded: ${key}`);
         } else {
-          logger.warn('CACHE', `File not found: ${fullPath}`);
+          logger.warn("CACHE", `File not found: ${fullPath}`);
         }
+      } catch (e) {
+        logger.error("CACHE", `Failed to load ${key}: ${e.message}`);
       }
-    } catch (e) {
-      logger.error('CACHE', `Failed to load ${key}: ${e.message}`);
-    }
-  }
+    })
+  );
 }
 
+import config from '../../config.js';
+
 /**
- * Get the cached asset buffer by key. Local assets are loaded synchronously;
- * remote assets are expected to have been preloaded by preloadAssets().
+ * Get the cached asset buffer by key (e.g. 'rimuru', 'rimuru2').
+ * If not in cache but available in config, loads it synchronously.
+ * 
+ * @param {string} key - The asset key defined in config.assets
+ * @param {Object} [configAssets] - Optional config.assets reference for fallback
+ * @returns {Buffer | null} The asset as a Buffer, or null if missing.
  */
 export function getAssetBuffer(key, configAssets = null) {
-  if (assetCache[key]) return assetCache[key];
-
-  const assets = configAssets || config?.assets;
-  const value = assets?.[key];
-  if (isRemoteUrl(value)) {
-    // A remote asset must be preloaded because this API is synchronous.
-    return null;
+  if (assetCache[key]) {
+    return assetCache[key];
   }
-
-  if (typeof value === 'string') {
+  
+  const assets = configAssets || config?.assets;
+  if (assets && assets[key] && !assets[key].startsWith('http')) {
     try {
-      const fullPath = path.resolve(process.cwd(), value);
+      const fullPath = path.resolve(process.cwd(), assets[key]);
       if (fs.existsSync(fullPath)) {
         const buf = fs.readFileSync(fullPath);
-        assetCache[key] = buf;
+        assetCache[key] = buf; 
         return buf;
       }
     } catch (e) {
       console.error(`  ✖  ERR   Failed to read ${key} from disk:`, e.message);
     }
   }
-
+  
   return null;
 }
 
-/** Fetch an arbitrary asset URL with an in-memory cache. */
-export async function getRemoteAssetBuffer(url) {
-  return fetchRemoteBuffer(url);
-}
-
-/** Return a random shuffle image as a Buffer. */
-export async function getRandomShuffleAssetBuffer(urls = config?.assets?.shuffleUrls) {
-  if (!Array.isArray(urls) || urls.length === 0) return null;
-  const url = urls[Math.floor(Math.random() * urls.length)];
-  try {
-    return await fetchRemoteBuffer(url);
-  } catch (e) {
-    logger.warn('SHUFFLE', `Failed to fetch remote shuffle image: ${e.message}`);
-    return null;
-  }
-}
-
 /**
- * Update an asset buffer in memory and optionally save it to disk.
+ * Update an asset buffer in memory and save it to disk (useful for owner commands that change assets).
+ * 
+ * @param {string} key - Asset key
+ * @param {Buffer} buffer - New asset buffer
+ * @param {string} filepath - The path where it should be saved
  */
 export function updateAssetAndSave(key, buffer, filepath) {
   assetCache[key] = buffer;
-  if (filepath && !isRemoteUrl(filepath)) {
+  if (filepath && !filepath.startsWith('http')) {
     try {
       const fullPath = path.resolve(process.cwd(), filepath);
       fs.writeFileSync(fullPath, buffer);

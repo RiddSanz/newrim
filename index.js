@@ -1,15 +1,14 @@
-import { RIMURU_CORE_CONFIG, RIMURU_DEVELOPER } from "./rimuru.js";
 import path from "path";
 import fs from "fs";
 import config from "./config.js";
-import { startConnection } from "./src/handler.js";
+import { startConnection } from "./src/connection.js";
 import {
   messageHandler,
   groupHandler,
   messageUpdateHandler,
   groupSettingsHandler,
   handleAntiRemoveFromUpsert,
-} from "./src/connection.js";
+} from "./src/handler.js";
 import { loadPlugins, pluginStore } from "./src/lib/rimuru-plugins.js";
 import { initDatabase, getDatabase } from "./src/lib/rimuru-database.js";
 import {
@@ -26,7 +25,6 @@ import { startMemoryMonitor } from "./src/lib/rimuru-memory-monitor.js";
 import { startTempCleaner } from "./src/lib/rimuru-temp-cleaner.js";
 import { startDailyPruner } from "./src/lib/rimuru-data-pruner.js";
 import { preloadAssets } from "./src/lib/rimuru-asset-manager.js";
-import { startOrderPoller } from "./src/lib/orderPoller.js";
 import {
   logger,
   c,
@@ -243,9 +241,9 @@ function setupAntiCrash() {
 
 async function main() {
   await playBootSequence({
-    name: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-    version: RIMURU_CORE_CONFIG.bot?.version || "1.0.0",
-    developer: RIMURU_DEVELOPER || "Developer",
+    name: config.bot?.name || "Rimuru-AI",
+    version: config.bot?.version || "1.0.0",
+    developer: config.bot?.developer || "Developer",
     mode: config.mode || "public",
   });
   setupAntiCrash();
@@ -307,17 +305,25 @@ async function main() {
     },
 
     onMessage: async (msg, sock) => {
+      let handlerTimeout;
       try {
         const handlerPromise = messageHandler(msg, sock);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Handler timeout")), 60000),
-        );
+        const timeoutPromise = new Promise((_, reject) => {
+          handlerTimeout = setTimeout(
+            () => reject(new Error("Handler timeout")),
+            60000,
+          );
+        });
         await Promise.race([handlerPromise, timeoutPromise]);
       } catch (error) {
         if (error.message !== "Handler timeout") {
           logger.error("HANDLER", error.message);
           if (config.dev?.debugLog) console.error(c.gray(error.stack));
         }
+      } finally {
+        // Jangan biarkan timeout 60 detik tertinggal untuk setiap pesan yang
+        // sudah selesai diproses; ini mengurangi timer aktif saat chat ramai.
+        if (handlerTimeout) clearTimeout(handlerTimeout);
       }
     },
 

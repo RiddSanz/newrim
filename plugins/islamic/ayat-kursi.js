@@ -2,7 +2,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 
 import fetch from 'node-fetch'
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "ayatkursi",
+  alias: [],
+  category: "islamic",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   let caption = `
 *「 Ayat Kursi 」*
 
@@ -18,9 +35,5 @@ Allah mengetahui apa-apa yang di hadapan mereka dan di belakang mereka, dan mere
 conn.sendMessage(m.chat, { image: { url: 'https://telegra.ph/file/3b1af1497b25621e4859c.jpg' }, caption: caption, viewOnce: true, footer: author }, { quoted: m });
 await m.reply('sɪʟᴀʜᴋᴀɴᴋᴀɴ ᴋᴀᴋ ʙᴜᴋᴀ ғᴏᴛᴏ 𝟷× ʟɪʜᴀᴛɴʏᴀ ᴛᴇʀɪᴍᴀᴋᴀsɪʜ') 
 }
-handler.help = ['ayatkursi']
-handler.tags = ['quran']
-handler.command = /^(ayatkursi)$/i
-handler.limit = true
 
-export default handler
+export { pluginConfig as config, handler };

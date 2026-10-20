@@ -1,7 +1,6 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+import config from "../../config.js";
 
-
-const CHANNEL_ID = "120363402057133599@newsletter"
+const CHANNEL_ID = config.saluran?.id
 
 const pluginConfig = {
 name: "uppreset",

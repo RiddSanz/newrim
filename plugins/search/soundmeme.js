@@ -12,11 +12,28 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-let handler = async (m, {
-    conn,
+const pluginConfig = {
+  name: "soundmeme2",
+  alias: [],
+  category: "search",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, {
+    sock,
     text,
     command
-}) => {
+}) {
+    const conn = sock;
     const baseUrl = 'https://www.myinstants.com/en/search/?name=';
 
     if (command === 'soundmeme-listnama') {
@@ -178,8 +195,4 @@ let handler = async (m, {
     }
 };
 
-handler.command = /^soundmeme2/i;
-handler.help = ['soundmeme-listnama nama', 'soundmeme-random', 'soundmeme-search nama'];
-handler.tags = ['search', 'fun'];
-handler.limit = false
-export default handler;
+export { pluginConfig as config, handler };

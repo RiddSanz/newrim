@@ -1,10 +1,7 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 /*
 By : ZenzzXD
 Canvas Fake Instagram Profile
-Source bahan : https://whatsapp.com/channel/0029VbCHRSDAzNboLatr0W0o/502
+Source bahan : https://whatsapp.com/channel/RIMURU_CHANNEL
 */
 
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';

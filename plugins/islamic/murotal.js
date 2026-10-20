@@ -1,7 +1,25 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler  = async (m, { conn, usedPrefix: _p }) => {
+const pluginConfig = {
+  name: "murothal",
+  alias: [],
+  category: "islamic",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix: _p }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 let elaina = `
 QUR'AN BOT:
 Via Copas {SEBARKAN}
@@ -51,13 +69,7 @@ Juz 30 ⇨ http://j.mp/2bFREcc`
       mentionedJid: [m.sender],
       }}}}}, {})
 }
-handler.help = ['murothal']
-handler.tags = ['quotes']
-handler.command = /^(murothal)$/i
-handler.owner = false
 handler.mods = false
-handler.premium = false
-handler.group = false
 handler.private = false
 
 handler.admin = false
@@ -65,4 +77,4 @@ handler.botAdmin = false
 
 handler.fail = null
 
-export default handler
+export { pluginConfig as config, handler };

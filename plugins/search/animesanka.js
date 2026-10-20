@@ -15,7 +15,6 @@ const config = {
     isEnabled: true
 }
 
-
 const baseURL = 'https://www.sankavollerei.com/anime'
 
 async function fetchJson(url) {

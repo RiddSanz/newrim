@@ -1,13 +1,30 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let { MessageType } = (await import('@itsliaaa/baileys')).default
+let { MessageType } = (await import('rimuru')).default
 
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)]
 }
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "minecraftbattle",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   try {
     // Inisialisasi database global
     global.db.data = global.db.data || {}
@@ -86,9 +103,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['minecraftbattle']
-handler.tags = ['rpg']
-handler.command = /^minecraftbattle$/i
-handler.group = true
-
-export default handler
+export { pluginConfig as config, handler };

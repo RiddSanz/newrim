@@ -8,11 +8,29 @@ Instagram: https://instagram.com/tulisan.ku.id
 ini wm gw cok jan di hapus
 */
 
-let handler = async (m, {
-	conn,
+const pluginConfig = {
+  name: "listown",
+  alias: ["er", "ers"],
+  category: "owner",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, {
+	sock,
 	text,
-	usedPrefix
-}) => {
+	prefix
+}) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 	let response = "• *OWNER SUBSCRIPTION*\n\n";
 	let totalOwner = 0;
 
@@ -40,9 +58,4 @@ let handler = async (m, {
 	});
 }
 
-handler.help =  ['listowner']
-handler.command = /^(listown(er|ers)?)$/i
-handler.tags = ['owner']
-
-handler.owner = true
-export default handler
+export { pluginConfig as config, handler };

@@ -4,7 +4,23 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "ikiru",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
   if (!text)
     return m.reply("Contoh:\n.ikiru Solo Leveling");
 
@@ -154,8 +170,4 @@ let handler = async (m, { text }) => {
   }
 };
 
-handler.command = /^ikiru$/i;
-handler.tags = ["search", "anime"];
-handler.help = ["ikiru <judul>"];
-
-export default handler;
+export { pluginConfig as config, handler };

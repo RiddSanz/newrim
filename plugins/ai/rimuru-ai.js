@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { UnlimitedAI } from "../../src/scraper/unlimitedai.js";
 import te from "../../src/lib/rimuru-error.js";
 
@@ -8,7 +5,7 @@ const pluginConfig = {
   name: "rimuru-ai",
   alias: ["rimuruai", "rimuru"],
   category: "ai",
-  description: "Chat dengan rimuru AI — Asisten bot cerdas",
+  description: "Chat dengan Rimuru AI — Asisten bot cerdas",
   usage: ".rimuru-ai <pertanyaan>",
   example: ".rimuru-ai Apa itu Node.js?",
   isOwner: false,
@@ -24,7 +21,7 @@ async function handler(m, { sock }) {
   const text = m.args.join(" ");
   if (!text) {
     return m.reply(
-      `🤖 *rimuru AI*\n\n` +
+      `🤖 *Rimuru AI*\n\n` +
         `> Asisten cerdas siap membantu\n\n` +
         `*PENGGUNAAN:*\n` +
         `> *${m.prefix}rimuru-ai <pertanyaan>*\n\n` +
@@ -40,7 +37,7 @@ async function handler(m, { sock }) {
 
     if (!result.status) {
       await m.react("☢");
-      return m.reply(`❌ *rimuru AI Error*\n\n> ${result.error || "Gagal mendapatkan respons"}`);
+      return m.reply(`❌ *Rimuru AI Error*\n\n> ${result.error || "Gagal mendapatkan respons"}`);
     }
 
     await m.react("✅");

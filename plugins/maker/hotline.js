@@ -3,6 +3,22 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import axios from "axios";
 
+const pluginConfig = {
+  name: "hotline",
+  alias: [],
+  category: "maker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, usedPrefix, command }) => {
     await m.react("🕐");
 
@@ -44,9 +60,4 @@ const handler = async (m, { conn, usedPrefix, command }) => {
     }
 };
 
-handler.help = ["hotline teks|teks"];
-handler.tags = ["maker"];
-handler.command = /^hotline$/i;
-handler.limit = true;
-
-export default handler;
+export { pluginConfig as config, handler };

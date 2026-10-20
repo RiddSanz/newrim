@@ -12,7 +12,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
   ✺ Note    : gunain untuk membaca atau decode QR code langsung dari gambar, buat uji coba pake fitur qrcode lalu readqr juga bisa, tq to Zenz telah mencari web atau api nya ygy
 */
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "readqr",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     try {
         let q = m.quoted ? m.quoted : m;
         let mime = (q.msg || q).mimetype || "";
@@ -54,10 +72,6 @@ ${result.data}
     }
 };
 
-handler.help = ["readqr"];
-handler.tags = ["tools"];
-handler.command = /^(readqr)$/i;
-handler.limit = true;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
-export default handler;
+export { pluginConfig as config, handler };

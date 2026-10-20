@@ -6,7 +6,24 @@ import similarity from 'similarity'
 const timeout = 30000
 const reward = 5000
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "kuis",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   conn.kuis = conn.kuis ? conn.kuis : {}
 
   let id = m.chat
@@ -31,11 +48,6 @@ let handler = async (m, { conn }) => {
   ]
 }
 
-handler.help = ['kuis']
-handler.tags = ['game']
-handler.command = /^kuis$/i
-
-export default handler
 
 handler.before = async function (m, { conn }) {
   conn.kuis = conn.kuis ? conn.kuis : {}
@@ -105,3 +117,5 @@ const kuisData = [
   { soal: 'Pesawat jatuh kapal tenggelam munculnya dimana?', jawaban: 'di berita' },
   { soal: 'Apa yang ada di tengah sawah?', jawaban: 'w' },
 ]
+
+export { pluginConfig as config, handler };

@@ -1,64 +1,68 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import * as _canvas from '@napi-rs/canvas';
-import axios from "axios";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
+import axios from "axios";
 
 const pluginConfig = {
   name: "afinitasml",
-  alias: [],
+  alias: ["afinitas", "mlafinitas"],
   category: "canvas",
-  description: "Membuat profil ML dengan bingkai Afinitas",
-  usage: ".afinitasml (reply/kirim foto) [nomor bg]",
-  example: ".afinitasml 1",
+  description: "Bikin card afinitas ML dari fotomu",
+  usage: ".afinitasml (reply/kirim foto) [bgNum]",
+  example: ".afinitasml 2",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
 
 async function handler(m, { sock }) {
-  let buffer = null;
+  let media = null;
+  const msgObj = m.quoted?.message ? m.quoted : m;
+  const type = getContentType(msgObj.message);
+
+  if (!type || type !== "imageMessage") {
+    return m.reply(`⚠️ Harap kirim atau reply foto dengan perintah \`${m.prefix}${m.command}\``);
+  }
   
-  if (m.quoted && (m.quoted.type === "imageMessage" || m.quoted.mtype === "imageMessage")) {
-    try { buffer = await m.quoted.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else if (m.isMedia && m.type === "imageMessage") {
-    try { buffer = await m.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else {
-    return m.reply(`🎮 *ᴀꜰɪɴɪᴛᴀꜱ ᴍʟ*\n\n> Kirim/reply gambar untuk dijadikan avatar!\n> Kamu juga bisa menambahkan nomor background (1-6) di akhir perintah.\n\nContoh: \`.afinitasml 3\``);
-  }
-
-  m.react("🕕");
-
-  const backgrounds = [
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225640136.png",
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225645439.png",
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225653904.png",
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225659927.png",
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225664898.png",
-    "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225669507.png"
-  ];
-
-  let index = Math.floor(Math.random() * backgrounds.length);
-  const bgNum = m.text?.trim();
-  if (bgNum) {
-    const n = parseInt(bgNum);
-    if (!isNaN(n) && n >= 1 && n <= backgrounds.length) {
-      index = n - 1;
-    }
-  }
-
+  await m.react("🕕");
+  
   try {
-    const userImage = await _canvas.loadImage(buffer);
-    const bg = await _canvas.loadImage(backgrounds[index]);
-    const avatarBorder = await _canvas.loadImage("https://c.termai.cc/i128/BOc3D5a.png");
+    media = await downloadMediaMessage(msgObj, "buffer", {});
+    if (!media) throw new Error("Gagal membaca media");
 
-    const canvas = _canvas.createCanvas(bg.width, bg.height);
+    const bgNum = m.text?.trim() || "";
+
+    const backgrounds = [
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225640136.png",
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225645439.png",
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225653904.png",
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225659927.png",
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225664898.png",
+      "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772225669507.png"
+    ];
+
+    let index = Math.floor(Math.random() * backgrounds.length);
+    if (bgNum) {
+      const n = parseInt(bgNum);
+      if (!isNaN(n) && n >= 1 && n <= backgrounds.length) {
+        index = n - 1;
+      }
+    }
+
+    const [bgBuffer, avatarBorderBuffer] = await Promise.all([
+      axios.get(backgrounds[index], { responseType: "arraybuffer" }).then(r => r.data),
+      axios.get("https://c.termai.cc/i128/BOc3D5a.png", { responseType: "arraybuffer" }).then(r => r.data)
+    ]);
+
+    const userImage = await loadImage(media);
+    const bg = await loadImage(Buffer.from(bgBuffer));
+    const avatarBorder = await loadImage(Buffer.from(avatarBorderBuffer));
+
+    const canvas = createCanvas(bg.width, bg.height);
     const ctx = canvas.getContext("2d");
 
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
@@ -94,12 +98,13 @@ async function handler(m, { sock }) {
       avatarSize + pad * 2
     );
 
-    const finalBuffer = await canvas.encode("png");
-    await sock.sendMedia(m.chat, finalBuffer, null, m, { type: "image" });
-    m.react("✅");
-  } catch (error) {
-    m.react("❌");
-    m.reply(`❌ Terjadi kesalahan saat memproses gambar.`);
+    const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "📱 *Afinitas ML*" }, { quoted: m });
+    await m.react("✅");
+
+  } catch (err) {
+    await m.react("☢");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

@@ -49,7 +49,24 @@ const getFormattedDate = (date) => {
     return `${day}/${month}/${year}`;
 };
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "totalpesan",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
     let chatData = loadChatData();
     const messages = conn.chats[m.chat]?.messages || {};
     const participants = (await conn.groupMetadata(m.chat)).participants;
@@ -98,9 +115,4 @@ let handler = async (m, { conn }) => {
     );
 };
 
-handler.help = ['totalpesan'];
-handler.tags = ['group'];
-handler.command = /^(totalpesan)$/i;
-handler.group = true;
-
-export default handler;
+export { pluginConfig as config, handler };

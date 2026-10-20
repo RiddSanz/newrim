@@ -1,10 +1,7 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import te from "../../src/lib/rimuru-error.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "ourin";
+import { prepareWAMessageMedia, generateWAMessageFromContent } from "rimuru";
 
 const pluginConfig = {
   name: ["gachawaifu", "waifuaction", "tinggalinwaifu", "waifuku", "istriku"],
@@ -53,7 +50,7 @@ const waifuPool = [
   { name: "Kaguya Shinomiya", age: 17, height: "158 cm", weight: "46 kg", tier: "Rare", keyword: "Kaguya Shinomiya aesthetic", weightChance: 30 },
 
   // Epic (15% weight)
-  { name: "Rimuru", age: 18, height: "155 cm", weight: "45 kg", tier: "Epic", keyword: "Rimuru wandering witch aesthetic icon", weightChance: 15 },
+  { name: "Elaina", age: 18, height: "155 cm", weight: "45 kg", tier: "Epic", keyword: "Elaina wandering witch aesthetic icon", weightChance: 15 },
   { name: "Yor Forger", age: 27, height: "170 cm", weight: "55 kg", tier: "Epic", keyword: "Yor Forger aesthetic icon", weightChance: 15 },
   { name: "Makima", age: 24, height: "173 cm", weight: "58 kg", tier: "Epic", keyword: "Makima aesthetic icon", weightChance: 15 },
   { name: "Power", age: 17, height: "170 cm", weight: "52 kg", tier: "Epic", keyword: "Power chainsaw man aesthetic", weightChance: 15 },
@@ -66,7 +63,7 @@ const waifuPool = [
   { name: "Firefly", age: 20, height: "158 cm", weight: "47 kg", tier: "Epic", keyword: "Firefly honkai star rail aesthetic", weightChance: 15 },
 
   // Legendary (5% weight)
-  { name: "Rimuru", age: 16, height: "170 cm", weight: "55 kg", tier: "Legendary", keyword: "Rimuru aesthetic icon", weightChance: 5 },
+  { name: "Zero Two", age: 16, height: "170 cm", weight: "55 kg", tier: "Legendary", keyword: "Zero Two aesthetic icon", weightChance: 5 },
   { name: "Kurumi Tokisaki", age: 17, height: "157 cm", weight: "46 kg", tier: "Legendary", keyword: "Kurumi Tokisaki aesthetic", weightChance: 5 },
   { name: "Saber (Artoria)", age: 24, height: "154 cm", weight: "42 kg", tier: "Legendary", keyword: "Saber Artoria Pendragon icon", weightChance: 5 },
   { name: "Frieren", age: 1000, height: "152 cm", weight: "40 kg", tier: "Legendary", keyword: "Frieren aesthetic icon", weightChance: 5 },

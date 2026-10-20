@@ -3,6 +3,22 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fs from "fs"
 
+const pluginConfig = {
+  name: "bankcek",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn }) => {
   const who = m.mentionedJid && m.mentionedJid[0]
     ? m.mentionedJid[0]
@@ -50,14 +66,7 @@ const handler = async (m, { conn }) => {
   }, { quoted: m })
 }
 
-handler.help = ['bankcek']
-handler.tags = ['rpg']
-handler.command = /^(bankcek)$/i
 handler.register = true
-handler.group = true
-handler.rpg = true
-export default handler
-
 const flaImg = [
   'https://flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=water-logo&fontsize=90&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&fillTextColor=%23000&shadowGlowColor=%23000&backgroundColor=%23000&text=',
   'https://flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=crafts-logo&fontsize=90&doScale=true&scaleWidth=800&scaleHeight=500&text=',
@@ -67,3 +76,5 @@ const flaImg = [
 ]
 
 const toRupiah = number => parseInt(number).toLocaleString().replace(/,/g, ".")
+
+export { pluginConfig as config, handler };

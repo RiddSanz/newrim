@@ -73,6 +73,22 @@ class Uptodown {
 }
 
 
+const pluginConfig = {
+  name: "uptodown",
+  alias: [],
+  category: "search",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, args }) => {
     if (!args[0]) {
         return m.reply("Masukkan nama aplikasi untuk mencari.");
@@ -126,9 +142,4 @@ const handler = async (m, { conn, args }) => {
     }
 };
 
-handler.help = ['uptodown'].map(v => v + ' <nama aplikasi>');
-handler.command = /^(uptodown)$/i;
-handler.tags = ["search"]
-handler.limit = false;
-
-export default handler;
+export { pluginConfig as config, handler };

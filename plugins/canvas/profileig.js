@@ -1,10 +1,7 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
 import { uploadImage } from "../../src/lib/rimuru-uploader.js";
-import { downloadMediaMessage } from "ourin";
+import { downloadMediaMessage } from "rimuru";
 
 const pluginConfig = {
     name: "profileig",
@@ -26,10 +23,10 @@ async function handler(m, { sock, text }) {
     if (!text) return m.reply(`Format salah!\n\n> Contoh: .profileig 10M|1|150|jokowi|Presiden RI|true\n> \n> _Catatan: Reply gambar untuk dijadikan foto profil._`);
     const [pengikut, mengikuti, postingan, username, bio, verif] = text.split("|").map(v => v.trim());
     if (!pengikut || !mengikuti || !postingan || !username || !bio || !verif) return m.reply(`Pastikan semua argumen diisi dengan benar, dipisah dengan tanda |.`);
-
+    
     let imgUrl = "";
     const isImage = m.type === "imageMessage" || (m.quoted && m.quoted.type === "imageMessage");
-
+    
     await m.react("🕕");
     try {
         if (isImage) {
@@ -44,9 +41,9 @@ async function handler(m, { sock, text }) {
                 imgUrl = "https://i.ibb.co/3Fh9Q6M/blank-profile-picture.png";
             }
         }
-
+        
         const url = `https://kyzznekoo.zone.id/api/canvas/profileig?url=${encodeURIComponent(imgUrl)}&pengikut=${encodeURIComponent(pengikut)}&mengikuti=${encodeURIComponent(mengikuti)}&postingan=${encodeURIComponent(postingan)}&username=${encodeURIComponent(username)}&bio=${encodeURIComponent(bio)}&verif=${encodeURIComponent(verif)}`;
-
+        
         const res = await axios.get(url, {
             responseType: 'arraybuffer',
             headers: {
@@ -54,7 +51,7 @@ async function handler(m, { sock, text }) {
                 "Content-Type": "application/json"
             }
         });
-
+        
         await sock.sendMessage(m.chat, { image: Buffer.from(res.data), caption: "✅ Berhasil membuat profile IG" }, { quoted: m });
         await m.react("✅");
     } catch (e) {

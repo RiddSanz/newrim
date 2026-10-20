@@ -97,6 +97,22 @@ async function translateToIndonesian(text) {
     }
 }
 
+const pluginConfig = {
+  name: "listhero",
+  alias: ["heroml"],
+  category: "info",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, command, args }) => {
     if (command === 'listhero') {
         const heroes = await listHeroEmel();
@@ -131,9 +147,4 @@ const handler = async (m, { conn, command, args }) => {
     }
 };
 
-handler.help = ['listhero', 'heroml'].map(v => v + ' ');
-handler.command = /^(listhero|heroml)$/i;
-handler.tags = ['game'];
-handler.limit = false;
-
-export default handler;
+export { pluginConfig as config, handler };

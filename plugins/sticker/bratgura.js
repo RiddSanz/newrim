@@ -1,8 +1,5 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import axios from 'axios';
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js';
 const pluginConfig = {
     name: 'bratgura',
@@ -83,13 +80,10 @@ async function handler(m, { sock }) {
         const canvas = createCanvas(bgImage.width, bgImage.height)
         const ctx = canvas.getContext('2d')
 
-
         ctx.drawImage(bgImage, 0, 0)
 
         const W = bgImage.width
         const H = bgImage.height
-
-
 
         const textAreaX = Math.floor(W * 0.55)
         const textAreaY = Math.floor(H * 0.08)
@@ -97,7 +91,6 @@ async function handler(m, { sock }) {
         const textAreaH = Math.floor(H * 0.80)
 
         const padding = 10
-
 
         let fontSize = 80
         let lines = []
@@ -114,10 +107,8 @@ async function handler(m, { sock }) {
         const lineHeight = fontSize * 1.2
         const totalTextH = lines.length * lineHeight
 
-
         const startY = textAreaY + padding + (textAreaH - totalTextH) / 2 + fontSize
         const centerX = textAreaX + (textAreaW / 2)
-
 
         ctx.font = `bold ${fontSize}px Arial`
         ctx.fillStyle = '#000000'

@@ -12,7 +12,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
   ✺ Note    : menyediakan quick info berbasis badge, bukan untuk analisis data mendalam atau perhitungan presisi, ditanya berguna engga nya juga kurang tau v:
 */
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "npmshield",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     try {
         if (!text) {
             return m.reply(`*Contoh:* ${usedPrefix + command} /npm/dw/react`)
@@ -78,10 +96,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['npmshield'];
-handler.tags = ['tools'];
-handler.command = /^(npmshield)$/i;
-handler.limit = true;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
-export default handler
+export { pluginConfig as config, handler };

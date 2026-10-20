@@ -1,7 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import safeJson from "../../src/lib/rimuru-safe-json.js";
 import fetch from "node-fetch";
 
 const pluginConfig = {
@@ -94,7 +90,7 @@ async function handler(m, { text }) {
             timeout: 10000
         });
 
-        const json = await safeJson(res, { success: false });
+        const json = await res.json();
 
         if (json.success) {
             const region = getRegion(serverId);

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 
 async function tiktokDl(url) {
@@ -182,25 +179,21 @@ async function handler(m, { sock }) {
         `- Shares: *${result.stats.share}*\n` +
         `- Downloads: *${result.stats.download}*`;
 
-      const slides = result.data?.filter(zan => zan?.url) || [];
-      for (let idx = 0; idx < slides.length; idx++) {
-        await sock.sendMessage(
-          m.chat,
-          {
-            image: { url: slides[idx].url },
-            caption: idx === 0 ? caption : "",
-          },
-          { quoted: m },
-        );
-      }
-
-      await sock.sendButton(
+      const slides = result.data?.map((zan, idx) => ({
+        image: { url: zan.url },
+        caption: idx === 0 ? caption : "",
+      })) || [];
+      await sock.sendMessage(
         m.chat,
-        null,
-        `📸 Slide berhasil dikirim!\nTekan tombol di bawah untuk ambil music.`,
-        m,
-        { buttons: [musicButton] },
+        {
+          albumMessage: slides,
+        },
+        { quoted: m },
       );
+
+      await sock.sendButton(m.chat, null, `📸 Slide berhasil dikirim!\nTekan tombol di bawah untuk ambil music.`, m, {
+        buttons: [musicButton],
+      });
     }
     m.react("✅");
   } catch (e) {

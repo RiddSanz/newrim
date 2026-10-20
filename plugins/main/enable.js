@@ -4,7 +4,25 @@ import { getDatabase } from '../../src/lib/rimuru-database.js'
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
+const pluginConfig = {
+  name: "enable",
+  alias: ["disable", "on", "off"],
+  category: "main",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command, args, isOwner, isAdmin, isROwner }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   let isEnable = /^(enable|on)$/i.test(command)
 
   global.db.data.chats = global.db.data.chats || {}
@@ -206,8 +224,4 @@ ${usedPrefix}disable antilink
   m.reply(`✅ Berhasil ${isEnable ? 'mengaktifkan' : 'menonaktifkan'} *${type}* ${target}`)
 }
 
-handler.help = ['enable', 'disable']
-handler.tags = ['group', 'owner']
-handler.command = /^(enable|disable|on|off)$/i
-
-export default handler
+export { pluginConfig as config, handler };

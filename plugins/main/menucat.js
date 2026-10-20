@@ -1,28 +1,13 @@
-import { RIMURU_CORE_CONFIG, RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import * as botmodePlugin from "../group/botmode.js";
-import { getCasesByCategory } from "../../case/rimuru.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "ourin";
-import config from "../../config.js";
-import axios from "axios";
-import sharp from "sharp";
-import {
-  getCommandsByCategory,
-  getCategories,
-  getPlugin,
-} from "../../src/lib/rimuru-plugins.js";
-import { getDatabase } from "../../src/lib/rimuru-database.js";
-import { getTimeGreeting } from "../../src/lib/rimuru-formatter.js";
-import fs from "fs"
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
+import { getCommandsByCategory, getCategories } from "../../src/lib/rimuru-plugins.js";
+import { getCasesByCategory } from "../../case/rimuru.js";
+import config from "../../config.js";
 
 const pluginConfig = {
   name: "menucat",
   alias: ["mc", "category", "cat"],
   category: "main",
-  description: "Menampilkan commands dalam kategori tertentu",
+  description: "Menampilkan menu kategori dengan tampilan yang sama seperti AllMenu",
   usage: ".menucat <kategori>",
   example: ".menucat tools",
   isOwner: false,
@@ -34,610 +19,162 @@ const pluginConfig = {
   isEnabled: true,
 };
 
-const CATEGORY_EMOJIS = {
-  owner: "👑",
-  main: "🏠",
-  utility: "🔧",
-  fun: "🎮",
-  group: "👥",
-  download: "📥",
-  search: "🔍",
-  tools: "🛠️",
-  sticker: "🖼️",
-  ai: "🤖",
-  game: "🎯",
-  media: "🎬",
-  info: "ℹ️",
-  religi: "☪️",
-  panel: "🖥️",
-  user: "📊",
-  jpm: "📢",
-  pushkontak: "📱",
-  ephoto: "🎨",
-  store: "🛒",
-  linode: "☁️",
-  random: "🎲",
-  canvas: "🎨",
-  vps: "🌊",
-  premium: "💎",
-  convert: "🔄",
-  economy: "💰",
-  cek: "📋"
+const MONO = {
+  A: "𝙰", B: "𝙱", C: "𝙲", D: "𝙳", E: "𝙴", F: "𝙵", G: "𝙶", H: "𝙷", I: "𝙸", J: "𝙹", K: "𝙺", L: "𝙻", M: "𝙼",
+  N: "𝙽", O: "𝙾", P: "𝙿", Q: "𝚀", R: "𝚁", S: "𝚂", T: "𝚃", U: "𝚄", V: "𝚅", W: "𝚆", X: "𝚇", Y: "𝚈", Z: "𝚉",
+  a: "𝚊", b: "𝚋", c: "𝚌", d: "𝚍", e: "𝚎", f: "𝚏", g: "𝚐", h: "𝚑", i: "𝚒", j: "𝚓", k: "𝚔", l: "𝚕", m: "𝚖",
+  n: "𝚗", o: "𝚘", p: "𝚙", q: "𝚚", r: "𝚛", s: "𝚜", t: "𝚝", u: "𝚞", v: "𝚟", w: "𝚠", x: "𝚡", y: "𝚢", z: "𝚣",
+  "0": "𝟶", "1": "𝟷", "2": "𝟸", "3": "𝟹", "4": "𝟺", "5": "𝟻", "6": "𝟼", "7": "𝟽", "8": "𝟾", "9": "𝟿",
+};
+const mono = (value) => [...String(value)].map((c) => MONO[c] || c).join("");
+
+const CATEGORY_ORDER = [
+  "owner", "store", "main", "utility", "tools", "premium", "rich", "fun", "game", "rpg",
+  "download", "search", "sticker", "media", "ai", "group", "anonymous",
+  "pushkontak", "religi", "info", "cek", "economy", "user",
+  "canvas", "random", "convert", "music", "maker", "panel", "anime",
+];
+
+const CATEGORY_NAMES = {
+  owner: "OWNER MENU",
+  store: "STORE MENU",
+  main: "MAIN MENU",
+  utility: "UTILITY MENU",
+  tools: "TOOLS MENU",
+  fun: "FUN MENU",
+  game: "GAME MENU",
+  rpg: "RPG MENU",
+  download: "DOWNLOAD MENU",
+  search: "SEARCH MENU",
+  sticker: "STICKER MENU",
+  media: "MEDIA MENU",
+  ai: "AI MENU",
+  group: "GROUP MENU",
+  anonymous: "ANONYMOUS MENU",
+  pushkontak: "PUSH MENU",
+  religi: "ISLAM MENU",
+  info: "INFO MENU",
+  cek: "CEK MENU",
+  economy: "ECONOMY MENU",
+  user: "USER MENU",
+  canvas: "CANVAS MENU",
+  random: "RANDOM MENU",
+  premium: "PREMIUM MENU",
+  rich: "RICH MENU",
+  convert: "CONVERT MENU",
+  music: "MUSIC MENU",
+  maker: "MAKER MENU",
+  panel: "CPANEL MENU",
+  anime: "ANIME MENU",
 };
 
-function toSmallCaps(text) {
-  const smallCaps = {
-    a: "ᴀ",
-    b: "ʙ",
-    c: "ᴄ",
-    d: "ᴅ",
-    e: "ᴇ",
-    f: "ꜰ",
-    g: "ɢ",
-    h: "ʜ",
-    i: "ɪ",
-    j: "ᴊ",
-    k: "ᴋ",
-    l: "ʟ",
-    m: "ᴍ",
-    n: "ɴ",
-    o: "ᴏ",
-    p: "ᴘ",
-    q: "ǫ",
-    r: "ʀ",
-    s: "s",
-    t: "ᴛ",
-    u: "ᴜ",
-    v: "ᴠ",
-    w: "ᴡ",
-    x: "x",
-    y: "ʏ",
-    z: "ᴢ",
-  };
-  return text
-    .toLowerCase()
-    .split("")
-    .map((c) => smallCaps[c] || c)
-    .join("");
+function roleText(m) {
+  if (m.isOwner) return "👑 Pemilik Bot";
+  if (m.isPremium) return "💎 Premium Member";
+  return "🌿 Free User";
 }
 
-function createBracketBox(emoji, title, lines = []) {
-  let text = `╭─〔 ${emoji} \`${title}\`\n`;
-  for (const line of lines) {
-    text += `┃ *${toSmallCaps(line)}*\n`;
-  }
-  text += `╰─⬣\n\n`;
+function makeSection(title, commands) {
+  let text = `◤─「 ${mono(title)} 」─✦\n`;
+  for (const command of commands) text += `│⟡ 〔 _${mono(command)}_\n`;
+  text += `◣──────────❈\n`;
   return text;
 }
 
-function getCommandSymbols(cmdName) {
-  const plugin = getPlugin(cmdName);
-  if (!plugin || !plugin.config) return "";
-  const symbols = [];
-  if (plugin.config.isOwner) symbols.push("Ⓞ");
-  if (plugin.config.isPremium) symbols.push("ⓟ");
-  if (plugin.config.limit && plugin.config.limit > 0) symbols.push("Ⓛ");
-  if (plugin.config.isAdmin) symbols.push("Ⓐ");
-  if (plugin.config.isGroup) symbols.push("Ⓖ");
-  if (plugin.config.isPrivate) symbols.push("Ⓟ");
-  return symbols.length > 0 ? " " + symbols.join(" ") : "";
+function normalizeCategory(category) {
+  const input = String(category || "").toLowerCase();
+  const categories = getCategories();
+  return categories.find((c) => String(c).toLowerCase() === input) || null;
 }
 
-async function handler(m, { sock, db }) {
-  const prefix = config.command?.prefix || ".";
+function getModePolicy(botMode) {
+  const policies = {
+    md: { allowed: null, excluded: ["panel", "pushkontak", "store", "otp"] },
+    all: { allowed: null, excluded: [] },
+    cpanel: { allowed: ["main", "group", "sticker", "owner", "tools", "panel"], excluded: [] },
+    store: { allowed: ["main", "group", "sticker", "owner", "store"], excluded: [] },
+    pushkontak: { allowed: ["main", "group", "sticker", "owner", "pushkontak"], excluded: [] },
+    otp: { allowed: ["main", "group", "sticker", "owner", "otp"], excluded: [] },
+  };
+  return policies[botMode] || policies.md;
+}
+
+function getVisibleCategoryCommands(m, category, commandsByCategory, casesByCategory, botMode) {
+  const key = String(category).toLowerCase();
+  if (key === "owner" && !m.isOwner) return [];
+  const policy = getModePolicy(botMode);
+  if (policy.allowed && !policy.allowed.includes(key)) return [];
+  if (policy.excluded.includes(key)) return [];
+  const pluginCmds = commandsByCategory[category] || commandsByCategory[key] || [];
+  const caseCmds = casesByCategory[category] || casesByCategory[key] || [];
+  return [...new Set([...pluginCmds, ...caseCmds].map(String))];
+}
+
+async function handler(m, { sock, config: botConfig, db, uptime }) {
+  const prefix = botConfig.command?.prefix || config.command?.prefix || ".";
   const args = m.args || [];
-  const categoryArg = args[0]?.toLowerCase();
+  const categoryInput = args.join(" ").trim().toLowerCase();
   const categories = getCategories();
   const commandsByCategory = getCommandsByCategory();
   const casesByCategory = getCasesByCategory();
-  const savedVariant = db.setting("menucatVariant");
-  const menucatVariant = savedVariant || config.ui?.menucatVariant || 2;
-  const greeting = getTimeGreeting();
+  const groupData = m.isGroup ? db.getGroup(m.chat) || {} : {};
+  const botMode = groupData.botMode || "md";
+  const policy = getModePolicy(botMode);
 
-  if (!categoryArg) {
-    const groupData = m.isGroup ? db.getGroup(m.chat) || {} : {};
-    const botMode = groupData.botMode || "md";
-
-    let modeExcludeMap = {
-      md: ["panel", "pushkontak", "store"],
-      store: ["panel", "pushkontak", "jpm", "ephoto", "cpanel"],
-      pushkontak: ["panel", "store", "jpm", "ephoto", "cpanel"],
-      cpanel: ["pushkontak", "store", "jpm", "ephoto"],
-    };
-
-    try {
-      if (botmodePlugin && botmodePlugin.MODES) {
-        const modes = botmodePlugin.MODES;
-        modeExcludeMap = {};
-        for (const [key, val] of Object.entries(modes)) {
-          if (val.excludeCategories)
-            modeExcludeMap[key] = val.excludeCategories;
-        }
-      }
-    } catch (e) { }
-
-    const excludeCategories = modeExcludeMap[botMode] || modeExcludeMap.md;
-
-    const categoryOrder = [
-      "owner",
-      "main",
-      "utility",
-      "tools",
-      "fun",
-      "game",
-      "download",
-      "search",
-      "sticker",
-      "media",
-      "ai",
-      "group",
-      "religi",
-      "info",
-      "cek",
-      "economy",
-      "user",
-      "canvas",
-      "random",
-      "premium",
-      "jpm",
-      "pushkontak",
-      "panel",
-      "ephoto",
-      "store"
-    ];
-
-    const allCats = [
-      ...new Set([...categories, ...Object.keys(casesByCategory)]),
-    ];
-
-    const sortedCats = allCats.sort((a, b) => {
-      const indexA = categoryOrder.indexOf(a);
-      const indexB = categoryOrder.indexOf(b);
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
-
-    const visibleCats = sortedCats.filter((cat) => {
-      if (cat === "owner" && !m.isOwner) return false;
-      if (excludeCategories.includes(cat.toLowerCase())) return false;
-      const total =
-        (commandsByCategory[cat] || []).length +
-        (casesByCategory[cat] || []).length;
-      return total > 0;
-    });
-
-    let txt = ``;
-    txt += createBracketBox("🤖", "KETERANGAN", [
-      "Ⓞ = Hanya untuk owner",
-      "ⓟ = Hanya untuk premium",
-      "Ⓛ = Membutuhkan limit",
-      "Ⓐ = Hanya untuk admin",
-      "Ⓖ = Hanya di dalam grup",
-      "Ⓟ = Hanya di private chat",
-    ]);
-
-    for (const cat of visibleCats) {
-      const pluginCmds = commandsByCategory[cat] || [];
-      const caseCmds = casesByCategory[cat] || [];
-      const allCmds = [...pluginCmds, ...caseCmds];
-      if (allCmds.length === 0) continue;
-      const emoji = CATEGORY_EMOJIS[cat] || "📋";
-      const categoryName = toSmallCaps(cat);
-      const commandLines = allCmds.map((cmd) => {
-        const symbols = getCommandSymbols(cmd);
-        return `${prefix}${cmd}${symbols}`;
+  if (!categoryInput) {
+    const visible = [...categories]
+      .filter((cat) => !policy.allowed || policy.allowed.includes(String(cat).toLowerCase()))
+      .filter((cat) => !policy.excluded.includes(String(cat).toLowerCase()))
+      .filter((cat) => !(String(cat).toLowerCase() === "owner" && !m.isOwner))
+      .filter((cat) => (commandsByCategory[cat] || []).length || (casesByCategory[cat] || []).length)
+      .sort((a, b) => {
+        const ai = CATEGORY_ORDER.indexOf(String(a).toLowerCase());
+        const bi = CATEGORY_ORDER.indexOf(String(b).toLowerCase());
+        return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
       });
-      txt += createBracketBox(emoji, categoryName, commandLines);
-    }
-
-    try {
-      switch (menucatVariant) {
-        case 1:
-          await m.reply(txt);
-          break;
-        case 2: {
-          const media = await prepareWAMessageMedia(
-            {
-              image: getAssetBuffer("rimuru2", config.assets),
-            },
-            { upload: sock.waUploadToServer },
-          );
-          await sock.relayMessage(
-            m.chat,
-            {
-              viewOnceMessage: {
-                message: {
-                  messageContextInfo: {},
-                  interactiveMessage: {
-                    header: {
-                      title: "",
-                      subtitle: "",
-                      hasMediaAttachment: true,
-                      imageMessage: media.imageMessage,
-                    },
-                    body: {
-                      text: txt,
-                    },
-                    footer: {
-                      text: "Pilih tombol dibawah untuk kembali ke menu utama",
-                    },
-                    contextInfo: {
-                      isForwarded: true,
-                      forwardingScore: 9,
-                      participant: "0@s.whatsapp.net",
-                      quotedMessage: {
-                        conversation: `${RIMURU_CORE_CONFIG.bot?.name}`,
-                      },
-                      mentionedJid: [`${m.sender}`],
-                    },
-                    nativeFlowMessage: {
-                      messageParamsJson: JSON.stringify({
-                        limited_time_offer: {
-                          text: `${greeting}`,
-                          url: "Hai",
-                          copy_code: "Dibuat oleh " + RIMURU_DEVELOPER,
-                          expiration_time: Date.now() + 1000000,
-                        },
-                      }),
-                      buttons: [
-                        {
-                          name: "quick_reply",
-                          buttonParamsJson: JSON.stringify({
-                            display_text: "🍅 Kembali Ke Menu Utama",
-                            id: m.prefix + "menu",
-                          }),
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-            {},
-          );
-          break;
-        }
-        case 5: {
-          function runtime(seconds) {
-            seconds = Number(seconds);
-            const d = Math.floor(seconds / (3600 * 24));
-            const h = Math.floor(seconds % (3600 * 24) / 3600);
-            const m = Math.floor(seconds % 3600 / 60);
-            const s = Math.floor(seconds % 60);
-            return `${d} Jam ${m} Menit ${s} Detik`;
-          }
-
-          const weatherCode = {
-            0: "☀️ Cerah", 1: "🌤️ Cerah Berawan", 2: "⛅ Berawan", 3: "☁️ Mendung", 45: "🌫️ Berkabut", 48: "🌫️ Kabut Tebal", 51: "🌦️ Gerimis", 61: "🌧️ Hujan Ringan", 63: "🌧️ Hujan", 65: "⛈️ Hujan Lebat", 80: "🌦️ Hujan Lokal", 95: "⛈️ Badai Petir"
-          }
-
-          async function weatherMenu(city = "Jakarta") {
-            try {
-              const geo = await axios.get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
-              const loc = geo.data.results?.[0]
-              if (!loc) return "Cuaca tidak tersedia"
-              const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code`)
-              const current = res.data.current
-              const kondisi = weatherCode[current.weather_code] || "🌍 Tidak diketahui"
-              return `${kondisi} | 🌡️ ${Math.round(current.temperature_2m)}°C\n📍 ${loc.name}`
-            } catch {
-              return "Cuaca tidak tersedia"
-            }
-          }
-
-          const thumbnail = await sharp(getAssetBuffer("rimuru", config.assets)).resize(300, 300).toBuffer()
-          const qOrder = {
-            key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: m.sender },
-            message: { locationMessage: { degreesLatitude: 0, degreesLongitude: 0, name: await weatherMenu(), jpegThumbnail: thumbnail } }
-          }
-          const media4 = await prepareWAMessageMedia({ video: getAssetBuffer("rimuru-mp4", config.assets), gifPlayback: true }, { upload: sock.waUploadToServer });
-          const msg4 = generateWAMessageFromContent(m.chat, {
-            viewOnceMessage: {
-              message: {
-                messageContextInfo: {},
-                interactiveMessage: {
-                  header: { title: "", subtitle: "", hasMediaAttachment: true, videoMessage: media4.videoMessage },
-                  footer: { text: `Please select the button in below` },
-                  body: { text: txt },
-                  contextInfo: {
-                    mentionedJid: [m.sender],
-                    isForwarded: true,
-                    forwardingScore: 9,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter",
-                      newsletterName: RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-                      serverMessageId: 127,
-                    },
-                  },
-                  nativeFlowMessage: {
-                    messageParamsJson: JSON.stringify({
-                      limited_time_offer: { text: `${greeting}`, url: "Hai", expiration_time: Date.now() + 10000 },
-                      bottom_sheet: { in_thread_buttons_limit: 2, divider_indices: [1, 2, 3, 4, 5, 999], list_title: "Please select the menu", button_title: "🍙 See Category" },
-                      tap_target_configuration: { title: " X ", description: "bomboclard", canonical_url: "https://rimuru.site", domain: "shop.example.com", button_index: 0 },
-                    }),
-                    buttons: [
-                      { name: "", buttonParamsJson: "" },
-                      {
-                        name: "quick_reply",
-                        buttonParamsJson: JSON.stringify({ display_text: "🍅 Kembali Ke Menu Utama", id: m.prefix + "menu" })
-                      },
-                    ]
-                  }
-                }
-              }
-            }
-          }, { quoted: qOrder, userJid: sock.user.jid });
-
-          await sock.relayMessage(m.chat, msg4.message, { messageId: msg4.key.id });
-          break;
-        }
-        default:
-          await m.reply(txt);
-          break;
-      }
-    } catch (err) {
-      await m.reply(txt);
-    }
-    return;
+    const text = `${mono("DAFTAR KATEGORI")}\n\n` + visible.map((cat) => `${mono(prefix + "menucat")} ${mono(cat)}`).join("\n");
+    return m.reply(text);
   }
 
-  const allCategories = [
-    ...new Set([...categories, ...Object.keys(casesByCategory)]),
-  ];
-  const matchedCat = allCategories.find((c) => c.toLowerCase() === categoryArg);
+  const category = normalizeCategory(categoryInput);
+  if (!category) return m.reply(`❌ Kategori *${categoryInput}* tidak ditemukan.`);
 
-  if (!matchedCat) {
-    return m.reply(
-      `❌ *KATEGORI TIDAK DITEMUKAN*\n\n> Kategori \`${categoryArg}\` tidak ada.\n> Ketik \`${prefix}menucat\` untuk list kategori.`,
-    );
-  }
+  const commands = getVisibleCategoryCommands(m, category, commandsByCategory, casesByCategory, botMode);
+  if (!commands.length) return m.reply("❌ Tidak ada command pada kategori ini atau kategori tersebut tidak bisa diakses.");
 
-  if (matchedCat === "owner" && !m.isOwner) {
-    return m.reply(`❌ *AKSES DITOLAK*\n\n> Kategori ini hanya untuk owner.`);
-  }
+  const pushName = m.pushName || "User";
+  const botName = botConfig.bot?.name || "Rimuru MD";
+  const version = botConfig.bot?.version || "11.0.0";
+  const runtime = typeof uptime === "function" ? await uptime() : "-";
+  const mode = botMode;
+  const categoryTitle = CATEGORY_NAMES[String(category).toLowerCase()] || `${String(category).toUpperCase()} MENU`;
 
-  const pluginCommands = commandsByCategory[matchedCat] || [];
-  const caseCommands = casesByCategory[matchedCat] || [];
-  const allCommands = [...pluginCommands, ...caseCommands];
+  let caption = `${mono(`Hai Kak ${pushName}`)} 🎗️\n\n`;
+  caption += `◤───「 ${mono("INFO USER")} 」──✦\n`;
+  caption += `> ⎆  [ ${mono("Nama")} : ${mono(pushName)}\n`;
+  caption += `> ⎆  [ ${mono("Role")} : ${mono(roleText(m))}\n`;
+  caption += `> ⎆  [ ${mono("Mode")} : ${mono(mode)}\n`;
+  caption += `> ⎆  [ ${mono("Author")} : ${mono(botConfig.bot?.developer || "Anita Putri Azzahra")}\n`;
+  caption += `◣──────────❈\n\n`;
 
-  if (allCommands.length === 0) {
-    return m.reply(
-      `❌ *KOSONG*\n\n> Kategori \`${matchedCat}\` tidak memiliki command.`,
-    );
-  }
+  caption += `◤───「 ${mono("INFO BOT")} 」──✦\n`;
+  caption += `> ⎆  ${mono("Runtime")} : ${mono(runtime)}\n`;
+  caption += `> ⎆  ${mono("Versi")} : ${mono(version)}\n`;
+  caption += `> ⎆  ${mono("Fitur")} : ${mono(`${commands.length} commands`)}\n`;
+  caption += `> ⎆  ${mono("Bot")} : ${mono(botName)}\n`;
+  caption += `◣─────────────✦\n\n`;
+  caption += `${makeSection(categoryTitle, commands.map((cmd) => `${prefix}${cmd}`))}`;
+  caption += `${mono("*_Jangan Di Spam Ya Agar Botnya Bisa Aktif 24 Jam Dan Tidak Terkena Blokir Spam🍁_*")}`;
 
-  const emoji = CATEGORY_EMOJIS[matchedCat] || "📁";
-  const categoryName = toSmallCaps(matchedCat);
-  const commandLines = allCommands.map((cmd) => {
-    const symbols = getCommandSymbols(cmd);
-    return `${prefix}${cmd}${symbols}`;
-  });
-
-  let txt = ``;
-  txt += createBracketBox(emoji, categoryName, commandLines);
-  txt += `Total: \`${allCommands.length}\` commands`;
-  if (caseCommands.length > 0) {
-    txt += `\n(${pluginCommands.length} plugin + ${caseCommands.length} case)`;
-  }
-
-  try {
-    switch (menucatVariant) {
-      case 1:
-        await m.reply(txt);
-        break;
-      case 2: {
-        const media = await prepareWAMessageMedia(
-          {
-            image: getAssetBuffer("rimuru2", config.assets),
-          },
-          { upload: sock.waUploadToServer },
-        );
-        await sock.relayMessage(
-          m.chat,
-          {
-            viewOnceMessage: {
-              message: {
-                messageContextInfo: {},
-                interactiveMessage: {
-                  header: {
-                    title: "",
-                    subtitle: "",
-                    hasMediaAttachment: true,
-                    imageMessage: media.imageMessage,
-                  },
-                  body: {
-                    text: txt,
-                  },
-                  footer: {
-                    text: "Pilih tombol dibawah untuk kembali ke menu utama",
-                  },
-                  contextInfo: {
-                    isForwarded: true,
-                    forwardingScore: 9,
-                    participant: "0@s.whatsapp.net",
-                    quotedMessage: {
-                      conversation: `${RIMURU_CORE_CONFIG.bot?.name}`,
-                    },
-                    mentionedJid: [`${m.sender}`],
-                  },
-                  nativeFlowMessage: {
-                    messageParamsJson: JSON.stringify({
-                      limited_time_offer: {
-                        text: `${greeting}`,
-                        url: "Hai",
-                        copy_code: "Dibuat oleh " + RIMURU_DEVELOPER,
-                        expiration_time: Date.now() + 1000000,
-                      },
-                    }),
-                    buttons: [
-                      {
-                        name: "quick_reply",
-                        buttonParamsJson: JSON.stringify({
-                          display_text: "📂 Kembali Ke Daftar Kategori",
-                          id: m.prefix + "menucat",
-                        }),
-                      },
-                      {
-                        name: "quick_reply",
-                        buttonParamsJson: JSON.stringify({
-                          display_text: "🍅 Kembali Ke Menu Utama",
-                          id: m.prefix + "menu",
-                        }),
-                      },
-                    ],
-                  },
-                },
-              },
-            },
-          },
-          {},
-        );
-        break;
-      }
-      case 5: {
-        function runtime(seconds) {
-          seconds = Number(seconds);
-          const d = Math.floor(seconds / (3600 * 24));
-          const h = Math.floor(seconds % (3600 * 24) / 3600);
-          const m = Math.floor(seconds % 3600 / 60);
-          const s = Math.floor(seconds % 60);
-          return `${d} Jam ${m} Menit ${s} Detik`;
-        }
-
-        const weatherCode = {
-          0: "☀️ Cerah", 1: "🌤️ Cerah Berawan", 2: "⛅ Berawan", 3: "☁️ Mendung", 45: "🌫️ Berkabut", 48: "🌫️ Kabut Tebal", 51: "🌦️ Gerimis", 61: "🌧️ Hujan Ringan", 63: "🌧️ Hujan", 65: "⛈️ Hujan Lebat", 80: "🌦️ Hujan Lokal", 95: "⛈️ Badai Petir"
-        }
-
-        async function weatherMenu(city = "Jakarta") {
-          try {
-            const geo = await axios.get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
-            const loc = geo.data.results?.[0]
-            if (!loc) return "Cuaca tidak tersedia"
-            const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code`)
-            const current = res.data.current
-            const kondisi = weatherCode[current.weather_code] || "🌍 Tidak diketahui"
-            return `${kondisi} | 🌡️ ${Math.round(current.temperature_2m)}°C\n📍 ${loc.name}`
-          } catch {
-            return "Cuaca tidak tersedia"
-          }
-        }
-
-        const thumbnail = await sharp(getAssetBuffer("rimuru", config.assets)).resize(300, 300).toBuffer()
-        const qOrder = {
-          key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: m.sender },
-          message: { locationMessage: { degreesLatitude: 0, degreesLongitude: 0, name: await weatherMenu(), jpegThumbnail: thumbnail } }
-        }
-        const media4 = await prepareWAMessageMedia({ video: getAssetBuffer("rimuru-mp4", config.assets), gifPlayback: true }, { upload: sock.waUploadToServer });
-        const msg4 = generateWAMessageFromContent(m.chat, {
-          viewOnceMessage: {
-            message: {
-              messageContextInfo: {},
-              interactiveMessage: {
-                header: { title: "", subtitle: "", hasMediaAttachment: true, videoMessage: media4.videoMessage },
-                footer: { text: `Please select the button in below` },
-                body: { text: txt },
-                contextInfo: {
-                  mentionedJid: [m.sender],
-                  isForwarded: true,
-                  forwardingScore: 9,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter",
-                    newsletterName: RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-                    serverMessageId: 127,
-                  },
-                },
-                nativeFlowMessage: {
-                  messageParamsJson: JSON.stringify({
-                    limited_time_offer: { text: `${greeting}`, url: "Hai", expiration_time: Date.now() + 10000 },
-                    bottom_sheet: { in_thread_buttons_limit: 2, divider_indices: [1, 2, 3, 4, 5, 999], list_title: "Please select the menu", button_title: "🍙 See Category" },
-                    tap_target_configuration: { title: " X ", description: "bomboclard", canonical_url: "https://rimuru.site", domain: "shop.example.com", button_index: 0 },
-                  }),
-                  buttons: [
-                    { name: "", buttonParamsJson: "" },
-                    {
-                      name: "quick_reply",
-                      buttonParamsJson: JSON.stringify({ display_text: "📂 Kembali Ke Daftar Kategori", id: m.prefix + "menucat" })
-                    },
-                    {
-                      name: "quick_reply",
-                      buttonParamsJson: JSON.stringify({ display_text: "🍅 Kembali Ke Menu Utama", id: m.prefix + "menu" })
-                    },
-                  ]
-                }
-              }
-            }
-          }
-        }, { quoted: qOrder, userJid: sock.user.jid });
-
-        await sock.relayMessage(m.chat, msg4.message, { messageId: msg4.key.id });
-        break;
-      }
-      case 6: {
-        const weatherCode = {
-          0: "☀️ Cerah", 1: "🌤️ Cerah Berawan", 2: "⛅ Berawan", 3: "☁️ Mendung", 45: "🌫️ Berkabut", 48: "🌫️ Kabut Tebal", 51: "🌦️ Gerimis", 61: "🌧️ Hujan Ringan", 63: "🌧️ Hujan", 65: "⛈️ Hujan Lebat", 80: "🌦️ Hujan Lokal", 95: "⛈️ Badai Petir"
-        }
-
-        async function weatherMenu(city = "Jakarta") {
-          try {
-            const geo = await axios.get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
-            const loc = geo.data.results?.[0]
-            if (!loc) return "Cuaca tidak tersedia"
-            const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code`)
-            const current = res.data.current
-            const kondisi = weatherCode[current.weather_code] || "🌍 Tidak diketahui"
-            return `${kondisi} | 🌡️ ${Math.round(current.temperature_2m)}°C\n📍 ${loc.name}`
-          } catch {
-            return "Cuaca tidak tersedia"
-          }
-        }
-
-        const thumbnail = await sharp(getAssetBuffer("rimuru", config.assets)).resize(300, 300).toBuffer()
-
-        const msg6 = generateWAMessageFromContent(m.chat, {
-          viewOnceMessage: {
-            message: {
-              messageContextInfo: {},
-              interactiveMessage: {
-                header: {
-                  hasMediaAttachment: true,
-                  locationMessage: {
-                    degreesLatitude: 0,
-                    degreesLongitude: 0,
-                    name: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-                    address: await weatherMenu(),
-                    jpegThumbnail: thumbnail
-                  }
-                },
-                body: {
-                  text: txt,
-                },
-                contextInfo: {
-                  mentionedJid: [m.sender],
-                  isForwarded: true,
-                  forwardingScore: 9,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter",
-                    newsletterName: RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-                    serverMessageId: 127,
-                  },
-                },
-                nativeFlowMessage: {
-                  buttons: []
-                }
-              }
-            }
-          }
-        }, { quoted: m, userJid: sock.user.jid });
-
-        await sock.relayMessage(m.chat, msg6.message, { messageId: msg6.key.id });
-        break;
-      }
-      default:
-        await m.reply(txt);
-        break;
-    }
-  } catch (err) {
-    await m.reply(txt);
-  }
+  await sock.sendMessage(
+    m.chat,
+    {
+      image: getAssetBuffer("rimuru-v8"),
+      caption,
+      contextInfo: { forwardingScore: 999, isForwarded: true },
+    },
+    { quoted: m },
+  );
 }
 
 export { pluginConfig as config, handler };

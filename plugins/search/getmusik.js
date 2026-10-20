@@ -1,7 +1,5 @@
 import axios from 'axios';
 import config from '../../config.js';
-import path from 'path';
-import fs from 'fs';
 import { musicSessions } from './carimusik.js';
 
 const pluginConfig = {
@@ -17,13 +15,21 @@ const pluginConfig = {
 }
 
 let thumbMusic = null
-try {
-    const p = path.join(process.cwd(), 'assets/images/rimuru-music.jpg')
-    if (fs.existsSync(p)) thumbMusic = fs.readFileSync(p)
-} catch {}
 
-function getContextInfo(title, body, thumbnail) {
-    const saluranId = config.saluran?.id || '120363402057133599@newsletter'
+async function getThumbMusic() {
+    if (thumbMusic) return thumbMusic
+    try {
+        const response = await fetch('https://files.catbox.moe/s1fkp1.png', {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(15000)
+        })
+        if (response.ok) thumbMusic = Buffer.from(await response.arrayBuffer())
+    } catch {}
+    return thumbMusic
+}
+
+async function getContextInfo(title, body, thumbnail) {
+    const saluranId = config.saluran?.id || config.saluran?.id
     const saluranName = config.saluran?.name || config.bot?.name || 'rimuru-AI'
 
     const ctx = {
@@ -36,7 +42,7 @@ function getContextInfo(title, body, thumbnail) {
         }
     }
 
-    const thumb = thumbnail || thumbMusic
+    const thumb = thumbnail || await getThumbMusic()
     if (thumb) {
         ctx.externalAdReply = {
             title,
@@ -131,12 +137,12 @@ async function handler(m, { sock }) {
             audio: { url: song.url },
             mimetype: 'audio/mpeg',
             fileName: `${song.title}.mp3`,
-            contextInfo: getContextInfo('🎵 MUSIK', song.title, thumbBuffer)
+            contextInfo: await getContextInfo('🎵 MUSIK', song.title, thumbBuffer)
         }, { quoted: m })
         
         await sock.sendMessage(m.chat, {
             text: caption,
-            contextInfo: getContextInfo('🎵 MUSIK INFO', song.user?.username || '-', thumbBuffer)
+            contextInfo: await getContextInfo('🎵 MUSIK INFO', song.user?.username || '-', thumbBuffer)
         }, { quoted: m })
         
         musicSessions.delete(m.sender)

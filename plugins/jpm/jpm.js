@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import { fetchGroupsSafe } from "../../src/lib/rimuru-jpm-helper.js";
 import {
@@ -18,7 +14,7 @@ import {
   prepareWAMessageMedia,
   generateWAMessageFromContent,
   proto,
-} from "ourin";
+} from "rimuru";
 import config from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
 import { saluranCtx } from "../../src/lib/rimuru-context.js";
@@ -78,7 +74,7 @@ try {
 } catch {}
 
 function getVerifiedQuoted() {
-  const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+  const botName = config.bot?.name || "Rimuru-AI";
   const botNumber = config.owner?.number?.[0] || "0";
   return {
     key: {
@@ -139,6 +135,44 @@ function previewText(text) {
   if (!text) return "-";
   const cleaned = text.replace(/\s+/g, " ").trim();
   return cleaned.length <= 80 ? cleaned : `${cleaned.slice(0, 77)}...`;
+}
+
+async function collectRecentJpmImages(m, sock) {
+  const mediaList = [];
+  const now = Date.now();
+  const chatJid = m.chat;
+
+  try {
+    const store = sock.store || global.store;
+    const messages = store?.messages?.[chatJid]?.array || [];
+
+    for (const msg of messages) {
+      const msgTime =
+        (msg.messageTimestamp?.low || msg.messageTimestamp || 0) * 1000;
+      if (!msgTime || now - msgTime > 60000) continue;
+      if (msg.key?.fromMe) continue;
+
+      const content = msg.message;
+      if (!content?.imageMessage) continue;
+
+      try {
+        const stream = await sock.downloadMediaMessage(msg);
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        const buffer = Buffer.concat(chunks);
+        if (buffer.length < 1000) continue;
+
+        mediaList.push({
+          buffer,
+          type: "image",
+          caption: content.imageMessage.caption || "",
+          mimetype: content.imageMessage.mimetype || "image/jpeg",
+        });
+      } catch {}
+    }
+  } catch {}
+
+  return mediaList;
 }
 
 async function fetchAllSubscribedChannels(sock) {
@@ -218,9 +252,9 @@ async function sendInteractiveMessage(
     } catch {}
   }
 
-  const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-  const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-  const saluranName = RIMURU_CORE_CONFIG.saluran?.name || botName;
+  const botName = config.bot?.name || "Rimuru-AI";
+  const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+  const saluranName = config.saluran?.name || botName;
 
   const msg = generateWAMessageFromContent(
     m.chat,
@@ -270,8 +304,11 @@ async function sendInteractiveMessage(
 
 async function sendInteractiveJpm(m, sock, db, contentInfo) {
   const prefix = m.prefix;
-  const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-  const hasContent = contentInfo?.text || contentInfo?.mediaBuffer;
+  const botName = config.bot?.name || "Rimuru-AI";
+  const hasContent =
+    contentInfo?.text ||
+    contentInfo?.mediaBuffer ||
+    contentInfo?.mediaList?.length >= 3;
 
   const autoJpmCfg = getAutoJpmConfig();
   const autoJpmStatus = autoJpmCfg.enabled ? "✅ Aktif" : "❌ Nonaktif";
@@ -293,7 +330,7 @@ async function sendInteractiveJpm(m, sock, db, contentInfo) {
     body +=
       `\n\n📝 *Konten yang siap dikirim:*\n` +
       `> Teks: *${contentInfo?.text ? previewText(contentInfo.text) : "Tidak ada"}*\n` +
-      `> Media: *${contentInfo?.mediaBuffer ? contentInfo.mediaType : "Tidak ada"}*\n\n` +
+      `> Media: *${contentInfo?.mediaList?.length >= 3 ? `${contentInfo.mediaList.length} foto` : contentInfo?.mediaBuffer ? contentInfo.mediaType : "Tidak ada"}*\n\n` +
       `_Pilih mode pengiriman di bawah untuk mulai broadcast_`;
   } else {
     body +=
@@ -394,7 +431,7 @@ async function runBroadcast(
   sock,
   m,
   db,
-  { groupIds, allGroups, mode, text, mediaBuffer, mediaType },
+  { groupIds, allGroups, mode, text, mediaBuffer, mediaType, mediaList = [] },
 ) {
   const jedaJpm = db.setting("jedaJpm") || 5000;
   const ctx = saluranCtx();
@@ -440,7 +477,18 @@ async function runBroadcast(
           .map((p) => p.id || p.jid)
           .filter(Boolean);
         const hidetagCtx = { ...ctx, mentionedJid: mentions };
-        if (mediaBuffer) {
+        if (mediaList.length >= 3) {
+          for (let i = 0; i < mediaList.length; i++) {
+            const media = mediaList[i];
+            await sock.sendMessage(targetId, {
+              image: media.buffer,
+              caption: i === 0 ? text || media.caption : "",
+              mimetype: media.mimetype,
+              mentions,
+              contextInfo: hidetagCtx,
+            });
+          }
+        } else if (mediaBuffer) {
           await sock.sendMessage(targetId, {
             [mediaType]: mediaBuffer,
             caption: text,
@@ -452,6 +500,16 @@ async function runBroadcast(
             text,
             mentions,
             contextInfo: hidetagCtx,
+          });
+        }
+      } else if (mediaList.length >= 3) {
+        for (let i = 0; i < mediaList.length; i++) {
+          const media = mediaList[i];
+          await sock.sendMessage(targetId, {
+            image: media.buffer,
+            caption: i === 0 ? text || media.caption : "",
+            mimetype: media.mimetype,
+            contextInfo: { forwardingScore: 99, isForwarded: true },
           });
         }
       } else if (mediaBuffer) {
@@ -583,6 +641,7 @@ async function handleJpmMain(m, sock, db, fullInput) {
 
   let mediaBuffer = null;
   let mediaType = null;
+  let mediaList = [];
   let text = fullInput || "";
   const qmsg = m.quoted || m;
 
@@ -590,7 +649,17 @@ async function handleJpmMain(m, sock, db, fullInput) {
     text = m.quoted.body || m.quoted.text || m.quoted.contentText || "";
   }
 
-  if (qmsg.isImage) {
+  if (!m.quoted || qmsg.isImage) {
+    try {
+      const recentImages = await collectRecentJpmImages(m, sock);
+      if (recentImages.length >= 3) mediaList = recentImages;
+    } catch {}
+  }
+
+  if (mediaList.length >= 3) {
+    mediaBuffer = mediaList[0].buffer;
+    mediaType = "image";
+  } else if (qmsg.isImage) {
     try {
       mediaBuffer = await qmsg.download();
       mediaType = "image";
@@ -616,13 +685,16 @@ async function handleJpmMain(m, sock, db, fullInput) {
   }
 
   const contentInfo =
-    mediaBuffer || text ? { text, mediaBuffer, mediaType } : null;
+    mediaBuffer || text || mediaList.length >= 3
+      ? { text, mediaBuffer, mediaType, mediaList }
+      : null;
 
   if (contentInfo) {
     jpmSessions[m.sender] = {
       text,
       mediaBuffer,
       mediaType,
+      mediaList,
       timestamp: Date.now(),
     };
   }
@@ -681,8 +753,9 @@ async function executeJpmWithSession(m, sock, db, mode) {
   const text = session?.text || "";
   const mediaBuffer = session?.mediaBuffer || null;
   const mediaType = session?.mediaType || null;
+  const mediaList = session?.mediaList || [];
 
-  if (!text && !mediaBuffer) {
+  if (!text && !mediaBuffer && mediaList.length < 3) {
     return m.reply(
       `❌ *Tidak Ada Konten*\n\n` +
         `Kirim pesan, foto, audio, atau video terlebih dahulu, lalu reply dengan *${m.prefix}jpm* dan pilih mode pengiriman.\n\n` +
@@ -731,6 +804,7 @@ async function executeJpmWithSession(m, sock, db, mode) {
       text,
       mediaBuffer,
       mediaType,
+      mediaList,
     });
   } catch (error) {
     delete global.statusjpm;
@@ -953,7 +1027,7 @@ async function handleJpmUpdateWithContent(m, sock, db, input) {
     );
   }
 
-  let version = RIMURU_CORE_CONFIG.bot?.version || "v1.0";
+  let version = config.bot?.version || "v1.0";
   let changelog = input;
   if (input.includes("|")) {
     const parts = input.split("|");
@@ -973,7 +1047,7 @@ async function handleJpmUpdateWithContent(m, sock, db, input) {
       );
     }
 
-    const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const botName = config.bot?.name || "Rimuru-AI";
     const dateStr = timeHelper.formatDate("DD MMMM YYYY");
     const updateMessage =
       `🚀 *UPDATE !! | ${version}*\n\n` +
@@ -1132,9 +1206,9 @@ async function startAutoJpmSession(m, sock, db) {
   ];
 
   return sendInteractiveMessage(m, sock, {
-    title: `🔄 ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"} AutoJPM`,
+    title: `🔄 ${config.bot?.name || "Rimuru-AI"} AutoJPM`,
     body,
-    footer: `${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"} AutoJPM`,
+    footer: `${config.bot?.name || "Rimuru-AI"} AutoJPM`,
     buttons,
   });
 }
@@ -1412,9 +1486,9 @@ async function handleSetDelay(m, sock, db, input) {
     ];
 
     return sendInteractiveMessage(m, sock, {
-      title: `⏱️ ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"} Delay`,
+      title: `⏱️ ${config.bot?.name || "Rimuru-AI"} Delay`,
       body,
-      footer: `${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"} JPM System`,
+      footer: `${config.bot?.name || "Rimuru-AI"} JPM System`,
       buttons,
     });
   }
@@ -1446,7 +1520,7 @@ async function handleBlacklist(m, sock, db, settingKey, label) {
       return m.reply(`❌ Bot belum tergabung di grup mana pun.`);
     let listText =
       `📋 *Daftar Grup & ${label} Blacklist*\n\n` +
-      `Berikut *${groups.length} grup* yang diikuti bot *${RIMURU_CORE_CONFIG.bot?.name}*\n` +
+      `Berikut *${groups.length} grup* yang diikuti bot *${config.bot?.name}*\n` +
       `Tanda *🚫* berarti grup sedang di-blacklist.\n\n`;
     for (let i = 0; i < groups.length; i++) {
       const isBlacklisted = blacklist.includes(groups[i].id);

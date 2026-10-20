@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import fs from "fs";
 import path from "path";
 import config from "../../config.js";
@@ -49,8 +48,8 @@ function getRandomPraise() {
 }
 
 function _saluranCtx() {
-  const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-  const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+  const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+  const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
   return {
     forwardingScore: 9,
     isForwarded: true,
@@ -74,9 +73,9 @@ function getRpgContextInfo(title, body) {
   const base = _saluranCtx();
   if (title || body) {
     base.externalAdReply = {
-      title: title || RIMURU_CORE_CONFIG.bot?.name || "rimuru RPG",
+      title: title || config.bot?.name || "Rimuru RPG",
       body: body || "",
-      sourceUrl: RIMURU_CORE_CONFIG.saluran?.link || "",
+      sourceUrl: config.saluran?.link || "",
       mediaType: 1,
       renderLargerThumbnail: false,
       thumbnail: rpgThumbBuffer,
@@ -91,7 +90,7 @@ async function sendGamePreview(sock, jid, text, title, body, options) {
     {
       caption: `${config.info.website} ${text}`,
       url: `${config.info.website}`,
-      title: title || "🎮 rimuru GAMES",
+      title: title || "🎮 RIMURU GAMES",
       description: body || "Have fun playing!",
       jpegThumbnail: gameThumbBuffer,
       previewType: 0,
@@ -123,7 +122,7 @@ async function sendRpgPreview(sock, jid, text, title, body, options) {
     {
       caption: `${config.info.website} ${text}`,
       url: `${config.info.website}`,
-      title: title || "⚔️ rimuru RPG",
+      title: title || "⚔️ RIMURU RPG",
       description: body || "Adventure awaits!",
       jpegThumbnail: rpgThumbBuffer,
       previewType: 0,
@@ -139,7 +138,7 @@ async function sendToolsPreview(sock, jid, text, title, body, options) {
     {
       caption: `${config.info.website} ${text}`,
       url: `${config.info.website}`,
-      title: title || "🛠️ rimuru TOOLS",
+      title: title || "🛠️ RIMURU TOOLS",
       description: body || "Utility & tools",
       jpegThumbnail: gameThumbBuffer,
       previewType: 0,
@@ -170,7 +169,7 @@ function checkFastAnswer(session) {
   return { isFast: false, elapsed: elapsed };
 }
 
-function createFakeQuoted(botName = "rimuru-AI", verified = true) {
+function createFakeQuoted(botName = "Rimuru-AI", verified = true) {
   return {
     key: {
       fromMe: false,

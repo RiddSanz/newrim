@@ -1,4 +1,4 @@
-import { downloadMediaMessage } from "ourin";
+import { downloadMediaMessage } from "rimuru";
 import { isLid, lidToJid, lidToJidSafe } from "./rimuru-lid.js";
 import config from "../../config.js";
 const messageCache = new Map();
@@ -601,6 +601,112 @@ async function handleTextProtection({
   }
 }
 
+async function handleAntilinkKick(m, sock, db) {
+  if (!m.isGroup || m.isAdmin || m.isOwner || m.fromMe) return false;
+
+  const group = db.getGroup(m.chat) || {};
+  if (group.antilinkKick !== "on") return false;
+
+  const text = m.body || "";
+  LINK_REGEX.lastIndex = 0;
+  WA_LINK_REGEX.lastIndex = 0;
+  const hasLink =
+    LINK_REGEX.test(text) ||
+    ((WA_LINK_REGEX.lastIndex = 0), WA_LINK_REGEX.test(text));
+  LINK_REGEX.lastIndex = 0;
+  WA_LINK_REGEX.lastIndex = 0;
+  if (!hasLink) return false;
+
+  const botNumber = `${sock.user?.id?.split(":")[0]}@s.whatsapp.net`;
+  if (m.sender === botNumber) return false;
+
+  try {
+    const groupMeta = await sock.groupMetadata(m.chat);
+    const participants = groupMeta.participants || [];
+    const senderNum = m.sender?.replace(/[^0-9]/g, "") || "";
+    const botNum = botNumber?.replace(/[^0-9]/g, "") || "";
+    const senderTag = m.sender?.split("@")[0] || "user";
+
+    if (isAdminCheck(participants, senderNum)) return false;
+    if (!isBotAdminCheck(participants, botNum)) return false;
+
+    const limitValue = Number.parseInt(group.antilinkKickLimit, 10);
+    const limit = Number.isInteger(limitValue) && limitValue >= 1 && limitValue <= 20
+      ? limitValue
+      : 3;
+
+    await sock.sendMessage(m.chat, {
+      delete: {
+        remoteJid: m.chat,
+        fromMe: false,
+        id: m.key?.id || m.id,
+        participant: m.sender,
+      },
+    });
+
+    const warnings =
+      group.antilinkKickWarnings && typeof group.antilinkKickWarnings === "object"
+        ? { ...group.antilinkKickWarnings }
+        : {};
+
+    const previous = Number.parseInt(warnings[m.sender], 10) || 0;
+    const next = previous + 1;
+
+    if (next >= limit) {
+      delete warnings[m.sender];
+      db.setGroup(m.chat, {
+        antilinkKickWarnings: warnings,
+        antilinkKickLimit: limit,
+      });
+
+      try {
+        await sock.groupParticipantsUpdate(m.chat, [m.sender], "remove");
+      } catch {
+        warnings[m.sender] = next;
+        db.setGroup(m.chat, { antilinkKickWarnings: warnings });
+        await sock.sendMessage(m.chat, {
+          text:
+            `⚠️ *AntiLinkKick*\n\n` +
+            `@${senderTag} mencapai batas *${next}/${limit}* pelanggaran link, ` +
+            `tetapi bot gagal mengeluarkan member tersebut.`,
+          mentions: [m.sender],
+        });
+        return true;
+      }
+
+      await sock.sendMessage(m.chat, {
+        text:
+          `🚨 *AntiLinkKick*\n\n` +
+          `@${senderTag} dikeluarkan karena mencapai batas *${next}/${limit}* ` +
+          `pelanggaran link.\n> Pesan pelanggaran otomatis dihapus.`,
+        mentions: [m.sender],
+      });
+      return true;
+    }
+
+    warnings[m.sender] = next;
+    db.setGroup(m.chat, {
+      antilinkKickWarnings: warnings,
+      antilinkKickLimit: limit,
+    });
+
+    await sock.sendMessage(m.chat, {
+      text:
+        `⚠️ *AntiLinkKick*\n\n` +
+        `@${senderTag}, link tidak diperbolehkan di grup ini.\n` +
+        `> Peringatan: *${next}/${limit}*\n` +
+        (limit - next === 1
+          ? `> Satu pelanggaran lagi = kick otomatis.`
+          : `> Sisa ${limit - next} pelanggaran sebelum kick otomatis.`),
+      mentions: [m.sender],
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function handleAntilink(m, sock, db) {
   if (!m.isGroup) return false;
 
@@ -874,7 +980,7 @@ async function handleAntiRemove(messageUpdate, sock, db) {
           msgType === "audioMessage" ||
           msgType === "stickerMessage"
         ) {
-          const { downloadMediaMessage } = await import("ourin");
+          const { downloadMediaMessage } = await import("rimuru");
           const fakeMsg = {
             key: cached.key,
             message: { [msgType]: msgContent[msgType] },
@@ -913,7 +1019,7 @@ async function handleAntiRemove(messageUpdate, sock, db) {
             await sock.sendMessage(chatId, sendContent, { quoted: headerMsg });
           }
         } else {
-          const { generateWAMessageFromContent } = await import("ourin");
+          const { generateWAMessageFromContent } = await import("rimuru");
           const cleanContent = {};
           for (const k of contentKeys) {
             if (typeof msgContent[k] === "object" && msgContent[k] !== null) {
@@ -1036,7 +1142,7 @@ async function handleAntiRemoveFromUpsert(msg, sock, db) {
           msgType === "audioMessage" ||
           msgType === "stickerMessage"
         ) {
-          const { downloadMediaMessage } = await import("ourin");
+          const { downloadMediaMessage } = await import("rimuru");
           const fakeMsg = {
             key: cached.key,
             message: { [msgType]: msgContent[msgType] },
@@ -1075,7 +1181,7 @@ async function handleAntiRemoveFromUpsert(msg, sock, db) {
             await sock.sendMessage(chatId, sendContent, { quoted: headerMsg });
           }
         } else {
-          const { generateWAMessageFromContent } = await import("ourin");
+          const { generateWAMessageFromContent } = await import("rimuru");
           const cleanContent = {};
           for (const k of contentKeys) {
             if (typeof msgContent[k] === "object" && msgContent[k] !== null) {
@@ -1466,6 +1572,7 @@ async function handleAntiHidetag(m, sock, db) {
 
 export {
   handleAntilink,
+  handleAntilinkKick,
   handleAntiTagSW,
   handleAntiSwGc,
   handleAntiJudol,

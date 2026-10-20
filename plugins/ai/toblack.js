@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import { uploadImage } from "../../src/lib/rimuru-uploader.js";
 import { f } from "../../src/lib/rimuru-http.js";
@@ -8,7 +5,7 @@ import te from "../../src/lib/rimuru-error.js";
 import { live3d } from "../../src/scraper/seaart.js";
 const pluginConfig = {
   name: "toblack",
-  alias: ["black", "hitam", "tohitam"],
+  alias: ["black", "hitamkan", "hitam", "tohitam"],
   category: "ai",
   description: "Ubah gambar ke skin tone lebih gelap",
   usage: ".toblack (reply gambar)",

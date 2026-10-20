@@ -1,14 +1,10 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import config from '../../config.js';
 import { getDatabase } from '../../src/lib/rimuru-database.js';
-import { getRemoteAssetBuffer } from '../../src/lib/rimuru-asset-manager.js';
 import te from '../../src/lib/rimuru-error.js';
-import { prepareWAMessageMedia, generateWAMessageFromContent, generateWAMessage, jidNormalizedUser } from 'ourin';
+import { prepareWAMessageMedia, generateWAMessageFromContent, generateWAMessage, jidNormalizedUser } from 'rimuru';
 
 const pluginConfig = {
     name: 'srt',
@@ -70,25 +66,19 @@ async function handler(m, { sock, args }) {
             await m.reply(`✅ *SESI TANGKAPAN GAMBAR SELESAI*\n\nSesi telah dihentikan dan seluruh gambar telah diproses.\n- Total gambar baru yang ditambahkan: *${count}*\n- Total keseluruhan gambar di sistem: *${totalImages}*`);
         } 
         else if (action === 'list') {
-            const remoteUrls = Array.isArray(config.assets?.shuffleUrls) ? config.assets.shuffleUrls : [];
-            const localFiles = fs.existsSync(SHUFFLE_DIR)
-                ? fs.readdirSync(SHUFFLE_DIR).filter(f => /\.(jpg|png|jpeg)$/i.test(f))
-                : [];
-
-            if (remoteUrls.length === 0 && localFiles.length === 0) {
-                return m.reply('❌ Koleksi shuffle kosong.');
-            }
-
-            const total = remoteUrls.length + localFiles.length;
-            await m.reply(`📂 *DAFTAR GAMBAR SHUFFLE*\n\nSistem menemukan *${total}* gambar. Koleksi URL Catbox menjadi koleksi utama; file lokal yang baru ditambahkan lewat sesi capture tetap didukung.`);
-
+            if (!fs.existsSync(SHUFFLE_DIR)) return m.reply('❌ Belum ada satu pun gambar yang tersimpan di dalam direktori *shuffle*. Silakan lakukan penangkapan gambar terlebih dahulu.');
+            const files = fs.readdirSync(SHUFFLE_DIR).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg'));
+            if (files.length === 0) return m.reply('❌ Direktori *shuffle* masih kosong. Silakan gunakan perintah tangkapan gambar untuk mulai menambahkan.');
+            
+            await m.reply(`📂 *DAFTAR GAMBAR SHUFFLE*\n\nSistem menemukan *${files.length}* gambar yang tersimpan. Sedang memproses dan merangkai album untuk ditampilkan, harap tunggu sebentar.`);
+            
             try {
                 const opener = generateWAMessageFromContent(
                     m.chat,
                     {
                         messageContextInfo: { messageSecret: crypto.randomBytes(32) },
                         albumMessage: {
-                            expectedImageCount: total,
+                            expectedImageCount: files.length,
                             expectedVideoCount: 0,
                         },
                     },
@@ -103,29 +93,25 @@ async function handler(m, { sock, args }) {
                     messageId: opener.key.id,
                 });
 
-                for (const url of remoteUrls) {
-                    const imgBuffer = await getRemoteAssetBuffer(url);
-                    if (!imgBuffer) continue;
-                    const msg = await generateWAMessage(opener.key.remoteJid, { image: imgBuffer }, {
-                        upload: sock.waUploadToServer,
-                    });
-                    msg.message.messageContextInfo = {
-                        messageSecret: crypto.randomBytes(32),
-                        messageAssociation: { associationType: 1, parentMessageKey: opener.key },
-                    };
-                    await sock.relayMessage(msg.key.remoteJid, msg.message, { messageId: msg.key.id });
-                }
+                for (let i = 0; i < files.length; i++) {
+                    const imgPath = path.join(SHUFFLE_DIR, files[i]);
+                    const imgBuffer = fs.readFileSync(imgPath);
 
-                for (const file of localFiles) {
-                    const imgBuffer = fs.readFileSync(path.join(SHUFFLE_DIR, file));
                     const msg = await generateWAMessage(opener.key.remoteJid, { image: imgBuffer }, {
                         upload: sock.waUploadToServer,
                     });
+
                     msg.message.messageContextInfo = {
                         messageSecret: crypto.randomBytes(32),
-                        messageAssociation: { associationType: 1, parentMessageKey: opener.key },
+                        messageAssociation: {
+                            associationType: 1,
+                            parentMessageKey: opener.key,
+                        },
                     };
-                    await sock.relayMessage(msg.key.remoteJid, msg.message, { messageId: msg.key.id });
+
+                    await sock.relayMessage(msg.key.remoteJid, msg.message, {
+                        messageId: msg.key.id,
+                    });
                 }
             } catch (albumErr) {
                 console.error('Album Error:', albumErr);

@@ -11,6 +11,22 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const pluginConfig = {
+  name: "polisi",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, usedPrefix, command, args }) => {
   const sender = m.sender;
   const user = global.db.data.users[sender]
@@ -156,8 +172,4 @@ const handler = async (m, { conn, usedPrefix, command, args }) => {
   }
 };
 
-handler.help = ["polisi", "polisi cari", "polisi status", "polisi item <item>", "polisi leaderboard", "polisi stop"];
-handler.tags = ["game"];
-handler.command = ["polisi"];
-
-export default handler;
+export { pluginConfig as config, handler };

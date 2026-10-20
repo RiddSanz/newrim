@@ -1,9 +1,6 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fetch from "node-fetch";
 import crypto from "crypto";
-import { generateWAMessageFromContent, generateWAMessage, jidNormalizedUser } from "ourin";
+import { generateWAMessageFromContent, generateWAMessage, jidNormalizedUser } from "rimuru";
 
 const pluginConfig = {
     name: 'mywaifu',
@@ -24,13 +21,13 @@ const pluginConfig = {
 async function handler(m, { sock, args }) {
     const mode = args[0] ? args[0].toLowerCase() : "";
 
-    if (mode !== 'sfw' && mode !== 'nsfw') {
+    if (mode !== 'sfw') {
         return m.reply(
             `🌸 *PENCARI WAIFU* 🌸\n\n` +
             `Fitur ini akan mencarikan 10 gambar waifu spesial untukmu langsung dari Waifu.im dan menyatukannya dalam satu album rapi!\n\n` +
             `*CARA PENGGUNAAN:*\n` +
             `- Ketik \`${m.prefix}mywaifu sfw\` untuk gambar waifu yang aman.\n` +
-            `- Ketik \`${m.prefix}mywaifu nsfw\` untuk gambar waifu versi dewasa (NSFW).\n\n` +
+             +
             `_Pastikan kamu memilih mode yang sesuai dengan seleramu ya!_`
         );
     }
@@ -38,7 +35,7 @@ async function handler(m, { sock, args }) {
     try {
         await m.react('🕕');
 
-        const isNsfw = mode === 'nsfw';
+        const isNsfw = false;
         const pageSize = 10;
 
         const params = new URLSearchParams({

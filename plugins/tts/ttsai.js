@@ -20,7 +20,25 @@ const AvailableVoices = {
   eminem: 'eminem'
 }
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "ttsvoice",
+  alias: [],
+  category: "tts",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   let [model, ...rest] = text.split(" ")
   let message = rest.join(" ")
 
@@ -91,8 +109,4 @@ ${Object.keys(AvailableVoices).join(", ")}`)
   }
 }
 
-handler.help = ['ttsvoice <model> <teks>']
-handler.tags = ['voice']
-handler.command = /^ttsvoice$/i
-
-export default handler
+export { pluginConfig as config, handler };

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import crypto from "crypto";
 import config, { getOwnerName } from "../../config.js";
 import { getDatabase } from "../../src/lib/rimuru-database.js";
@@ -8,7 +5,7 @@ import {
   proto,
   generateWAMessageFromContent,
   prepareWAMessageMedia,
-} from "ourin";
+} from "rimuru";
 import { AIRich } from "../../src/lib/rimuru-builder.js";
 import axios from "axios";
 import sharp from "sharp";
@@ -34,7 +31,7 @@ async function handler(m, { sock, config: botConfig }) {
   const configOwners = botConfig.owner?.number || [];
   const dbOwners = db.data.owner || [];
   const ownerNumbers = [...new Set([...configOwners, ...dbOwners])];
-  const botName = botConfig.bot?.name || "rimuru-AI";
+  const botName = botConfig.bot?.name || "Rimuru-AI";
   if (ownerType === 2) {
     const contacts = [];
 

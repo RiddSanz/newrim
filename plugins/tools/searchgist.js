@@ -8,7 +8,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
  * Channel  : https://whatsapp.com/channel/0029VbAYjQgKrWQulDTYcg2K
  */
 
-let handler = async (m, { text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "searchgist",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) throw `${usedPrefix}${command} query`
 
   try {
@@ -37,9 +54,4 @@ let handler = async (m, { text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['searchgist']
-handler.tags = ['tools']
-handler.command = /^searchgist$/i
-handler.owner = false
-
-export default handler
+export { pluginConfig as config, handler };

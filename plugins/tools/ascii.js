@@ -18,7 +18,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import * as ch from "cheerio";
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "imagetoasci",
+  alias: ["imgascii", "ascii"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     try {
         if (!m.quoted && !(text && text.startsWith("http"))) {
             return m.reply(`*🍂 Butuh input gambar!*\n*Contoh: ${usedPrefix + command} (reply gambar atau kirim URL)*`);
@@ -158,10 +176,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 };
 
-handler.help = ["imagetoasci"];
-handler.tags = ["tools"];
-handler.command = /^(imagetoasci|imgascii|ascii)$/i;
-handler.limit = true;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
-export default handler;
+export { pluginConfig as config, handler };

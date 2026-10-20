@@ -1,10 +1,7 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import FormData from "form-data";
 import config from "../../config.js";
-import { downloadMediaMessage } from "ourin";
+import { downloadMediaMessage } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
 import rimuruApi from "../../src/lib/rimuru-apimanager.js";
 import { saluranCtx } from "../../src/lib/rimuru-context.js";
@@ -93,7 +90,7 @@ async function handler(m, { sock }) {
     const data = await rimuruApi.neoxr.whatMusic(
       {
         url: audioUrl,
-        apikey: config.APIkey?.neoxr || "Milik-Bot-rimuruMD",
+        apikey: config.APIkey?.neoxr || "Milik-Bot-RimuruMD",
       },
       {
         timeout: 60000,

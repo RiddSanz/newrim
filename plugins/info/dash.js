@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "dashboard",
+  alias: [],
+  category: "info",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   let stats = Object.entries(db.data.stats).map(([key, val]) => {
     let help = plugins[key]?.help
     let name = Array.isArray(help) ? help.join(', ') : help || key
@@ -33,9 +50,6 @@ let handler = async (m, { conn }) => {
   }, {})
 }
 
-handler.help = ['dashboard']
-handler.tags = ['main']
-handler.command = /^(dashboard)$/i
 handler.register = true;
 
-export default handler
+export { pluginConfig as config, handler };

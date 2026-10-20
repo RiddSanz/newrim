@@ -1,16 +1,41 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
+/*
+╔══════════════════════════════════════════════╗
+║       👑  𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 〽️                        ║
+╚══════════════════════════════════════════════╝
 
+🪽 𝑵𝒐𝒕𝒆 :
+Rimuru MD adalah SC hasil rename dari SC Ourin MD.
+
+╭─────────────「 🜲 𝑰𝑵𝑭𝑶 𝑶𝑼𝑹𝑰𝑵 」─────────────╮
+│ 👤 Developer : 𝑯𝒚𝒖𝒖 / 𝒁𝒂𝒏𝒏
+│ 🎵 TikTok    : https://tiktok.com/@ourinmd
+│ 📢 WhatsApp  : https://whatsapp.com/channel/0029VbB37bgBfxoAmAlsgE0t
+╰─────────────────────────────────────────────╯
+
+╭────────────「 ✦ 𝑰𝑵𝑭𝑶 𝑹𝑰𝑴𝑼𝑹𝑼 ✦ 」────────────╮
+│ 👤 Developer Pihak Ketiga : 𝑨𝒏𝒊𝒕𝒂 𝑷𝒖𝒕𝒓𝒊 𝑨𝒛𝒛𝒂𝒉𝒓𝒂
+│ 🎵 TikTok                 : https://tiktok.com/@anita.putri.azzah1
+│ 📸 Instagram              : anit_aputriazzahrah
+│ 📢 Saluran                : https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P
+│ ▶️ YouTube                : https://youtube.com/@rimurumd
+╰─────────────────────────────────────────────╯
+
+        ⚠️ 𝑫𝑶 𝑵𝑶𝑻 𝑹𝑬𝑴𝑶𝑽𝑬 𝑪𝑹𝑬𝑫𝑰𝑻 ⚠️
+              ❖ 𝐉𝐚𝐧𝐠𝐚𝐧 𝐡𝐚𝐩𝐮𝐬 𝐜𝐫𝐞𝐝𝐢𝐭 ❖
+
+                 「 👑 𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 👑 」
+*/
 
 import te from "../../src/lib/rimuru-error.js";
-import { enhanceVideo } from "../../src/scraper/termai.js";
+import winkEnhance from "../../src/scraper/wink.js";
 
 const pluginConfig = {
   name: "wink",
-  alias: ["winkenhance", "winkhd", "wenhance", "enhancevideo", "hdvideo", "ehv", "repairvideo", "rpv"],
+  alias: ["winkenhance", "winkhd", "wenhance"],
   category: "tools",
-  description: "Wink/XTerm AI video enhancer HD/UHD/4K/Repair",
-  usage: ".wink [uhd|4k|2k|hd|repair|portrait|cartoon|denoise|deblur|smooth|color] (reply video)",
-  example: ".wink uhd",
+  description: "Meningkatkan kualitas video menjadi Ultra HD dengan Wink AI",
+  usage: ".wink (reply video)",
+  example: ".wink",
   isOwner: false,
   isPremium: true,
   isGroup: false,
@@ -20,83 +45,56 @@ const pluginConfig = {
   isEnabled: true,
 };
 
-const MODES = {
-  uhd: ["VIDEO_UHD", "63031"],
-  "4k": ["VIDEO_HD", "63093"],
-  "2k": ["VIDEO_HD", "63091"],
-  hd: ["VIDEO_HD", "63090"],
-  portrait: ["VIDEO_HD", "63092"],
-  cartoon: ["VIDEO_HD", "63097"],
-  anime: ["VIDEO_HD", "63097"],
-  denoise: ["DENOISE", "63292"],
-  deblur: ["DEBLUR", "67691"],
-  smooth: ["FRAME_INTERPOLATION", "62091"],
-  fps: ["FRAME_INTERPOLATION", "62091"],
-  color: ["COLOR_CORRECTION", "64990"],
-  repair: ["VIDEO_REPAIR", "65591"],
-};
-
 async function handler(m, { sock }) {
-  const isVideo = m.isVideo || m.isMedia && String(m.mimetype || "").startsWith("video/") || (m.quoted && ["videoMessage", "documentMessage"].includes(m.quoted.type) && String(m.quoted.mimetype || m.quoted.message?.documentMessage?.mimetype || "").startsWith("video/"));
-  const opt = String(m.args?.[0] || "uhd").toLowerCase();
-  if (m.command === "wink" && !m.args?.length) {
-    return m.reply(`🤖 *WINK VIDEO PROCESSOR*\n\n` +
-      `Balas video dengan: *${m.prefix}wink uhd*\n\n` +
-      `uhd • 4k • 2k • hd • repair • portrait • cartoon • denoise • deblur • smooth • color`);
+  let isVideoMessage = m.isVideo || (m.quoted && m.quoted.type === "videoMessage");
+  let isDocumentMessage = (m.type === "documentMessage" && m.message?.documentMessage?.mimetype?.startsWith("video")) || (m.quoted && m.quoted.type === "documentMessage" && m.quoted.message?.documentMessage?.mimetype?.startsWith("video"));
+
+  if (!isVideoMessage && !isDocumentMessage) {
+    return m.reply(
+      `✨ *ᴡɪɴᴋ ᴠɪᴅᴇᴏ ᴇɴʜᴀɴᴄᴇʀ*\n\n` +
+        `> Bikin video buram jadi *Ultra HD* pakai AI Wink!\n\n` +
+        `*Cara pakai:*\n` +
+        `> Kirim/reply video lalu caption \`${m.prefix}wink\`\n\n` +
+        `⚠️ _Fitur Premium, proses estimasi 1-5 menit tergantung durasi video_`,
+    );
   }
-  if (!isVideo) return m.reply(`🎬 Reply/kirim video lalu gunakan *${m.prefix}wink [opsi]*.`);
-  const [task, model] = MODES[opt] || MODES.uhd;
+
   await m.react("🕕");
+
   try {
-    const video = m.quoted?.download ? await m.quoted.download() : await m.download();
-    if (!video?.length) throw new Error("Video gagal diunduh");
-    if (video.length > 100 * 1024 * 1024) throw new Error("Video terlalu besar (maks. 100MB)");
+    const videoBuffer = (await m?.quoted?.download?.()) || (await m.download?.());
 
-    const response = await enhanceVideo(video, { task, model });
-    if (response.status >= 400) throw new Error(`API Wink/XTerm HTTP ${response.status}`);
+    if (!videoBuffer || videoBuffer.length === 0) {
+      await m.react("❌");
+      return m.reply(`❌ *GAGAL*\n\nVideonya gagal diunduh, coba kirim ulang ya!`);
+    }
 
-    let finished = false;
-    await new Promise((resolve, reject) => {
-      const stream = response.data;
-      const onError = (e) => reject(e);
-      stream.on("error", onError);
-      stream.on("data", async (chunk) => {
-        const text = chunk.toString();
-        for (const line of text.matchAll(/data:\s*(.+)/g)) {
-          let data;
-          try { data = JSON.parse(line[1]); } catch { continue; }
-          if (["preparing", "uploading", "processing", "enhancing"].includes(data.status)) {
-            try { await m.react("⏳"); } catch {}
-          } else if (data.status === "failed" || data.status === "reject") {
-            reject(new Error(data.msg || "Proses Wink gagal"));
-            stream.destroy();
-            return;
-          } else if (data.status === "completed" && data.video?.url) {
-            // Only accept a completed video URL. This command must never send an image.
-            if (typeof data.video.url !== "string" || !/^https?:\/\//i.test(data.video.url)) {
-              continue;
-            }
-            finished = true;
-            await sock.sendMessage(m.chat, {
-              video: { url: data.video.url },
-              mimetype: "video/mp4",
-              fileName: `WINK-HD-${Date.now()}.mp4`,
-              caption: `✨ *Wink selesai*\nMode: *${opt}*${data.beans ? `\nPenggunaan: *${data.beans} Beans*` : ""}`,
-            }, { quoted: m });
-            try { await m.react("✅"); } catch {}
-            stream.destroy();
-            resolve();
-          }
-        }
-      });
-      stream.on("close", () => {
-        if (!finished) reject(new Error("Stream Wink terputus sebelum hasil selesai"));
-      });
+    if (videoBuffer.length > 50 * 1024 * 1024) {
+      await m.react("❌");
+      return m.reply(`❌ *FILE TERLALU BESAR*\n\nMaksimal ukuran video cuma *50MB* ya!`);
+    }
+
+    await m.reply(
+      `🎬 *ᴘʀᴏsᴇs ᴡɪɴᴋ ᴇɴʜᴀɴᴄᴇ ᴅɪᴍᴜʟᴀɪ*\n\n` +
+        `> Video lagi diproses AI Wink biar jadi *Ultra HD* ✨\n` +
+        `> Estimasi *1-5 menit*, mohon sabar ya!`,
+    );
+
+    const result = await winkEnhance(videoBuffer, {
+      filename: `wink-${Date.now()}.mp4`,
     });
-  } catch (e) {
-    await m.react("❌").catch(() => {});
-    console.error("[WINK-XTERM]", e);
-    return m.reply(te(m.prefix, m.command, m.pushName));
+
+    await sock.sendMedia(m.chat, result.resultUrl, `✨ *ᴡɪɴᴋ ᴇɴʜᴀɴᴄᴇ sᴇʟᴇsᴀɪ!*\n\n> Ini dia hasilnya, udah jadi *Ultra HD* kan? 😍`, m, {
+      type: "video",
+      mimetype: "video/mp4",
+      fileName: `WINK-HD-${Date.now()}.mp4`,
+    });
+
+    await m.react("✅");
+  } catch (err) {
+    console.log(err);
+    await m.react("❌");
+    await m.reply(`❌ Proses Wink enhance gagal! Coba lagi nanti ya 😭`);
   }
 }
 

@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "gaji",
+  alias: ["gajian"],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   let LastClaim = global.db.data.users[m.sender].lastclaim
   let cdm = `${MeNit(new Date - LastClaim)}`
   let cds = `${DeTik(new Date - LastClaim)}`
@@ -14,14 +31,7 @@ let handler = async (m, { conn }) => {
     global.db.data.users[m.sender].lastclaim = new Date * 1
   } else return m.reply(`Lu udah ambil jatah hari ini.\n\nTunggu ${cd1} Menit ${cd2} Detik!`)
 }
-handler.help = ['gajian']
-handler.tags = ['rpg']
-handler.command = /^(gaji|gajian)$/i
 handler.register = true
-handler.group = true
-handler.rpg = true
-export default handler 
-
 function JaM(ms) {
   let h = isNaN(ms) ? '60' : Math.floor(ms / 3600000) % 60
   return [h].map(v => v.toString().padStart(2, 0) ).join(':')
@@ -36,3 +46,5 @@ function DeTik(ms) {
   let s = isNaN(ms) ? '60' : Math.floor(ms / 1000) % 60
   return [s].map(v => v.toString().padStart(2, 0) ).join(':')
 }
+
+export { pluginConfig as config, handler };

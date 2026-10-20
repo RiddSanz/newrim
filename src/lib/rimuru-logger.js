@@ -66,7 +66,7 @@ function writeLog(kind, label, detail = "") {
   };
   const tag = tags[kind] || SYM.info;
 
-  // Format: [  OK  ] Started rimuru AI
+  // Format: [  OK  ] Started RIMURU AI
   const msg = `${tag} ${chalk.cyanBright(label)}${detail ? " " + cWhite(detail) : ""}`;
   console.log(msg);
 }
@@ -131,17 +131,17 @@ async function runLoader(text = "memuat", options = {}) {
 }
 
 async function playBootSequence(info = {}) {
-  const { name = "rimuru", version = "3.3", mode = "public" } = info;
+  const { name = "RIMURU", version = "4.8", mode = "public" } = info;
   console.log("");
   console.log(chalk.cyan(`
-          ██████╗ ██╗   ██╗██████╗ ██╗███╗   ██╗
-         ██╔═══██╗██║   ██║██╔══██╗██║████╗  ██║
-         ██║   ██║██║   ██║██████╔╝██║██╔██╗ ██║
-         ██║   ██║██║   ██║██╔══██╗██║██║╚██╗██║
-         ╚██████╔╝╚██████╔╝██║  ██║██║██║ ╚████║
-          ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+██████╗  ██╗███╗   ███╗██╗   ██╗██████╗ ██╗   ██╗
+██╔══██╗ ██║████╗ ████║██║   ██║██╔══██╗██║   ██║
+██████╔╝ ██║██╔████╔██║██║   ██║██████╔╝██║   ██║
+██╔══██╗ ██║██║╚██╔╝██║██║   ██║██╔══██╗██║   ██║
+██║  ██║ ██║██║ ╚═╝ ██║╚██████╔╝██║  ██║╚██████╔╝
+╚═╝  ╚═╝ ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
 `));
-  console.log(`         ${chalk.magenta.bold("►")} ${chalk.white("rimuru MULTI-DEVICE BOT")} ${chalk.gray(`v${version}`)}`);
+  console.log(`         ${chalk.magenta.bold("►")} ${chalk.white("RIMURU MULTI-DEVICE")} ${chalk.gray(`V${version}`)}`);
   console.log(`         ${chalk.magenta("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}`);
   console.log("");
   console.log(`${makeTag("BOOT", true)} ${cWhite(`Memulai Sistem Utama...`)}`);

@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, participants, text }) => {
+const pluginConfig = {
+  name: "tagadmin",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, participants, text }) {
+    const conn = sock;
   if (!m.isGroup) throw '…ini bukan grup.'
 
   let admins = participants
@@ -22,9 +39,4 @@ let handler = async (m, { conn, participants, text }) => {
   }, { quoted: m })
 }
 
-handler.help = ['tagadmin']
-handler.tags = ['group']
-handler.command = /^tagadmin$/i
-handler.group = true
-
-export default handler
+export { pluginConfig as config, handler };

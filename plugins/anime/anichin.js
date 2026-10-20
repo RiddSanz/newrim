@@ -101,7 +101,25 @@ class Anichin {
 
 const api = new Anichin()
 
-let handler = async (m, { conn, text, args, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "anichin",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, args, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!args[0]) {
     return m.reply(`📺 *Anichin Menu*
 
@@ -178,10 +196,6 @@ ${usedPrefix + command} episode url`)
   }
 }
 
-handler.help = ['anichin']
-handler.tags = ['anime']
-handler.command = /^anichin$/i
-handler.limit = true
 handler.register = true
 
-export default handler
+export { pluginConfig as config, handler };

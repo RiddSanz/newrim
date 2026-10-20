@@ -8,7 +8,24 @@ let timeout = 120000
 let poin = 4999
 const threshold = 0.72
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "tebaklogo",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   conn.game = conn.game ? conn.game : {}
   let id = 'tebaklogo-' + m.chat
 
@@ -47,13 +64,6 @@ ${json.deskripsi}
     }, timeout)
   ]
 }
-
-handler.help = ['tebaklogo']
-handler.tags = ['game']
-handler.command = /^tebaklogo$/i
-handler.limit = true
-
-export default handler
 
 
 handler.before = async function (m, { conn }) {
@@ -98,3 +108,5 @@ handler.before = async function (m, { conn }) {
 }
 
 export const exp = 0
+
+export { pluginConfig as config, handler };

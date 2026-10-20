@@ -1,113 +1,23 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import * as _canvas from '@napi-rs/canvas'
-import axios from "axios";
-import path from "path";
-import fs from "fs";
-
-
-import { uploadTo0x0 } from "../../src/lib/rimuru-tmpfiles.js";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
+import axios from "axios";
+
 const pluginConfig = {
   name: "fakedev",
   alias: [],
   category: "canvas",
-  description: "Membuat fake developer profile card",
-  usage: ".fakedev <nama> (reply/kirim foto)",
-  example: ".fakedev Misaki",
+  description: "Bikin gambar fakedev dari fotomu",
+  usage: ".fakedev <teks> (reply/kirim foto)",
+  example: ".fakedev developer",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
-let fontRegistered = false;
-async function handler(m, { sock }) {
-  const name = m.text?.trim();
-  if (!name) {
-    return m.reply(
-      `🎮 *ꜰᴀᴋᴇ ᴅᴇᴠᴇʟᴏᴘᴇʀ*\n\n` +
-        `> Masukkan nama untuk profile\n\n` +
-        `*ᴄᴀʀᴀ ᴘᴀᴋᴀɪ:*\n` +
-        `> 1. Kirim foto + caption \`${m.prefix}fakedev <nama>\`\n` +
-        `> 2. Reply foto dengan \`${m.prefix}fakedev <nama>\``,
-    );
-  }
-  let buffer = null;
-  if (
-    m.quoted &&
-    (m.quoted.type === "imageMessage" || m.quoted.mtype === "imageMessage")
-  ) {
-    try {
-      buffer = await m.quoted.download();
-    } catch (e) {
-      m.reply(te(m.prefix, m.command, m.pushName));
-    }
-  } else if (m.isMedia && m.type === "imageMessage") {
-    try {
-      buffer = await m.download();
-    } catch (e) {
-      m.reply(te(m.prefix, m.command, m.pushName));
-    }
-  } else {
-    try {
-      let te = await sock.profilePictureUrl(m.sender, "image");
-      buffer = Buffer.from(
-        (await axios.get(te, { responseType: "arraybuffer" })).data,
-      );
-    } catch (error) {
-      buffer = getAssetBuffer("pp-kosong");
-    }
-  }
-  if (!buffer) {
-    return m.reply(`❌ Kirim/reply gambar untuk dijadikan avatar!`);
-  }
-  m.react("🕕");
-  try {
-    const userImage = await _canvas.loadImage(buffer);
-    const bg = await _canvas.loadImage("https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772797781960.jpeg");
-    const badge = await _canvas.loadImage("https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772797710490.png");
-
-    const canvas = _canvas.createCanvas(1080, 1080);
-    const ctx = canvas.getContext("2d");
-
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = 263;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(userImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
-    ctx.restore();
-
-    drawCircularTextTop(ctx, name.toUpperCase(), centerX, centerY, radius, badge);
-
-    const finalBuffer = await canvas.encode("png");
-
-    await sock.sendMedia(
-      m.chat,
-      finalBuffer,
-      null,
-      m,
-      {
-        type: "image",
-      },
-    );
-    m.react("✅");
-  } catch (error) {
-    m.react("❌");
-    m.reply(`❌ Terjadi kesalahan saat memproses gambar.`);
-  }
-}
 
 function drawCircularTextTop(ctx, text, centerX, centerY, radius, badgeImage) {
   const fontSize = 72;
@@ -148,6 +58,63 @@ function drawCircularTextTop(ctx, text, centerX, centerY, radius, badgeImage) {
     const bx = centerX + Math.cos(badgeAngle) * textRadius;
     const by = centerY + Math.sin(badgeAngle) * textRadius;
     ctx.drawImage(badgeImage, bx - badgeSize / 2, by - badgeSize / 2, badgeSize, badgeSize);
+  }
+}
+
+async function handler(m, { sock }) {
+  const text = m.text?.trim();
+  if (!text) {
+    return m.reply(`⚠️ Harap masukkan teksnya!\nContoh: \`${m.prefix}${m.command} Halo\``);
+  }
+
+  let media = null;
+  const msgObj = m.quoted?.message ? m.quoted : m;
+  const type = getContentType(msgObj.message);
+
+  if (!type || type !== "imageMessage") {
+    return m.reply(`⚠️ Harap kirim atau reply foto dengan perintah \`${m.prefix}${m.command} <teks>\``);
+  }
+  
+  await m.react("🕕");
+  
+  try {
+    media = await downloadMediaMessage(msgObj, "buffer", {});
+    if (!media) throw new Error("Gagal membaca media");
+
+    const bgUrl = "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772797781960.jpeg";
+    const bgBuffer = await axios.get(bgUrl, { responseType: "arraybuffer" }).then(r => r.data);
+    const badgeBuffer = await axios.get("https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772797710490.png", { responseType: "arraybuffer" }).then(r => r.data);
+
+    const userImage = await loadImage(media);
+    const bg = await loadImage(Buffer.from(bgBuffer));
+    const badge = await loadImage(Buffer.from(badgeBuffer));
+
+    const canvas = createCanvas(1080, 1080);
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 263;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(userImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
+    ctx.restore();
+
+    drawCircularTextTop(ctx, text.toUpperCase(), centerX, centerY, radius, badge);
+
+    const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "👨‍💻 *Fake Dev*" }, { quoted: m });
+    await m.react("✅");
+
+  } catch (err) {
+    await m.react("☢");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

@@ -11,7 +11,24 @@ const rewards = {
 
 const cooldown = 2592000000 // 30 hari
 
-let handler = async (m, { usedPrefix }) => {
+const pluginConfig = {
+  name: "monthly",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { prefix }) {
+    const usedPrefix = prefix || m.prefix || ".";
     let user = global.db.data.users[m.sender] = global.db.data.users[m.sender] || {
         money: 0,
         exp: 0,
@@ -36,15 +53,8 @@ let handler = async (m, { usedPrefix }) => {
     user.lastmonthly = new Date * 1
 }
 
-handler.help = ['monthly']
-handler.tags = ['rpg']
-handler.command = /^(monthly)$/i
 handler.register = true
-handler.group = true
 handler.cooldown = cooldown
-handler.rpg = true
-
-export default handler
 
 function clockString(ms) {
     let d = Math.floor(ms / 86400000)
@@ -53,3 +63,5 @@ function clockString(ms) {
     let s = Math.floor(ms / 1000) % 60
     return `${d} hari ${h} jam ${m} menit ${s} detik`
 }
+
+export { pluginConfig as config, handler };

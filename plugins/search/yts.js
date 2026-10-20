@@ -1,9 +1,5 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import yts from "yt-search";
-import { generateWAMessageFromContent, proto } from "ourin";
+import { generateWAMessageFromContent, proto } from "rimuru";
 import axios from "axios";
 import sharp from "sharp";
 import config from "../../config.js";
@@ -81,7 +77,7 @@ Pilih salah satu tombol di bawah ini untuk langsung mengunduh hasil video atau a
           address: `📺 Channel: ${firstVideo.author.name} | ⏱️ Durasi: ${firstVideo.timestamp}`
         },
         contentText: contentText,
-        footerText: RIMURU_CORE_CONFIG.bot.name,
+        footerText: config.bot.name,
         headerType: 6,
       },
     };

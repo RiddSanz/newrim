@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, command, text }) => {
+const pluginConfig = {
+  name: "dimanakah",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, command, text }) {
+    const conn = sock;
   conn.reply(m.chat, `
 *Pertanyaan:* ${command} ${text}
 *Jawaban:* ${pickRandom(['di neraka','di surga','di mars','di tengah laut','di dada :v','di hatimu >///<'])}
@@ -11,13 +28,9 @@ let handler = async (m, { conn, command, text }) => {
     }
   } : {})
 }
-handler.help = ['dimanakah <pertanyaan>']
-handler.tags = ['fun']
-handler.command = /^dimanakah$/i
-handler.owner = false
-
-export default handler
 
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)]
 }
+
+export { pluginConfig as config, handler };

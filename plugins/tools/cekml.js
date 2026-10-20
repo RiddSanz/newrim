@@ -1,8 +1,6 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-import safeJson from "../../src/lib/rimuru-safe-json.js";
-
 let handler = async (m, { args, usedPrefix, command }) => {
   if (args.length < 2) {
     return m.reply(`Example:\n${usedPrefix + command} id zone`)

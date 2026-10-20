@@ -1,4 +1,4 @@
-import { jidDecode } from "ourin";
+import { jidDecode } from "rimuru";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 

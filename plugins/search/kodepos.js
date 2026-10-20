@@ -94,7 +94,24 @@ class KodePosScraper {
 
 const scraper = new KodePosScraper()
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "kodepos",
+  alias: [],
+  category: "search",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   if (!text) {
     return conn.reply(
       m.chat,
@@ -125,9 +142,4 @@ let handler = async (m, { conn, text }) => {
   await conn.reply(m.chat, teks.trim(), m, { quoted: global.fkontak })
 }
 
-handler.help = ['kodepos <query>']
-handler.tags = ['tools']
-handler.command = /^kodepos$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import te from '../../src/lib/rimuru-error.js'
 import { addExifToWebp, isAnimatedWebp, DEFAULT_METADATA } from '../../src/lib/rimuru-exif.js'
@@ -30,8 +27,8 @@ async function handler(m, { sock, config: botConfig }) {
             `> Reply sticker dengan caption:\n` +
             `> \`${m.prefix}swm packname\`\n\n` +
             `*ᴄᴏɴᴛᴏʜ:*\n` +
-            `> \`${m.prefix}swm rimuru-AI\`\n` +
-            `> \`${m.prefix}swm rimuru-AI|LuckyArchz\` _(packname + author)_`
+            `> \`${m.prefix}swm Rimuru-AI\`\n` +
+            `> \`${m.prefix}swm Rimuru-AI|LuckyArchz\` _(packname + author)_`
         )
     }
     
@@ -46,8 +43,8 @@ async function handler(m, { sock, config: botConfig }) {
             `❌ *ɢᴀɢᴀʟ*\n\n` +
             `> Masukkan packname\n\n` +
             `*ᴄᴏɴᴛᴏʜ:*\n` +
-            `> \`${m.prefix}swm rimuru-AI\`\n` +
-            `> \`${m.prefix}swm rimuru-AI|LuckyArchz\` _(+ author)_`
+            `> \`${m.prefix}swm Rimuru-AI\`\n` +
+            `> \`${m.prefix}swm Rimuru-AI|LuckyArchz\` _(+ author)_`
         )
     }
     

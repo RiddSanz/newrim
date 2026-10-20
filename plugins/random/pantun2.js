@@ -4,7 +4,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import fs from 'fs'
 import moment from 'moment-timezone'
 
-let handler = async (m, { conn, usedPrefix, __dirname, text, command }) => {
+const pluginConfig = {
+  name: "pantun2",
+  alias: [],
+  category: "random",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, __dirname, text, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 let tag = `@${m.sender.replace(/@.+/, '')}`
   let mentionedJid = [m.sender]
 let name = conn.getName(m.sender)
@@ -18,13 +36,8 @@ let cin = `${pickRandom(global.pantun)}`
 let nth = '❲ *PANTUN* ❳'
 m.reply(nth + `\n` + cin)
 }
-handler.help = ['pantun2']
-handler.tags = ['quotes']
-handler.command = /^(pantun2)$/i
 
 handler.register = true
-
-export default handler
 
 function ucapan() {
   const time = moment.tz('Asia/Jakarta').format('HH')
@@ -77,3 +90,5 @@ global.pantun = [
 'Membeli beras ke Mang Duloh Membeli semen ke Mang Omat Iman dan takwa kepada Allah Kunci bahagia dunia akhirat',
 'Beli bensin satu tangki Bensi dibeli oleh Mak Rosa Bersihkan hati dari dengki Sucikan raga dari dosa'
 ]
+
+export { pluginConfig as config, handler };

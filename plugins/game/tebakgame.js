@@ -4,7 +4,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import fs from 'fs'
 let timeout = 120000
 let poin = 4999
-let handler = async (m, { conn, command, usedPrefix }) => {
+const pluginConfig = {
+  name: "tebakgame",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, command, prefix }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     conn.game = conn.game ? conn.game : {}
     let id = 'tebakgame-' + m.chat
     if (id in conn.game) return conn.reply(m.chat, 'Masih ada soal belum terjawab di chat ini', conn.game[id][0])
@@ -26,8 +44,5 @@ Bonus: ${poin} XP
         }, timeout)
     ]
 }
-handler.help = ['tebakgame']
-handler.tags = ['game']
-handler.command = /^tebakgame$/i
 
-export default handler
+export { pluginConfig as config, handler };

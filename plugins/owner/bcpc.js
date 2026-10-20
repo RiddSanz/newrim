@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import { decodeAndNormalize } from "../../src/lib/rimuru-lid.js";
 import config from "../../config.js";
@@ -22,8 +18,8 @@ const pluginConfig = {
 };
 
 function getBcContextInfo() {
-  const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "";
-  const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "";
+  const saluranId = config.saluran?.id || "";
+  const saluranName = config.saluran?.name || config.bot?.name || "";
   const ctx = {
     forwardingScore: 1,
     isForwarded: true,

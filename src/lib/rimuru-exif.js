@@ -11,8 +11,8 @@
  * JANGAN HAPUS/GANTI CREDITS & THANKS TO
  * JANGAN DIJUAL YA MEK
  * 
- * Saluran Resmi rimuru:
- * https://whatsapp.com/channel/0029VbB37bgBfxoAmAlsgE0t 
+ * Saluran Resmi Rimuru:
+ * https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P 
  * 
  */
 import fs from 'fs'
@@ -44,7 +44,7 @@ function getTempDir() {
 }
 
 const DEFAULT_METADATA = {
-    packname: 'rimuru-AI',
+    packname: 'Rimuru-AI',
     author: 'Bot',
     packId: 'com.rimuru.sticker',
     emojis: ['🤖']
@@ -366,28 +366,28 @@ function cleanTempFiles(maxAge = 3600000) {
 
 const PRESETS = {
     default: {
-        packname: 'rimuru-AI',
+        packname: 'Rimuru-AI',
         author: 'Bot',
         emojis: ['🤖']
     },
     meme: {
         packname: 'Meme Pack',
-        author: 'rimuru-AI',
+        author: 'Rimuru-AI',
         emojis: ['😂', '🤣']
     },
     love: {
         packname: 'Love Pack',
-        author: 'rimuru-AI',
+        author: 'Rimuru-AI',
         emojis: ['❤️', '💕', '💖']
     },
     sad: {
         packname: 'Sad Pack',
-        author: 'rimuru-AI',
+        author: 'Rimuru-AI',
         emojis: ['😢', '😭', '💔']
     },
     angry: {
         packname: 'Angry Pack',
-        author: 'rimuru-AI',
+        author: 'Rimuru-AI',
         emojis: ['😠', '😡', '💢']
     }
 };

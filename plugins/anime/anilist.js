@@ -164,6 +164,22 @@ async function detail(url) {
   }
 }
 
+const pluginConfig = {
+  name: "anilist",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, usedPrefix, command, args }) => {
   try {
     if (command === 'anilist') {
@@ -271,9 +287,4 @@ ${populerResults.top.map((anime, index) => `${index + 1}. ${anime.title} (Rank: 
   }
 };
 
-handler.help = ['anilist'].map(v => v + ' <search|detail|populer> <query>');
-handler.command = /^(anilist)$/i;
-handler.tags = ['anime']
-handler.limit = false;
-
-export default handler;
+export { pluginConfig as config, handler };

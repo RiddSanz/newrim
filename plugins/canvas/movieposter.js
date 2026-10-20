@@ -1,14 +1,12 @@
-import { createMoviePoster, GENRES } from '../../src/lib/elaina/moviePoster.js';
-import { createRequire } from "module";
+import { createMoviePoster, GENRES } from '../../src/lib/canvas/moviePoster.js';
 import te from "../../src/lib/rimuru-error.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 const pluginConfig = {
   name: "movieposter",
   alias: ["posterfilm", "movieposterelaina"],
   category: "canvas",
   description: "Buat poster film bergaya sinematik dari nama, genre, dan judul",
   usage: ".movieposter nama|genre|judul|tagline",
-  example: ".movieposter Anita|scifi|Rimuru: The Movie|The last slime standing",
+  example: ".movieposter Anita Putri Azzahra|scifi|Rimuru: The Movie|The last slime standing",
   isOwner: false,
   isPremium: false,
   isGroup: false,
@@ -22,7 +20,7 @@ async function handler(m, { sock }) {
   try {
     const raw = String(m.text || "").trim();
     if (!raw) {
-      return m.reply(`🎬 *MOVIE POSTER*\n\nFormat: \`.movieposter nama|genre|judul|tagline\`\n\nGenre: ${Object.keys(GENRES).join(", ")}\n\nContoh: \`.movieposter Anita|scifi|Rimuru: The Movie|The last slime standing\``);
+      return m.reply(`🎬 *MOVIE POSTER*\n\nFormat: \`.movieposter nama|genre|judul|tagline\`\n\nGenre: ${Object.keys(GENRES).join(", ")}\n\nContoh: \`.movieposter Anita Putri Azzahra|scifi|Rimuru: The Movie|The last slime standing\``);
     }
 
     await m.react("🎬");

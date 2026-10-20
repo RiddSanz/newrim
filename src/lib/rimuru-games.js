@@ -22,9 +22,9 @@ import {
   checkFastAnswer,
 } from "./rimuru-context.js";
 import config from "../../config.js";
-import { getAssetBuffer } from "./rimuru-asset-manager.js";
 import fs from "fs";
 import sharp from "sharp";
+import { getAssetBuffer } from "./rimuru-asset-manager.js";
 let fetchBuffer;
 try {
   fetchBuffer = (await import("./rimuru-utils.js")).fetchBuffer;
@@ -55,7 +55,7 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-class rimuruGames {
+class RimuruGames {
   constructor() {
     this.registry = new Map();
   }
@@ -328,6 +328,6 @@ class rimuruGames {
   }
 }
 
-const games = new rimuruGames();
+const games = new RimuruGames();
 
-export { rimuruGames, games };
+export { RimuruGames, games };

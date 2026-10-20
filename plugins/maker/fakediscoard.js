@@ -1,13 +1,8 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-
-
 /*
 
 # Fitur : Fake Discord Chat
 # Type : Plugins ESM
-# Created by : https://whatsapp.com/channel/0029Vb2qri6JkK72MIrI8F1Z
+# Created by : https://whatsapp.com/channel/RIMURU_CHANNEL
 # Api : local (canvas)
 
    ⚠️ _Note_ ⚠️

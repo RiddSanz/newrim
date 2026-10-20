@@ -1,5 +1,11 @@
-import fs from 'fs';
-import path from 'path';
+async function loadImageBuffer(url) {
+    const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error(`Gagal memuat gambar (${response.status})`);
+    return Buffer.from(await response.arrayBuffer());
+}
 
 const pluginConfig = {
     name: 'preset',
@@ -59,12 +65,12 @@ async function handler(m, { sock }) {
         return m.reply('Minimal isi link VT & 9:16 🗿')
     }
 
-    const imgPath = path.join(process.cwd(), 'assets/images/rimuru-help.jpg')
+    const imgUrl = 'https://files.catbox.moe/s1fkp1.png'
     const finalText = buildText(vt, l916, l11, xml)
 
     // 💗 LOADING MESSAGE
     await sock.sendMessage(m.chat, {
-        image: fs.readFileSync(imgPath),
+        image: await loadImageBuffer(imgUrl),
         caption: `💗 *Rimuru lagi nyusun preset kamu...* 😈
 
 Tunggu bentar ya darling~`
@@ -85,7 +91,7 @@ Tunggu bentar ya darling~`
 
     // 🚀 FINAL MESSAGE
     await sock.sendMessage(m.chat, {
-        image: fs.readFileSync(imgPath),
+        image: await loadImageBuffer(imgUrl),
         caption: finalText,
         footer: 'Rimuru AI 💗',
         interactiveButtons: buttons

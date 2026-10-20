@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -12,11 +8,11 @@ import {
   generateWAMessage,
   generateWAMessageFromContent,
   jidNormalizedUser,
-} from "ourin";
+} from "rimuru";
 import config from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
 const execAsync = promisify(exec);
-const NEOXR_APIKEY = config.APIkey?.neoxr || "Milik-Bot-rimuruMD";
+const NEOXR_APIKEY = config.APIkey?.neoxr || "Milik-Bot-RimuruMD";
 
 const pluginConfig = {
   name: "pinvid",
@@ -55,7 +51,7 @@ async function handler(m, { sock }) {
 
   try {
     const res = await axios.get(
-      `https://firefly.maiku.my.id/api/pinterestvideo?apikey=rimuruNextGen&q=${encodeURIComponent(query)}`,
+      `https://firefly.maiku.my.id/api/pinterestvideo?apikey=RimuruNextGen&q=${encodeURIComponent(query)}`,
       {
         timeout: 60000,
       },
@@ -188,9 +184,9 @@ async function handler(m, { sock }) {
         albumErr.message,
       );
 
-      const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
+      const saluranId = config.saluran?.id || "120363412350560864@newsletter";
       const saluranName =
-        RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+        config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
       for (const content of mediaList) {
         await sock.sendMessage(

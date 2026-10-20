@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs'
 import path from 'path'
 import te from '../../src/lib/rimuru-error.js'
@@ -23,7 +20,7 @@ const pluginConfig = {
 
 async function handler(m, { sock }) {
     const isImage = m.isImage || (m.quoted && m.quoted.type === 'imageMessage')
-    if (!isImage) return m.reply(`🖼️ *ɢᴀɴᴛɪ rimuru-PROMOTE.JPG*\n\n> Kirim/reply gambar untuk mengganti\n> File: assets/images/rimuru-promote.jpg`)
+    if (!isImage) return m.reply(`🖼️ *ɢᴀɴᴛɪ RIMURU-PROMOTE.JPG*\n\n> Kirim/reply gambar untuk mengganti\n> File: assets/images/rimuru-promote.jpg`)
     try {
         let buffer = m.quoted && m.quoted.isMedia ? await m.quoted.download() : await m.download()
         if (!buffer) return m.reply('❌ Gagal mendownload gambar')

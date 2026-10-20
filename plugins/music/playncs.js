@@ -97,7 +97,24 @@ class NCS {
   }
 }
 
-let handler = async (m, { conn, text, command }) => {
+const pluginConfig = {
+  name: "playncs",
+  alias: ["ncssearch", "ncsplay"],
+  category: "music",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, command }) {
+    const conn = sock;
   const ncs = new NCS()
   conn.ncsResults = conn.ncsResults || {}
 
@@ -192,10 +209,6 @@ let handler = async (m, { conn, text, command }) => {
   }
 }
 
-handler.help = ["playncs", "ncssearch", "ncsplay"]
-handler.tags = ["sound"]
-handler.command = /^(playncs|ncssearch|ncsplay)$/i
-handler.limit = true
 handler.register = true
 
-export default handler
+export { pluginConfig as config, handler };

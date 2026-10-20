@@ -1,54 +1,62 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import * as _canvas from '@napi-rs/canvas'
-import path from "path";
-import config from "../../config.js";
+import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import te from "../../src/lib/rimuru-error.js";
+import axios from "axios";
 
 const pluginConfig = {
   name: "fakeffduo",
-  alias: ["fakefreefirduo"],
+  alias: [],
   category: "canvas",
-  description: "Membuat gambar ff",
-  usage: ".fakeffduo <text>",
-  example: ".fakeffduo Hai cantik",
+  description: "Bikin gambar banner Fake FF (Duo)",
+  usage: ".fakeffduo <nama1>|<nama2>|[bgNum]",
+  example: ".fakeffduo Fauzan|Bot|1",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
 
-let fontRegistered = false;
+let isFontLoaded = false;
+async function loadFont() {
+    if (isFontLoaded) return;
+    const fontBuffer = await axios.get("https://files.catbox.moe/knb2k0.otf", { responseType: "arraybuffer" }).then(r => r.data);
+    GlobalFonts.register(Buffer.from(fontBuffer), "TeutonNormal");
+    isFontLoaded = true;
+}
 
 async function handler(m, { sock }) {
-  const nama = m.text?.split("|");
-  if (!nama || nama.length < 2) {
-    return m.reply(
-      `*FAKE FF DUO*\n\n> Contoh: ${m.prefix}fakeffduo nama1|nama2`,
-    );
-  }
-  m.react("🕕");
-
-  if (!fontRegistered) {
-    try {
-      _canvas.GlobalFonts.registerFromPath(path.join(process.cwd(), "SAMPEL/maker/Teuton.otf"), "TeutonNormal");
-      fontRegistered = true;
-    } catch (e) {
-      console.log("Gagal meload font TeutonNormal:", e);
-    }
+  await loadFont();
+  const input = m.text?.trim();
+  if (!input || !input.includes("|")) {
+    return m.reply(`⚠️ Harap masukkan 2 nama dipisah dengan tanda |\nContoh: \`${m.prefix}${m.command} Fauzan|Bot|1\``);
   }
 
+  const parts = input.split("|");
+  const name1 = parts[0]?.trim();
+  const name2 = parts[1]?.trim();
+  const bg = parseInt(parts[2]?.trim() || "1");
+
+  if (!name1 || !name2) {
+    return m.reply(`⚠️ Parameter name1 dan name2 diperlukan!`);
+  }
+
+  const githubBaseUrl = "https://raw.githubusercontent.com/Raavfy-24/Maker/refs/heads/main";
+  const max = 50;
+
+  if (bg < 1 || bg > max) {
+    return m.reply(`⚠️ Background harus 1-${max}`);
+  }
+
+  await m.react("🕕");
+  
   try {
-    const bgNum = Math.floor(Math.random() * 50) + 1;
-    const githubBaseUrl = "https://raw.githubusercontent.com/Raavfy-24/Maker/refs/heads/main";
-    const bgUrl = `${githubBaseUrl}/FAKE%20FF%20DUO/${bgNum}.png`;
+    const bgUrl = `${githubBaseUrl}/FAKE%20FF%20DUO/${bg}.png`;
+    const bgBuffer = await axios.get(bgUrl, { responseType: "arraybuffer" }).then(r => r.data);
 
-    const background = await _canvas.loadImage(bgUrl);
-    const canvas = _canvas.createCanvas(background.width, background.height);
+    const background = await loadImage(Buffer.from(bgBuffer));
+    const canvas = createCanvas(background.width, background.height);
     const ctx = canvas.getContext("2d");
 
     ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
@@ -56,40 +64,33 @@ async function handler(m, { sock }) {
     ctx.font = `bold 38px "TeutonNormal"`;
     ctx.textAlign = "center";
 
-    const name1 = nama[0].trim();
-    const name2 = nama[1].trim();
-
     ctx.fillStyle = "#ffffff";
     ctx.fillText(name1, 212, canvas.height - 314);
+
     ctx.fillStyle = "#ffb300";
     ctx.fillText(name1, 212, canvas.height - 314);
+
     ctx.strokeStyle = "rgba(0,0,0,0.8)";
     ctx.lineWidth = 1.6;
     ctx.strokeText(name1, 212, canvas.height - 314);
 
+
     ctx.fillStyle = "#ffffff";
     ctx.fillText(name2, 740, canvas.height - 434);
+
     ctx.fillStyle = "#ffb300";
     ctx.fillText(name2, 740, canvas.height - 434);
+
     ctx.strokeStyle = "rgba(0,0,0,0.8)";
     ctx.lineWidth = 1.6;
     ctx.strokeText(name2, 740, canvas.height - 434);
 
     const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "🎮 *Fake FF Duo*" }, { quoted: m });
+    await m.react("✅");
 
-    await sock.sendMedia(
-      m.chat,
-      buffer,
-      null,
-      m,
-      {
-        type: "image",
-      },
-    );
-
-    m.react("✅");
-  } catch (error) {
-    m.react("☢");
+  } catch (err) {
+    await m.react("☢");
     m.reply(te(m.prefix, m.command, m.pushName));
   }
 }

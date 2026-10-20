@@ -17,7 +17,6 @@ const config = {
     isEnabled: true
 }
 
-
 async function hdvideo(buffer) {
     const baseApi = 'https://api.unblurimage.ai'
     const productSerial = crypto.randomUUID().replace(/-/g, '')

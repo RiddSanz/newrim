@@ -5,7 +5,24 @@ import { createCanvas, loadImage } from '@napi-rs/canvas'
 import fs from 'fs'
 import path from 'path'
 
-let handler = async (m, { text, conn }) => {
+const pluginConfig = {
+  name: "sertifikatcinta",
+  alias: [],
+  category: "maker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text, sock }) {
+    const conn = sock;
   const nama = text || m.pushName || 'Kamu'
   const alasan = pick([
     'karena terlalu tampan hingga memicu pemanasan global',
@@ -61,9 +78,4 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-handler.help = ['sertifikatcinta <nama>']
-handler.tags = ['maker', 'fun']
-handler.command = /^sertifikatcinta$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

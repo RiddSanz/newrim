@@ -1,118 +1,161 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import process from "node:process";
-
-export const config = {
+/**
+ * .bypass <url>
+ * Contoh: .bypass sfl.gl/lqOU0
+ */
+const pluginConfig = {
   name: "bypass",
   alias: ["linkbypass", "unlocklink", "bypasser"],
   category: "tools",
-  description: "Membuka/melewati tautan terpendek atau linkvertise",
+  description: "Bypass shortlink / locked URL",
   usage: ".bypass <url>",
-  example: ".bypass https://linkvertise.com/...",
+  example: ".bypass sfl.gl/lqOU0",
   isOwner: false,
   isPremium: false,
-  isGroup: false,
-  isPrivate: false,
   cooldown: 5,
   energi: 1,
   isEnabled: true,
 };
 
-const API = "https://trw.lat/api/bypass";
-const API_KEY = "TRW_FREE-GAY-15a92945-9b04-4c75-8337-f2a6007281e9";
+const API_BASE = "https://albyoffc.my.id/api/bypass/all";
+const API_KEY = "albymd-235b23e";
 
-function parseResult(result) {
-  if (typeof result !== "string") return result;
-
-  const tupleMatch = result.match(/^\(['"](.+?)['"],\s*(True|False)\)$/);
-  if (tupleMatch) return tupleMatch[1];
-
-  const quoteMatch = result.match(/^["'](.+?)["']$/);
-  if (quoteMatch) return quoteMatch[1];
-
-  return result;
+function normalizeUrl(input) {
+  let u = String(input || "").trim();
+  if (!u) return null;
+  const m =
+    u.match(/https?:\/\/[^\s<>"']+/i) ||
+    u.match(/(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"']*)?/i);
+  if (m) u = m[0].replace(/[)\]>,.]+$/g, "");
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try {
+    new URL(u);
+    return u;
+  } catch {
+    return null;
+  }
 }
 
-export async function handler(m, { text, usedPrefix, prefix, command, sock, conn }) {
-  const pfx = usedPrefix || prefix || '/';
+function pickResult(data) {
+  if (data == null) return null;
+  if (typeof data === "string") return data;
+  const keys = [
+    "result",
+    "url",
+    "link",
+    "destination",
+    "target",
+    "final",
+    "bypass",
+  ];
+  for (const k of keys) {
+    if (typeof data[k] === "string" && data[k]) return data[k];
+  }
+  if (data.data) {
+    if (typeof data.data === "string") return data.data;
+    for (const k of keys) {
+      if (typeof data.data?.[k] === "string" && data.data[k]) return data.data[k];
+    }
+  }
+  return null;
+}
 
-  // Ambil URL dari argumen teks atau dari pesan yang di-reply
-  let targetUrl = text?.trim();
+function box(title, lines) {
+  const body = lines.filter(Boolean).join("\n");
+  return `╭──━─━─━─━─━─━─━─━─╮\n│ *${title}*\n├──━─━─━─━─━─━─━─━─┤\n${body
+    .split("\n")
+    .map((l) => `│ ${l}`)
+    .join("\n")}\n╰──━─━─━─━─━─━─━─━─╯`;
+}
 
-  if (!targetUrl && m.quoted?.text) {
-    // Ekstrak URL dari pesan yang di-reply jika ada
-    const match = m.quoted.text.match(/https?:\/\/[^\s]+/);
-    if (match) targetUrl = match[0];
+async function handler(m, { text, prefix, command }) {
+  const pfx = prefix || ".";
+  let raw = (text || "").trim();
+  if (!raw && m.quoted?.text) {
+    const qm =
+      m.quoted.text.match(/https?:\/\/[^\s<>"']+/i) ||
+      m.quoted.text.match(/(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"']*)?/i);
+    if (qm) raw = qm[0];
   }
 
-  if (!targetUrl) {
+  if (!raw) {
     return m.reply(
-      `*Format salah!*\n\n` +
-      `📌 *Cara Penggunaan:*\n` +
-      `${pfx}${command} <url_linkvertise_atau_shortener>\n\n` +
-      `_Contoh:_ ${pfx}${command} https://linkvertise.com/519136/resource-pack-hd`
+      box("BYPASS LINK", [
+        `📦 Format: *${pfx}${command}* <url>`,
+        `📌 Contoh: *${pfx}${command}* sfl.gl/lqOU0`,
+        ``,
+        `📋 Support: *${pfx}suppbypass*`,
+      ])
     );
   }
 
-  // Cari pola URL menggunakan Regex sederhana
-  const urlMatch = targetUrl.match(/https?:\/\/[^\s]+/);
-  if (!urlMatch) {
-    return m.reply(`❌ URL tidak valid. Pastikan menyertakan http:// atau https://`);
-  }
-
-  const cleanUrl = urlMatch[0];
-
-  await m.react('⏳');
+  const url = normalizeUrl(raw);
+  if (!url) return m.reply("❌ URL tidak valid.");
 
   try {
-    const apiUrl = new URL(API);
-    apiUrl.searchParams.set("apikey", API_KEY);
-    apiUrl.searchParams.set("url", cleanUrl);
-
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "accept": "*/*",
-        "origin": "https://bypassunlock.com",
-        "referer": "https://bypassunlock.com/",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
-        "sec-ch-ua": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\"",
-        "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": "\"Android\"",
-        "sec-fetch-site": "cross-site",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-dest": "empty",
-        "accept-language": "id-ID,id;q=0.9",
-        "priority": "u=1, i"
-      }
-    });
-
-    const rawText = await response.text();
-    let data;
-
+    await m.react?.("⏳");
+    const apiUrl = `${API_BASE}?apikey=${encodeURIComponent(API_KEY)}&url=${encodeURIComponent(url)}`;
+    const res = await fetch(apiUrl, { headers: { accept: "application/json" } });
+    let data = null;
+    const rawBody = await res.text();
     try {
-      data = JSON.parse(rawText);
+      data = JSON.parse(rawBody);
     } catch {
-      throw new Error(`Server melempar respons non-JSON (${response.status})`);
+      data = { raw: rawBody };
     }
 
-    if (!response.ok || !data.success || !data.result) {
-      throw new Error(data.message || data.error || "Gagal melakukan bypass link.");
+    if (!res.ok) {
+      await m.react?.("❌");
+      return m.reply(
+        box("BYPASS GAGAL", [
+          `HTTP: ${res.status}`,
+          `URL: ${url}`,
+          String(data?.message || data?.msg || rawBody).slice(0, 500),
+        ])
+      );
     }
 
-    const finalUrl = parseResult(data.result);
+    if (data?.status === false || data?.success === false) {
+      await m.react?.("❌");
+      return m.reply(
+        box("BYPASS GAGAL", [
+          data.message || data.msg || "Gagal memproses link.",
+          `URL: ${url}`,
+        ])
+      );
+    }
 
-    let caption = `🔗 *LINK BYPASS RESULT*\n\n`;
-    caption += `📥 *Link Asli:*\n${cleanUrl}\n\n`;
-    caption += `📤 *Link Hasil Bypass:*\n${finalUrl}`;
+    const result = pickResult(data);
+    await m.react?.("✅");
 
-    await m.reply(caption.trim());
-    await m.react('✅');
+    if (result) {
+      return m.reply(
+        box("BYPASS BERHASIL", [
+          `🔗 Asal:`,
+          url,
+          ``,
+          `✅ Hasil:`,
+          result,
+        ])
+      );
+    }
 
-  } catch (err) {
-    console.error(err);
-    await m.react('❌');
-    m.reply(`❌ *Terjadi Kesalahan:*\n${err.message || String(err)}`);
+    // fallback full json (trimmed)
+    const pretty = JSON.stringify(data, null, 2).slice(0, 3000);
+    return m.reply(
+      box("BYPASS RESULT", [
+        `🔗 ${url}`,
+        ``,
+        "```json",
+        pretty,
+        "```",
+      ])
+    );
+  } catch (e) {
+    await m.react?.("❌");
+    return m.reply(`❌ Error: ${e.message || e}`);
   }
 }
+
+export const config = pluginConfig;
+export { handler, pluginConfig };
+export default { config: pluginConfig, handler };

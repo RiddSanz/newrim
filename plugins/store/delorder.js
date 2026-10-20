@@ -1,7 +1,23 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { args }) => {
+const pluginConfig = {
+  name: "delorder",
+  alias: [],
+  category: "store",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { args }) {
   let orders = global.db.data.store?.orders || []
   if (!orders.length) return m.reply('Tidak ada order.')
 
@@ -14,9 +30,4 @@ let handler = async (m, { args }) => {
   m.reply(`✅ Order *${del.barang}* berhasil dihapus dari antrian.`)
 }
 
-handler.help = ['delorder <no>']
-handler.tags = ['store']
-handler.command = /^delorder$/i
-handler.owner = true
-
-export default handler
+export { pluginConfig as config, handler };

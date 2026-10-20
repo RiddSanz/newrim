@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import fs from "fs";
 import path from "path";
 import archiver from "archiver";
@@ -37,13 +36,13 @@ const EXCLUDE_DIRS = new Set([
   "build",
   "Baileys-master",
   "rimuru",
-  "RIMURU V8",
+  "ALYA V8",
   "DHX-pro",
   "RTXZY-MD-pro",
   "BETABOTZ-MD2-pro",
   "KazzTzyCanvs",
   "starseed-main",
-  "rimuruGlitch-Baileys-main",
+  "RimuruGlitch-Baileys-main",
   "Script Lyrra MD V7",
   "Sky Md V2",
   "Marin Kitagawa MD V1.0 (1)",
@@ -269,7 +268,7 @@ async function sendBackupToOwner(backupInfo) {
       `┃ ⏱️ Interval: ${formatInterval(state.intervalMs)}\n` +
       `┃ #️⃣ Backup ke-${state.backupCount + 1}\n` +
       `╰┈┈┈┈┈┈┈┈⬡\n\n` +
-      `> ${RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"} Auto Backup System`;
+      `> ${config.bot?.name || "Rimuru-AI"} Auto Backup System`;
 
     await sockInstance.sendMessage(ownerJid, {
       document: { url: backupInfo.path },

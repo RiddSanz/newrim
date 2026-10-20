@@ -1,19 +1,86 @@
-import { RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import _sharp from 'sharp'
 import axios from "axios";
 import config from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
 import { f } from "../../src/lib/rimuru-http.js";
 import { addExifToWebp } from "../../src/lib/rimuru-exif.js";
+import { pinterest } from "btch-downloader";
+
+function getResults(data) {
+  const candidates = [
+    data?.result?.result?.result,
+    data?.result?.result,
+    data?.result,
+    data?.data?.results,
+    data?.data,
+    data?.results,
+  ];
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function getImageUrl(item) {
+  if (typeof item === "string") return item;
+  return (
+    item?.image_url ||
+    item?.image ||
+    item?.images?.orig?.url ||
+    item?.images?.["736x"]?.url ||
+    item?.images?.["564x"]?.url ||
+    item?.url ||
+    item?.thumbnail ||
+    null
+  );
+}
+
+// Gabungkan hasil dari beberapa sumber agar jumlah yang diminta lebih mungkin terpenuhi.
+async function searchPinterest(query) {
+  const q = encodeURIComponent(query);
+  const collected = [];
+  const seen = new Set();
+  const maxCandidates = 150;
+
+  const addResults = (data) => {
+    for (const item of getResults(data)) {
+      const imageUrl = getImageUrl(item);
+      if (typeof imageUrl !== "string" || !/^https?:\/\//i.test(imageUrl)) continue;
+      if (seen.has(imageUrl)) continue;
+      seen.add(imageUrl);
+      collected.push(item);
+      if (collected.length >= maxCandidates) break;
+    }
+  };
+
+  try {
+    addResults(await pinterest(query));
+  } catch (err) {
+    console.log("[PinPack] btch-downloader gagal:", err.message);
+  }
+
+  const fallbacks = [
+    `https://api.cuki.biz.id/api/search/pinterest?apikey=cuki-x&query=${q}&type=image`,
+    `https://api.siputzx.my.id/api/s/pinterest?query=${q}`,
+  ];
+
+  for (const url of fallbacks) {
+    if (collected.length >= maxCandidates) break;
+    try {
+      addResults(await f(url));
+    } catch (err) {
+      console.log("[PinPack] fallback gagal:", err.message);
+    }
+  }
+
+  return collected;
+}
 
 function getSharp() {
   return _sharp;
 }
 
-const MAX_STICKERS = 20;
+const MAX_STICKERS = 30;
 const DOWNLOAD_DELAY = 700;
 
 async function downloadBuffer(url) {
@@ -39,9 +106,9 @@ const pluginConfig = {
   name: "pinpack",
   alias: ["ppack", "pinsticker", "pinsearchpack"],
   category: "sticker",
-  description: "Cari gambar Pinterest lalu jadikan sticker pack",
-  usage: ".pinpack <query>",
-  example: ".pinpack cat",
+  description: "Cari gambar Pinterest lalu kirim sticker pack sesuai jumlah yang diminta (1-30)",
+  usage: ".pinpack <query> | <jumlah 1-30>",
+  example: ".pinpack Rimuru | 30",
   isOwner: false,
   isPremium: false,
   isGroup: false,
@@ -52,59 +119,83 @@ const pluginConfig = {
 };
 
 async function handler(m, { sock }) {
-  const query = m.args?.join(" ")?.trim();
+  const input = String(m.text ?? m.args?.join(" ") ?? "").trim();
+  const parts = input.split("|");
+  const query = (parts[0] || "").trim();
+  const amountText = (parts[1] || "").trim();
 
-  if (!query) {
+  if (!input || parts.length !== 2 || !query || !amountText) {
     return m.reply(
       `── .✦ 𝗣𝗜𝗡 𝗣𝗔𝗖𝗞 ✦. ── 𝜗ৎ\n\n` +
-        `Cari gambar Pinterest → jadikan sticker pack!\n\n` +
+        `Cari gambar Pinterest lalu ubah menjadi sticker pack sesuai jumlah pilihanmu.\n\n` +
         `╭─〔 Cara Pakai 〕───⬣\n` +
-        `│  ✦ ${m.prefix}pinpack <query>\n` +
+        `│  ✦ ${m.prefix}pinpack <request> | <jumlah 1-30>\n` +
         `╰──────────────⬣\n\n` +
-        `*${m.prefix}pinpack anime cat*\n` +
-        `*${m.prefix}pinpack aesthetic*\n\n` +
-        `.☘︎ ݁˖`,
+        `Contoh:\n` +
+        `*${m.prefix}pinpack Rimuru | 30*\n` +
+        `*${m.prefix}pinpack anime cat | 10*\n\n` +
+        `Jumlah wajib berupa angka dari 1 sampai 30. .☘︎ ݁˖`,
     );
+  }
+
+  if (!/^\d+$/.test(amountText)) {
+    return m.reply(`Jumlah harus berupa angka 1-30.\nContoh: *${m.prefix}pinpack Rimuru | 30*`);
+  }
+
+  const requestedCount = Number(amountText);
+  if (!Number.isInteger(requestedCount) || requestedCount < 1 || requestedCount > MAX_STICKERS) {
+    return m.reply(`Jumlah sticker harus antara *1 sampai ${MAX_STICKERS}*.\nContoh: *${m.prefix}pinpack Rimuru | 30*`);
   }
 
   await m.react("🕕");
 
   try {
-    const data = await f(`https://api.siputzx.my.id/api/s/pinterest?query=${query}`);
-    const results = data?.data?.slice(0, MAX_STICKERS);
+    const results = await searchPinterest(query);
 
-    if (!results || results.length === 0) {
+    if (!results.length) {
       await m.react("✘");
       return m.reply(`── .✦ ──\n\n> Tidak ditemukan hasil untuk: *${query}* .☘︎ ݁˖`);
     }
 
     await m.reply(
-      `── .✦ ──\n\n> Mengunduh *${results.length}* gambar dari Pinterest\n> Lalu dikonversi ke sticker pack... .☘︎ ݁˖`,
+      `── .✦ ──\n\n> Permintaan: *${requestedCount} sticker*\n` +
+        `> Ditemukan *${results.length}* kandidat gambar. Mengunduh dan mengonversi sampai jumlah yang diminta terpenuhi... .☘︎ ݁˖`,
     );
 
     const stickerBuffers = [];
+    const seenUrls = new Set();
 
     for (const item of results) {
-      const imageUrl = item.image_url;
-      if (!imageUrl) continue;
+      if (stickerBuffers.length >= requestedCount) break;
+
+      const imageUrl = getImageUrl(item);
+      if (!imageUrl || seenUrls.has(imageUrl)) continue;
+      seenUrls.add(imageUrl);
 
       try {
         const buf = await downloadBuffer(imageUrl);
+        if (!buf?.length) continue;
         const webp = await toWebpSticker(buf);
-        stickerBuffers.push(webp);
-        await new Promise((r) => setTimeout(r, DOWNLOAD_DELAY));
-      } catch {
-        continue;
+        if (webp?.length) stickerBuffers.push(webp);
+        if (stickerBuffers.length < requestedCount) {
+          await new Promise((resolve) => setTimeout(resolve, DOWNLOAD_DELAY));
+        }
+      } catch (err) {
+        console.log("[PinPack] Gagal mengunduh/mengonversi gambar:", err.message);
       }
     }
 
-    if (!stickerBuffers.length) {
+    // Jumlah harus sesuai input. Jangan mengirim pack yang jumlahnya kurang dari permintaan.
+    if (stickerBuffers.length !== requestedCount) {
       await m.react("✘");
-      return m.reply(`── .✦ ──\n\n> Gagal mendownload gambar .☘︎ ݁˖`);
+      return m.reply(
+        `── .✦ ──\n\n> Kamu meminta *${requestedCount} sticker*, tetapi hanya *${stickerBuffers.length}* gambar yang berhasil diunduh.\n` +
+          `> Pack tidak dikirim agar jumlahnya tidak berbeda dari permintaan. Coba kata kunci lain atau jumlah lebih kecil. .☘︎ ݁˖`,
+      );
     }
 
     const packname = `Pinterest: ${query}`;
-    const author = RIMURU_DEVELOPER || config.sticker?.author || "Bot";
+    const author = config.bot?.developer || config.sticker?.author || "Bot";
 
     try {
       await sock.sendStickerPack(m.chat, stickerBuffers, m, {
@@ -116,11 +207,10 @@ async function handler(m, { sock }) {
         emojis: ["❤"],
       });
       await m.react("✓");
+      await m.reply(`── .✦ ──\n\n> Berhasil membuat pack berisi tepat *${requestedCount} sticker* dari *${query}*. .☘︎ ݁˖`);
     } catch (packErr) {
       console.error("[PinPack] Pack send failed:", packErr.message);
-      await m.reply(
-        `── .✦ ──\n\n> Pack gagal, mengirim satu per satu... .☘︎ ݁˖`,
-      );
+      await m.reply(`── .✦ ──\n\n> Pack gagal dikirim sebagai pack, mencoba mengirim *${requestedCount} sticker* satu per satu... .☘︎ ݁˖`);
 
       let sent = 0;
       for (const buf of stickerBuffers) {
@@ -142,26 +232,27 @@ async function handler(m, { sock }) {
             { quoted: m },
           );
           sent++;
-          await new Promise((r) => setTimeout(r, 500));
-        } catch {
-          continue;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (err) {
+          console.log("[PinPack] Gagal mengirim sticker:", err.message);
         }
       }
 
-      if (sent > 0) {
+      if (sent === requestedCount) {
         await m.react("✓");
-        await m.reply(
-          `── .✦ ──\n\n> Berhasil kirim *${sent}* sticker dari *${packname}* .☘︎ ݁˖`,
-        );
+        await m.reply(`── .✦ ──\n\n> Berhasil mengirim tepat *${sent} sticker* dari *${packname}*. .☘︎ ݁˖`);
+      } else if (sent > 0) {
+        await m.react("✘");
+        await m.reply(`── .✦ ──\n\n> Diminta *${requestedCount} sticker*, tetapi hanya *${sent}* yang berhasil terkirim karena beberapa pengiriman gagal. .☘︎ ݁˖`);
       } else {
         await m.react("✘");
-        await m.reply(`── .✦ ──\n\n> Gagal mengirim sticker .☘︎ ݁˖`);
+        await m.reply(`── .✦ ──\n\n> Gagal mengirim sticker. .☘︎ ݁˖`);
       }
     }
   } catch (error) {
     console.error("[PinPack] Error:", error.message);
     await m.react("✘");
-    m.reply(te(m.prefix, m.command, m.pushName));
+    return m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

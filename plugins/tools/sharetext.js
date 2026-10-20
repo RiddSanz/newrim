@@ -11,6 +11,22 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import axios from 'axios';
 
+const pluginConfig = {
+  name: "shareteks",
+  alias: ["bagiteks"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, {
     conn,
     text
@@ -25,12 +41,6 @@ const handler = async (m, {
     }
 };
 
-handler.help = ['shareteks teks'];
-handler.tags = ['tools'];
-handler.command = /^(shareteks|bagiteks)$/i;
-handler.limit = true;
-
-export default handler;
 
 const bikinLink = async (teks) => {
     const {
@@ -49,3 +59,5 @@ const bikinLink = async (teks) => {
 };
 
 // kok simple bang? Ya emng gini simple webnya 😹
+
+export { pluginConfig as config, handler };

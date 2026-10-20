@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { theme, chalk, logger } from "./rimuru-logger.js";
-import { createLegacyPlugin } from "./rimuru-legacy.js";
 /**
  * @typedef {Object} PluginConfig
  * @property {string} name - Nama command (tanpa prefix)
@@ -53,7 +52,6 @@ const pluginStore = {
   commands: new Map(),
   aliases: new Map(),
   categories: new Map(),
-  legacyHooks: [],
 };
 
 /**
@@ -148,88 +146,6 @@ const removePluginFromStore = (plugin) => {
  */
 import { pathToFileURL } from "url";
 
-
-
-const wrapFeatureCreditHandler = (handler, featureCredit) => {
-  if (typeof handler !== "function" || !featureCredit) return handler;
-
-  const MEDIA_KEYS = ["image", "video", "document"];
-  const hasMedia = (payload) =>
-    payload && typeof payload === "object" && MEDIA_KEYS.some((key) => key in payload);
-  const creditText = String(featureCredit);
-  const addCredit = (caption) => {
-    const text = String(caption ?? "");
-    if (text.includes("Fitur By: Anita Putri Azzahra") && text.includes("anita.putri.azzah1")) return text;
-    return text ? `${text}\n\n${creditText}` : creditText;
-  };
-
-  const decorate = (m, sock) => {
-    if (!m || !sock) return { m, sock };
-    const wrappedSock = new Proxy(sock, {
-      get(target, prop, receiver) {
-        const original = Reflect.get(target, prop, receiver);
-        if (typeof original !== "function") return original;
-        if (prop === "sendMessage") {
-          return async function (jid, content, options) {
-            if (hasMedia(content) || (content && typeof content === "object" && "text" in content)) {
-              const next = { ...content };
-              if (hasMedia(next) && ("caption" in next || next.image || next.video || next.document)) next.caption = addCredit(next.caption);
-              else if ("text" in next) next.text = addCredit(next.text);
-              content = next;
-            }
-            return original.call(target, jid, content, options);
-          };
-        }
-        if (prop === "sendMedia") {
-          return async function (jid, source, caption = "", quoted, options = {}) {
-            return original.call(target, jid, source, addCredit(caption), quoted, options);
-          };
-        }
-        if (prop === "sendFile") {
-          return async function (jid, input, options = {}) {
-            const next = { ...options };
-            const mime = String(next.mimetype || "");
-            const filename = String(next.filename || "").toLowerCase();
-            const isMedia = mime.startsWith("image/") || mime.startsWith("video/") || mime.startsWith("application/pdf") || /\.(?:jpe?g|png|gif|webp|mp4|mov|mkv|pdf)$/i.test(filename);
-            if (isMedia || "caption" in next) next.caption = addCredit(next.caption);
-            return original.call(target, jid, input, next);
-          };
-        }
-        if (prop === "sendButton") {
-          return async function (jid, source, text = null, quoted, options = {}) {
-            const hasSource = source !== null && source !== undefined;
-            return original.call(target, jid, source, hasSource ? addCredit(text) : text, quoted, options);
-          };
-        }
-        return original.bind(target);
-      },
-    });
-
-    const wrappedMessage = new Proxy(m, {
-      get(target, prop, receiver) {
-        if (prop === "reply") {
-          return async function (text, ...args) {
-            const value = typeof text === "string" ? addCredit(text) : text;
-            return target.reply.call(target, value, ...args);
-          };
-        }
-        return Reflect.get(target, prop, receiver);
-      },
-      set(target, prop, value, receiver) {
-        return Reflect.set(target, prop, value, receiver);
-      },
-    });
-    return { m: wrappedMessage, sock: wrappedSock };
-  };
-
-  return async function wrappedFeatureHandler(m, ctx = {}) {
-    const { m: wrappedM, sock: wrappedSock } = decorate(m, ctx.sock || ctx.conn);
-    const nextCtx = { ...ctx, m: wrappedM, sock: wrappedSock };
-    if (ctx.conn) nextCtx.conn = wrappedSock;
-    return handler(wrappedM, nextCtx);
-  };
-};
-
 async function loadPlugin(filePath, bustCache = false) {
   try {
     const fileUrl =
@@ -241,16 +157,6 @@ async function loadPlugin(filePath, bustCache = false) {
       plugin = plugin.default;
     }
 
-    // Compatibility for Megami/old-style plugins: default-exported function
-    // with handler.command/help/tags instead of Rimuru's { config, handler }.
-    if (typeof plugin === "function" && !plugin.config && !plugin.handler &&
-        (plugin.command || plugin.help || plugin.tags)) {
-      const legacyPlugin = createLegacyPlugin(plugin, filePath);
-      legacyPlugin.featureCredit = plugin.FEATURE_CREDIT || plugin.default?.FEATURE_CREDIT || null;
-      legacyPlugin.handler = wrapFeatureCreditHandler(legacyPlugin.handler, legacyPlugin.featureCredit);
-      return legacyPlugin;
-    }
-
     if (!plugin.config || !plugin.handler) {
       return null;
     }
@@ -259,31 +165,14 @@ async function loadPlugin(filePath, bustCache = false) {
       return null;
     }
 
-    const makePluginInfo = (entry, inheritedCredit = null) => {
-      if (!entry || !entry.config || typeof entry.handler !== "function") return null;
-      const featureCredit = entry.FEATURE_CREDIT || inheritedCredit || entry.config?.credit || null;
-      const info = {
-        config: { ...defaultConfig, ...entry.config },
-        handler: wrapFeatureCreditHandler(entry.handler, featureCredit),
-        featureCredit,
-        filePath,
-      };
-      if (!info.config.name) {
-        info.config.name = path.basename(filePath, path.extname(filePath));
-      }
-      if (typeof entry.replyHandler === "function") info.replyHandler = entry.replyHandler;
-      if (entry.fileRole) info.fileRole = entry.fileRole;
-      return info;
+    let pInfo = {
+      config: { ...defaultConfig, ...plugin.config },
+      handler: plugin.handler,
+      filePath: filePath,
     };
 
-    const featureCredit = plugin.FEATURE_CREDIT || plugin.default?.FEATURE_CREDIT || plugin.handler?.FEATURE_CREDIT || plugin.config?.credit || null;
-    const pInfo = makePluginInfo(plugin, featureCredit);
-    if (!pInfo) return null;
-
-    if (Array.isArray(plugin.plugins)) {
-      pInfo.extraPlugins = plugin.plugins
-        .map((entry) => makePluginInfo(entry, featureCredit))
-        .filter(Boolean);
+    if (!pInfo.config.name) {
+      pInfo.config.name = path.basename(filePath, path.extname(filePath));
     }
 
     return pInfo;
@@ -316,15 +205,11 @@ function registerPlugin(plugin) {
   }
 
   for (const n of names) {
-    if (!pluginStore.commands.has(n) && !pluginStore.aliases.has(n)) {
-      pluginStore.commands.set(n, plugin);
-    }
+    pluginStore.commands.set(n, plugin);
   }
 
   for (const a of aliases) {
-    if (!pluginStore.commands.has(a) && !pluginStore.aliases.has(a)) {
-      pluginStore.aliases.set(a, primaryName);
-    }
+    pluginStore.aliases.set(a, primaryName);
   }
 
   const categoryLower = String(
@@ -402,8 +287,6 @@ async function loadPlugins(pluginsDir) {
   pluginStore.commands.clear();
   pluginStore.aliases.clear();
   pluginStore.categories.clear();
-  pluginStore.legacyHooks.length = 0;
-  global.__legacyPlugins = {};
 
   let loadedCount = 0;
   const loadedPlugins = [];
@@ -421,16 +304,12 @@ async function loadPlugins(pluginsDir) {
     if (!fs.statSync(categoryPath).isDirectory()) {
       if (category.endsWith(".js") && category !== "_index.js") {
         const plugin = await loadPlugin(categoryPath);
-        if (plugin) {
-          const entries = [plugin, ...(plugin.extraPlugins || [])];
-          for (const entry of entries) {
-            if (!entry) continue;
-            if (entry.config && (!entry.config.category || entry.config.category === "uncategorized")) entry.config.category = "uncategorized";
-            if (registerPlugin(entry)) {
-              loadedCount++;
-              loadedPlugins.push({ name: entry.config.name, category: entry.config.category || "uncategorized" });
-            }
-          }
+        if (plugin && registerPlugin(plugin)) {
+          loadedCount++;
+          loadedPlugins.push({
+            name: plugin.config.name,
+            category: "uncategorized",
+          });
         }
       }
       continue;
@@ -445,16 +324,19 @@ async function loadPlugins(pluginsDir) {
       const plugin = await loadPlugin(filePath);
 
       if (plugin) {
-        const entries = [plugin, ...(plugin.extraPlugins || [])];
-        for (const entry of entries) {
-          if (!entry) continue;
-          if (!entry.config.category || entry.config.category === "uncategorized") {
-            entry.config.category = category;
-          }
-          if (registerPlugin(entry)) {
-            loadedCount++;
-            loadedPlugins.push({ name: entry.config.name, category: entry.config.category });
-          }
+        if (
+          !plugin.config.category ||
+          plugin.config.category === "uncategorized"
+        ) {
+          plugin.config.category = category;
+        }
+
+        if (registerPlugin(plugin)) {
+          loadedCount++;
+          loadedPlugins.push({
+            name: plugin.config.name,
+            category: plugin.config.category,
+          });
         }
       }
     }
@@ -517,7 +399,7 @@ function getCategories() {
  * @returns {Plugin[]} Array semua plugins
  */
 function getAllPlugins() {
-  return Array.from(new Set(pluginStore.commands.values()));
+  return Array.from(pluginStore.commands.values());
 }
 
 /**
@@ -544,28 +426,13 @@ function getCommandsByCategory() {
   const result = {};
 
   for (const [category, plugins] of pluginStore.categories.entries()) {
-    const seen = new Set();
     result[category] = [];
-
     for (const p of plugins) {
-      if (!p?.config?.isEnabled) continue;
-
+      if (!p.config.isEnabled) continue;
       const names = Array.isArray(p.config.name)
         ? p.config.name
         : [p.config.name];
-
-      for (const rawName of names) {
-        const name = String(rawName || '').trim().toLowerCase();
-        if (!name || seen.has(name)) continue;
-
-        // Only count commands that are actually registered and executable.
-        // This prevents a duplicate plugin file from inflating menu totals.
-        const registered = pluginStore.commands.get(name);
-        if (registered !== p) continue;
-
-        seen.add(name);
-        result[category].push(name);
-      }
+      result[category].push(...names);
     }
   }
 
@@ -663,38 +530,30 @@ function enablePlugin(name) {
  */
 function isPluginEnabled(name) {
   const plugin = getPlugin(name);
-  return plugin ? plugin.config.isEnabled : true;
+  return plugin ? plugin.config.isEnabled : false;
 }
 
-async function hotReloadPlugin(filePath, categoryOverride = null) {
+async function hotReloadPlugin(filePath) {
+  let primaryName = "";
   try {
     const plugin = await loadPlugin(filePath, true);
-    if (!plugin) return { success: false, error: "Failed to load plugin" };
-
-    const entries = [plugin, ...(plugin.extraPlugins || [])];
-    if (categoryOverride) {
-      for (const entry of entries) entry.config.category = String(categoryOverride).toLowerCase();
+    if (!plugin) {
+      return { success: false, error: "Failed to load plugin" };
     }
 
-    // Remove every command originating from this bundled file.
-    for (const existing of new Set(pluginStore.commands.values())) {
-      if (existing?.filePath && path.resolve(existing.filePath) === path.resolve(filePath)) {
-        removePluginFromStore(existing);
-      }
+    const names = normalizePluginNames(plugin.config.name);
+    primaryName = names[0] || "";
+
+    const existingPlugin =
+      findRegisteredPluginByFilePath(filePath) ||
+      (primaryName ? pluginStore.commands.get(primaryName) : null);
+    if (existingPlugin) {
+      removePluginFromStore(existingPlugin);
     }
 
-    let registered = 0;
-    let firstName = "";
-    for (const entry of entries) {
-      if (registerPlugin(entry)) {
-        registered++;
-        if (!firstName) firstName = normalizePluginNames(entry.config.name)[0] || "";
-      }
-    }
-
-    if (registered) {
-      logger.success("plugin", `hot reloaded: ${firstName}${entries.length > 1 ? ` (+${registered - 1} bundled)` : ""}`);
-      return { success: true, name: firstName, count: registered };
+    if (registerPlugin(plugin)) {
+      logger.success("plugin", `hot reloaded: ${primaryName}`);
+      return { success: true, name: primaryName };
     }
 
     return { success: false, error: "Failed to register plugin" };
@@ -743,11 +602,6 @@ function unloadPlugin(name) {
   }
 }
 
-
-function getLegacyHooks() {
-  return pluginStore.legacyHooks;
-}
-
 export {
   loadPlugin,
   loadPlugins,
@@ -765,7 +619,6 @@ export {
   isPluginEnabled,
   hotReloadPlugin,
   unloadPlugin,
-  getLegacyHooks,
   pluginStore,
   defaultConfig,
   getAllCommandNames,

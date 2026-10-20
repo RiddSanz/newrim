@@ -9,16 +9,6 @@ const defaultGroups = {};
 const defaultSettings = { selfMode: false };
 const defaultStats = {};
 const defaultSewa = { enabled: false, groups: {} };
-const defaultAutoAI = {};
-const defaultLegacy = {
-  clans: {},
-  sider: {},
-  antipm: {},
-  autopost: {},
-  activeWars: {},
-  pendingWars: {},
-  warHistory: [],
-};
 
 class Database {
   constructor(dbPath) {
@@ -30,8 +20,6 @@ class Database {
       settings: false,
       stats: false,
       sewa: false,
-      legacy: false,
-      autoai: false,
     };
     this.db = {
       data: {
@@ -40,7 +28,6 @@ class Database {
         settings: {},
         stats: {},
         sewa: { enabled: false, groups: {} },
-        autoai: {},
       },
     };
     this.ready = false;
@@ -102,8 +89,6 @@ class Database {
         premium: { file: "premium.json", defaults: [] },
         owner: { file: "owner.json", defaults: [] },
         partner: { file: "partner.json", defaults: [] },
-        legacy: { file: "legacy.json", defaults: defaultLegacy },
-        autoai: { file: "autoai.json", defaults: defaultAutoAI },
       };
 
       for (const [key, { file, defaults }] of Object.entries(fileMap)) {
@@ -131,8 +116,6 @@ class Database {
         sewa: this.stores.sewa.data,
         premium: this.stores.premium.data,
         owner: this.stores.owner.data,
-        legacy: this.stores.legacy.data,
-        autoai: this.stores.autoai.data,
       };
 
       this.db.write = () => this.flushAll();
@@ -186,7 +169,6 @@ class Database {
           settings: { selfMode: false },
           stats: {},
           sewa: { enabled: false, groups: {} },
-          autoai: {},
         },
         write: () => { },
         read: () => { },
@@ -344,21 +326,6 @@ class Database {
       logger.error("database", `gagal menyimpan: ${error.message}`);
       return false;
     }
-  }
-
-  prepareLegacyUser(jid) {
-    const user = this.getUser(jid) || this.setUser(jid, {});
-    if (!user) return null;
-    user.exp ??= 0;
-    user.level ??= 1;
-    user.health ??= 100;
-    user.maxHealth ??= 100;
-    user.warn ??= 0;
-    user.bank ??= 0;
-    user.premiumTime ??= 0;
-    user.isRegistered ??= false;
-    this.markDirty("users");
-    return user;
   }
 
   getUser(jid) {
@@ -622,7 +589,6 @@ class Database {
       premium: { file: "premium.json", defaults: [] },
       owner: { file: "owner.json", defaults: [] },
       partner: { file: "partner.json", defaults: [] },
-      legacy: { file: "legacy.json", defaults: defaultLegacy },
     };
 
     let resetCount = 0;
@@ -659,7 +625,6 @@ class Database {
       sewa: this.stores.sewa.data,
       premium: this.stores.premium.data,
       owner: this.stores.owner.data,
-      legacy: this.stores.legacy.data,
     };
 
     if (this.stores.partner) {
@@ -695,7 +660,6 @@ class Database {
       sewa: this.db.data.sewa,
       premium: this.db.data.premium,
       owner: this.db.data.owner,
-      legacy: this.db.data.legacy,
     };
     const backupPath = path.join(backupDir, `backup-${ts}.json`);
     fs.writeFileSync(backupPath, JSON.stringify(combined, null, 2), "utf-8");
@@ -721,9 +685,6 @@ class Database {
   }
   get owner() {
     return this.db.data.owner;
-  }
-  get legacy() {
-    return this.db.data.legacy;
   }
   get partner() {
     return this.db.data.partner;

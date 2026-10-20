@@ -2,6 +2,7 @@ import { getDatabase } from '../../src/lib/rimuru-database.js';
 import config from '../../config.js';
 import fs from 'fs';
 import path from 'path';
+import { getAssetBuffer } from '../../src/lib/rimuru-asset-manager.js';
 
 const pluginConfig = {
     name: ['autopromo', 'promosi'],
@@ -12,8 +13,8 @@ const pluginConfig = {
     isOwner: true
 };
 
-const CHANNEL_URL = 'https://whatsapp.com/channel/0029VbAh3OwGOj9nf1CHs23U';
-const IMAGE_PATH = path.join(process.cwd(), 'assets/images/rimuru2.jpg');
+const CHANNEL_URL = config.saluran?.link || 'https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P';
+const IMAGE_PATH = config.assets?.rimuru2;
 
 const blacklist = []; // Bisa ditambah ID grup yang gak mau dipromosi
 
@@ -88,16 +89,9 @@ async function sendPromo(sock, isTest = false) {
     }
 
     // Validasi gambar
-    if (!fs.existsSync(IMAGE_PATH)) {
+    const imageBuffer = getAssetBuffer("rimuru2");
+    if (!imageBuffer) {
         console.log('[AUTO PROMO] ❌ Gambar tidak ditemukan:', IMAGE_PATH);
-        return false;
-    }
-
-    let imageBuffer;
-    try {
-        imageBuffer = fs.readFileSync(IMAGE_PATH);
-    } catch (err) {
-        console.log('[AUTO PROMO] ❌ Gagal baca gambar:', err.message);
         return false;
     }
 

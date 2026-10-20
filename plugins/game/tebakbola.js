@@ -6,7 +6,25 @@ import axios from "axios"
 let timeout = 60000
 let poin = 4999
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "tebakbola",
+  alias: ["whobola"],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   conn.game = conn.game || {}
   const id = "tebakbola-" + m.chat
 
@@ -86,9 +104,4 @@ handler.all = async function (m) {
   }
 }
 
-handler.help = ["tebakbola"]
-handler.tags = ["game"]
-handler.command = /^(tebakbola|whobola)$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

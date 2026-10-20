@@ -1,5 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-
 import config from '../../config.js'
 import * as timeHelper from './rimuru-time.js'
 /**
@@ -222,7 +220,7 @@ function createBodyLine(text, prefix = CHARS.vertical, bullet = CHARS.bullet) {
  * @param {string} value - Nilai
  * @returns {string} Formatted line dengan arrow
  * @example
- * createArrowLine('Nama', 'rimuru-AI'); // "│ ➣ Nama: rimuru-AI"
+ * createArrowLine('Nama', 'Rimuru-AI'); // "│ ➣ Nama: Rimuru-AI"
  */
 function createArrowLine(label, value) {
   return `${CHARS.vertical} ${CHARS.arrow} ${label}: ${value}`;
@@ -264,9 +262,9 @@ function createDashboard(data) {
  */
 function createBotInfo(data) {
   const {
-    botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+    botName = config.bot?.name || "Rimuru-AI",
     developer = config.owner?.name || "Owner",
-    version = RIMURU_CORE_CONFIG.bot?.version || "1.0.0",
+    version = config.bot?.version || "1.0.0",
     uptime = "0s",
     totalFeatures = 0,
     mode = config.mode || "public",
@@ -333,7 +331,7 @@ function createUserProfile(data) {
  */
 function createBotStatus(data) {
   const {
-    botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+    botName = config.bot?.name || "Rimuru-AI",
     uptime = "0s",
     mode = "Public",
     totalCommands = 0,

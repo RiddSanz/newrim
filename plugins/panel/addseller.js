@@ -1,11 +1,9 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import fs from 'fs'
 import path from 'path'
 import { isLid, lidToJid } from '../../src/lib/rimuru-lid.js'
 import { getDatabase } from '../../src/lib/rimuru-database.js'
+import { cleanNumber } from '../../src/lib/rimuru-roles-cpanel.js'
 import { getGroupMode } from '../group/botmode.js'
 const pluginConfig = {
     name: 'addseller',
@@ -30,14 +28,13 @@ function cleanJid(jid) {
 }
 
 function getNumber(jid) {
-    const clean = cleanJid(jid)
-    return clean ? clean.split('@')[0] : null
+    return cleanNumber(cleanJid(jid))
 }
 
 function getLegacyData() {
     const p = path.join(process.cwd(), 'database', 'cpanel', 'legacy_sellers.json')
     if (fs.existsSync(p)) {
-        try { return JSON.parse(fs.readFileSync(p, 'utf8')) } catch { return { sellers: [], ownerPanels: [] } }
+        try { const data = JSON.parse(fs.readFileSync(p, 'utf8')); return { sellers: Array.isArray(data?.sellers) ? data.sellers.map(cleanNumber).filter(Boolean) : [], ownerPanels: Array.isArray(data?.ownerPanels) ? data.ownerPanels.map(cleanNumber).filter(Boolean) : [] } } catch { return { sellers: [], ownerPanels: [] } }
     }
     return { sellers: [], ownerPanels: [] }
 }
@@ -59,8 +56,8 @@ function hasAccess(senderJid, isOwner, legacyData) {
     if (isOwner) return true
     const cleanSender = cleanJid(senderJid)?.split('@')[0]
     if (!cleanSender) return false
-    const ownerPanels = legacyData?.ownerPanels || []
-    return ownerPanels.includes(cleanSender)
+    const ownerPanels = (legacyData?.ownerPanels || []).map(cleanNumber).filter(Boolean)
+    return ownerPanels.includes(cleanNumber(cleanSender))
 }
 
 function handler(m, { sock }) {
@@ -105,7 +102,7 @@ function handler(m, { sock }) {
     } else if (m.mentionedJid?.length > 0) {
         targetUser = getNumber(m.mentionedJid[0])
     } else if (m.text?.trim()) {
-        targetUser = m.text.trim().replace(/[^0-9]/g, '')
+        targetUser = cleanNumber(m.text.trim().replace(/[^0-9]/g, ''))
     } else {
         targetUser = getNumber(m.sender)
     }

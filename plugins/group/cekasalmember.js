@@ -1,6 +1,22 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
+const pluginConfig = {
+  name: "cekasalmember",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, mess }) => {
   if (!m.isGroup) return m.reply(mess.group);
 
@@ -29,9 +45,4 @@ const handler = async (m, { conn, mess }) => {
   m.reply(msg);
 };
 
-handler.help = ['cekasalmember'];
-handler.tags = ['group'];
-handler.command = /^cekasalmember$/i;
-handler.group = true
-
-export default handler;
+export { pluginConfig as config, handler };

@@ -56,7 +56,24 @@ async function checkDataBreach(email) {
   }
 }
 
-let handler = async (m, { conn, args, command }) => {
+const pluginConfig = {
+  name: "breach",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, args, command }) {
+    const conn = sock;
   if (!args[0] || !args[0].includes('@')) {
     return m.reply(`Masukkan email yang valid!\nContoh: .${command} email@domain.com`)
   }
@@ -84,9 +101,4 @@ let handler = async (m, { conn, args, command }) => {
   }
 }
 
-handler.help = ['breach <email>']
-handler.tags = ['tools']
-handler.command = /^breach$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

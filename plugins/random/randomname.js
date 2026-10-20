@@ -56,7 +56,23 @@ async function generateRandomName({
   return names
 }
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "randomname",
+  alias: [],
+  category: "random",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
   if (!text) return m.reply('Format: randomname gender|kata|surname(optional)|kategori(optional)\nContoh: randomname cowok|3|random|eng,spa')
 
   let [genderRaw, kataRaw, surnameRaw, kategoriRaw] = text.split('|').map(v => v?.trim() || '')
@@ -111,16 +127,12 @@ let handler = async (m, { text }) => {
   }
 }
 
-handler.command = /^(randomname)$/i
-handler.help = ['randomname gender|kata|surname(optional)|kategori(optional)']
-handler.tags = ['tools']
-handler.limit = true 
 handler.register = true
-
-export default handler
 
 /**
  * CR Ponta Sensei
  * CH https://whatsapp.com/channel/0029VagslooA89MdSX0d1X1z
  * WEB https://codeteam.my.id
 **/
+
+export { pluginConfig as config, handler };

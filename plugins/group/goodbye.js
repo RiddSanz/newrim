@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import {
   cacheParticipantLids,
   getCachedJid,
@@ -19,7 +15,7 @@ import path from "path";
 import fs from "fs";
 import te from "../../src/lib/rimuru-error.js";
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "ourin";
+import { prepareWAMessageMedia, generateWAMessageFromContent } from "rimuru";
 function resolvePlaceholders(
   template,
   username,
@@ -50,7 +46,7 @@ function resolvePlaceholders(
     .replace(/{date}/gi, now.format("DD/MM/YYYY"))
     .replace(/{time}/gi, now.format("HH:mm"))
     .replace(/{day}/gi, dayId)
-    .replace(/{bot}/gi, RIMURU_CORE_CONFIG.bot?.name || "rimuru")
+    .replace(/{bot}/gi, config.bot?.name || "Rimuru")
     .replace(/{prefix}/gi, prefix);
 }
 const pluginConfig = {
@@ -197,8 +193,8 @@ async function sendGoodbyeMessage(sock, groupJid, participant, groupMeta) {
       groupMeta?.owner?.split("@")[0] || "",
       config.command?.prefix || ".",
     );
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
     if (goodbyeType === 2) {
       const cardBody = groupData?.goodbyeMsg
         ? resolvePlaceholders(
@@ -216,7 +212,7 @@ async function sendGoodbyeMessage(sock, groupJid, participant, groupMeta) {
           body: {
             text: `👋 *Sayonara* *@${userName}*`,
           },
-          footer: { text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI" },
+          footer: { text: config.bot?.name || "Rimuru-AI" },
           header: { title: "Goodbye", hasMediaAttachment: false },
           carouselMessage: {
             cards: [
@@ -227,7 +223,7 @@ async function sendGoodbyeMessage(sock, groupJid, participant, groupMeta) {
                 body: {
                   text: cardBody,
                 },
-                footer: { text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI" },
+                footer: { text: config.bot?.name || "Rimuru-AI" },
                 nativeFlowMessage: {
                   buttons: [
                     {
@@ -338,7 +334,7 @@ async function sendGoodbyeMessage(sock, groupJid, participant, groupMeta) {
                 text: text
               },
               footer: {
-                text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"
+                text: config.bot?.name || "Rimuru-AI"
               },
               contextInfo: {
                 mentionedJid: [realParticipant],

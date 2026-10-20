@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "airdrop",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
     const user = global.db.data.users[m.sender]
     const em = global.rpg.emoticon
     const timeout = 3600000
@@ -91,13 +108,6 @@ ${em('money')} Money: -${loss}
     user.lastclaim = Date.now()
 }
 
-handler.help = ['airdrop']
-handler.tags = ['rpg']
-handler.command = /^airdrop$/i
-handler.group = true
-handler.rpg = true
-
-export default handler
 
 function pickRandom(list) {
     return list[Math.floor(Math.random() * list.length)]
@@ -111,3 +121,5 @@ function clockString(ms) {
 
     return `${d} Hari ${h} Jam ${m} Menit ${s} Detik`
 }
+
+export { pluginConfig as config, handler };

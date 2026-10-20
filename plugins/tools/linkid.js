@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import te from '../../src/lib/rimuru-error.js'
 
@@ -57,9 +54,9 @@ async function handler(m, { sock }) {
 ` +
             `*Contoh:*
 ` +
-            `• ${m.prefix}linkid https://whatsapp.com/channel/xxxxx
+            `• ${m.prefix}linkid https://whatsapp.com/channel/CHANNEL_ID
 ` +
-            `• ${m.prefix}linkid https://chat.whatsapp.com/xxxxx`
+            `• ${m.prefix}linkid https://chat.whatsapp.com/xxxxxxxxxxxxxxxxxxxx`
         )
     }
 
@@ -80,9 +77,9 @@ async function handler(m, { sock }) {
 ` +
             `Link yang didukung:
 ` +
-            `• Link Channel: https://whatsapp.com/channel/xxxxx
+            `• Link Channel: https://whatsapp.com/channel/CHANNEL_ID
 ` +
-            `• Link Grup: https://chat.whatsapp.com/xxxxx`
+            `• Link Grup: https://chat.whatsapp.com/xxxxxxxxxxxxxxxxxxxx`
         )
     }
 

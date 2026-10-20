@@ -107,7 +107,24 @@ class Mobinime {
 ========================= */
 const mob = new Mobinime()
 
-let handler = async (m, { text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "mobinime",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
   try {
     if (!text)
       return m.reply(
@@ -163,8 +180,4 @@ ${usedPrefix + command} search naruto`
   }
 }
 
-handler.help = ['mobinime']
-handler.tags = ['anime']
-handler.command = /^mobinime$/i
-
-export default handler
+export { pluginConfig as config, handler };

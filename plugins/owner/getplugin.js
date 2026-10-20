@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from "fs";
 import path from "path";
 import config from "../../config.js";
@@ -157,7 +153,7 @@ async function handler(m, { sock }) {
 
   return await sock.sendMessage(m.chat, {
     text: "Langsung aja, pencet tombol dibawah",
-    footer: RIMURU_CORE_CONFIG.bot.name,
+    footer: config.bot.name,
     interactiveButtons: [
       {
         name: "cta_copy",

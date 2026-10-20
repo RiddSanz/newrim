@@ -1,11 +1,8 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 /**
 * Name     : fake bca
 * Creator  : Rin imup lucu🤤
 * Category : Canvas
-* Link     : https://whatsapp.com/channel/0029Vb6EHtR5Ui2gHMW9zX2x
+* Link     : https://whatsapp.com/channel/RIMURU_CHANNEL
 * Note     : Dilarang menghapus watermark/credit original.
 **/
 

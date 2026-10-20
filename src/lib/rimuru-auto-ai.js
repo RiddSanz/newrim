@@ -1,7 +1,6 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { logicBell, transcribeAudio } from "../scraper/termai.js";
+import { chat as geminiChat } from "../scraper/geminiVision.js";
 import { getDatabase } from "./rimuru-database.js";
 import { pinterest } from "btch-downloader";
 import config from "../../config.js";
@@ -89,7 +88,7 @@ function sayHello(name) {
 }
 console.log(sayHello("User"))
 text: Ini contoh kodenya: (opsional)
-footer: Powered by rimuru AI (opsional)
+footer: Powered by Rimuru AI (opsional)
 [/RICH:CODE]
 
 Bahasa didukung: javascript (js, ts, typescript), python (py), go (golang), lua, bash (sh, shell)
@@ -107,14 +106,14 @@ PENTING: text WAJIB mengandung placeholder {{IE_0}}...{{/IE_0}} untuk setiap URL
 4. LIST (saat user minta info singkat format daftar key-value):
 [RICH:LIST]
 title: Info Bot
-rows: Nama | rimuru AI;; Versi | 2.4.5;; Developer | Zann
-footer: © rimuru AI (opsional)
+rows: Nama | Rimuru AI;; Versi | 2.4.5;; Developer | Zann
+footer: © Rimuru AI (opsional)
 [/RICH:LIST]
 
 5. STICKER (saat user minta sticker, atau untuk ekspresi emosi):
 [RICH:STICKER]
 url: https://iili.io/BPBdFuj.md.jpg
-packname: rimuru AI (opsional)
+packname: Rimuru AI (opsional)
 author: AutoAI (opsional)
 [/RICH:STICKER]
 
@@ -419,7 +418,7 @@ async function sendRichMessage(rich, sock, jid, quoted) {
         return false;
       }
       await sock.sendImageAsSticker(jid, stickerInput, quoted, {
-        packname: packname || RIMURU_CORE_CONFIG.bot?.name || "rimuru AI",
+        packname: packname || config.bot?.name || "Rimuru AI",
         author: author || "AutoAI",
       });
       return true;
@@ -836,7 +835,7 @@ async function executeAction(action, m, sock) {
         m.chat,
         {
           sticker: stickerBuffer,
-          packname: RIMURU_CORE_CONFIG.bot?.name || "rimuru",
+          packname: config.bot?.name || "Rimuru",
           author: "AutoAI",
         },
         { quoted: m },
@@ -865,62 +864,8 @@ async function executeAction(action, m, sock) {
   return results;
 }
 
-
-async function extractDocumentText(m) {
-  if (!m?.isDocument && m?.type !== "documentMessage") return "";
-  try {
-    const mime = String(m.mimetype || m.message?.documentMessage?.mimetype || "").toLowerCase();
-    const filename = String(m.fileName || m.message?.documentMessage?.fileName || "file").toLowerCase();
-    const buffer = m.download ? await m.download() : null;
-    if (!buffer?.length) return "";
-    if (/text\/(plain|csv|markdown)|application\/(json|javascript)/.test(mime) || /\.(txt|md|csv|json|js|ts|html|css|xml|log|py|java|c|cpp|php|sql)$/i.test(filename)) {
-      return buffer.toString("utf8").slice(0, 30000);
-    }
-    if (mime === "application/pdf" || /\.pdf$/i.test(filename)) {
-      const tmp = path.join(process.cwd(), "temp", `autoai-${Date.now()}.pdf`);
-      const out = `${tmp}.txt`;
-      fs.mkdirSync(path.dirname(tmp), { recursive: true });
-      fs.writeFileSync(tmp, buffer);
-      try {
-        await execAsync(`pdftotext -layout "${tmp}" "${out}"`, { timeout: 30000 });
-        const text = fs.existsSync(out) ? fs.readFileSync(out, "utf8") : "";
-        return text.slice(0, 30000);
-      } finally {
-        for (const file of [tmp, out]) try { fs.unlinkSync(file); } catch {}
-      }
-    }
-    if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || /\.docx$/i.test(filename)) {
-      const AdmZip = (await import("adm-zip")).default;
-      const zip = new AdmZip(buffer);
-      const entry = zip.getEntry("word/document.xml");
-      if (entry) {
-        const xml = entry.getData().toString("utf8");
-        return xml.replace(/<w:tab\s*\/?>/g, "\t").replace(/<w:br\s*\/?>/g, "\n").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim().slice(0, 30000);
-      }
-    }
-    return `File ${filename} (${mime}) diterima, tetapi formatnya belum bisa diekstrak otomatis.`;
-  } catch (e) {
-    console.log("[AutoAI] Document extraction failed:", e.message);
-    return "";
-  }
-}
-
-async function extractAudioText(m) {
-  const isAudio = m?.type === "audioMessage" || m?.isAudio || String(m?.mimetype || "").startsWith("audio/");
-  if (!isAudio) return "";
-  try {
-    const buffer = m.download ? await m.download() : null;
-    if (!buffer?.length) return "";
-    return await transcribeAudio(buffer);
-  } catch (e) {
-    console.log("[AutoAI] Audio transcription failed:", e.message);
-    return "";
-  }
-}
-
 async function handleAutoAI(m, sock) {
-  // Bella AutoAI mengikuti pola SC sumber: hanya proses pesan nyata,
-  // tetapi konfigurasi aktif tetap menentukan apakah chat ini dilayani.
+  if (!m.isGroup) return false;
   if (m.fromMe) return false;
 
   const db = getDatabase();
@@ -928,14 +873,27 @@ async function handleAutoAI(m, sock) {
   if (!db.db.data.autoai) db.db.data.autoai = {};
   if (!db.db.data.autoai_global) db.db.data.autoai_global = { enabled: false };
 
-  const autoai = db.db.data.autoai[m.chat];
-  // Hanya konfigurasi Bella/Bell409 yang dibuat melalui .set bell on/off
-  // yang mengaktifkan engine ini.
-  if (
-    !autoai?.enabled ||
-    !["bell409", "bella"].includes(String(autoai.character || "").toLowerCase())
-  ) {
+  let autoai = db.db.data.autoai[m.chat];
+  let isGlobalMode = false;
+  if (autoai && autoai.enabled) {
+    // per-group config is active, use it
+  } else if (autoai && autoai.enabled === false) {
+    // explicit opt-out from global
     return false;
+  } else {
+    // no per-group config, check global
+    const globalCfg = db.db.data.autoai_global;
+    if (!globalCfg.enabled) return false;
+    isGlobalMode = true;
+    if (!globalCfg.sessions) globalCfg.sessions = {};
+    autoai = {
+      enabled: true,
+      character: globalCfg.character || "global",
+      characterName: globalCfg.characterName || "Global",
+      instruction: globalCfg.instruction,
+      responseType: globalCfg.responseType || "text",
+      sessions: globalCfg.sessions,
+    };
   }
 
   const botJid = sock.user?.id?.split(":")[0] + "@s.whatsapp.net";
@@ -980,17 +938,10 @@ async function handleAutoAI(m, sock) {
 
   if (!isBotQuoted && !isMentioned) return false;
 
-  let userMessage = m.body || "";
+  const userMessage = m.body || "";
   const hasImage =
     m.isImage ||
     (m.quoted && (m.quoted.isImage || m.quoted.type === "imageMessage"));
-  const audioText = await extractAudioText(m);
-  const documentText = await extractDocumentText(m);
-  const isAudio = Boolean(audioText);
-  if (audioText) userMessage = `[Voice Note / VN]
-${audioText}`;
-  if (documentText) userMessage = `${userMessage ? userMessage + "\n\n" : ""}[Isi file]
-${documentText}`;
 
   if (!userMessage && !hasImage) return false;
 
@@ -1005,8 +956,11 @@ ${documentText}`;
     let imageBuffer = null;
     if (hasImage) {
       try {
-        if (m.isImage && m.download) imageBuffer = await m.download();
-        else if (m.quoted?.download) imageBuffer = await m.quoted.download();
+        if (m.isImage && m.download) {
+          imageBuffer = await m.download();
+        } else if (m.quoted?.download) {
+          imageBuffer = await m.quoted.download();
+        }
       } catch (e) {
         console.log("[AutoAI] Image download failed:", e.message);
       }
@@ -1019,8 +973,6 @@ ${documentText}`;
     let contextParts = [];
     if (m.pushName && m.pushName !== "Unknown") {
       contextParts.push(`User: "${m.pushName}" (${senderNumber})`);
-      const knownRole = db.getUser(m.sender)?.role;
-      if (knownRole) contextParts.push(`Role/hubungan user: ${knownRole}`);
     }
     if (m.isOwner) contextParts.push("User ini adalah OWNER bot.");
     if (m.isAdmin) contextParts.push("User ini adalah ADMIN grup.");
@@ -1054,47 +1006,18 @@ ${documentText}`;
     saveToHistory(autoai, senderNumber, "user", userMessage || "[gambar]");
 
     let aiResponse = "";
-    let aiMeta = null;
-      const termaiResult = await logicBell({
-        text: fullMessage,
-        id: m.sender,
-        fullainame: RIMURU_CORE_CONFIG.bot?.name || "Rimuru-MD",
-        nickainame: RIMURU_CORE_CONFIG.bot?.name || "Rimuru",
-        senderName: m.pushName,
-        ownerName: config.owner?.name || "Owner",
-        date: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }),
-        role: db.getUser(m.sender)?.role || "asing",
-        msgtype: m.type,
-        custom_profile: fullInstruction,
-        image: imageBuffer ? imageBuffer.toString("base64") : undefined,
-        commands: [],
+    try {
+      const result = await geminiChat({
+        message: fullMessage,
+        instruction: fullInstruction,
+        imageBuffer,
+        history,
       });
-      aiMeta = termaiResult?.data || termaiResult;
-      aiResponse =
-        aiMeta?.msg ||
-        aiMeta?.text ||
-        aiMeta?.response ||
-        aiMeta?.answer ||
-        termaiResult?.msg ||
-        termaiResult?.text ||
-        "";
-      if (!String(aiResponse).trim()) {
-        console.error(
-          "[AutoAI] Logic Bell returned empty response:",
-          JSON.stringify({
-            keys: Object.keys(termaiResult || {}),
-            dataKeys: Object.keys(termaiResult?.data || {}),
-            rawStatus: termaiResult?.raw?.status,
-            rawKeys: Object.keys(termaiResult?.raw || {}),
-          }),
-        );
-        aiResponse = getFallbackResponse();
-      }
-      if (aiMeta?.newRole) {
-        const u = db.getUser(m.sender) || db.setUser(m.sender);
-        u.role = String(aiMeta.newRole);
-        db.save();
-      }
+      aiResponse = result.text || getFallbackResponse();
+    } catch (apiError) {
+      console.error("[AutoAI API Error]", apiError.message);
+      aiResponse = getFallbackResponse();
+    }
 
     const normalizedAiResponse = normalizeStructuredResponse(aiResponse);
     let actions = [];
@@ -1213,13 +1136,11 @@ ${documentText}`;
 
     return true;
   } catch (error) {
-    console.error("[AutoAI Error]", error?.stack || error?.message || error);
-    try { await sock.sendPresenceUpdate("paused", m.chat); } catch {}
+    console.error("[AutoAI Error]", error.message);
+    await sock.sendPresenceUpdate("paused", m.chat);
     try {
-      await m.reply(getFallbackResponse(), { replyAi: false });
-    } catch (replyError) {
-      console.error("[AutoAI Reply Fallback Error]", replyError?.message || replyError);
-    }
+      await m.reply(getFallbackResponse());
+    } catch {}
     return true;
   }
 }

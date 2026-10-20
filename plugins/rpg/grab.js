@@ -1,9 +1,27 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { 
-conn, usedPrefix
-}) => {
+const pluginConfig = {
+  name: "taksi",
+  alias: ["grab", "megrab"],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { 
+sock, prefix
+}) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 
     let user = global.db.data.users[m.sender]
     let __timers = (new Date - user.lastgrab)
@@ -134,11 +152,6 @@ setTimeout(() => {
                      }, 0) 
   user.lastgrab = new Date * 1
 }
-handler.help = ['grab']
-handler.tags = ['rpg']
-handler.command = /^(taksi|grab|megrab)$/i
-
-export default handler
 
 function clockString(ms) {
   let d = isNaN(ms) ? '--' : Math.floor(ms / 86400000)
@@ -147,3 +160,5 @@ function clockString(ms) {
   let s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60
   return ['\n' + d, ' *Days ☀️*\n ', h, ' *Hours 🕐*\n ', m, ' *Minute ⏰*\n ', s, ' *Second ⏱️* '].map(v => v.toString().padStart(2, 0)).join('')
 }
+
+export { pluginConfig as config, handler };

@@ -8,7 +8,7 @@ const pluginConfig = {
   alias: ["allmenuvariant", "allmenustyle"],
   category: "owner",
   description: "Mengatur variant tampilan allmenu",
-  usage: ".setallmenu <v1-v5>",
+  usage: ".setallmenu <v1-v9>",
   example: ".setallmenu v2",
   isOwner: true,
   isPremium: false,
@@ -44,6 +44,12 @@ const VARIANTS = {
     desc: "Tampilan location message tanpa tombol interaktif",
     emoji: "📍",
   },
+  v9: {
+    id: 9,
+    name: "ALLMENU DEFAULT • SC VARIANT",
+    desc: "Tampilan default AllMenu yang diambil dari varian SC yang diberikan",
+    emoji: "🌸",
+  },
 };
 
 async function handler(m, { sock, db }) {
@@ -53,7 +59,7 @@ async function handler(m, { sock, db }) {
   if (variant) {
     const selected = VARIANTS[variant];
     if (!selected) {
-      await m.reply(`❌ *VARIANT TIDAK VALID*\n\nGunakan: *v1*, *v2*, *v5*, atau *v6*`);
+      await m.reply(`❌ *VARIANT TIDAK VALID*\n\nGunakan: *v1*, *v2*, *v5*, *v6*, atau *v9*`);
       return;
     }
 
@@ -69,7 +75,7 @@ async function handler(m, { sock, db }) {
   }
 
   const current =
-    db.setting("allmenuVariant") || config.ui?.allmenuVariant || 2;
+    db.setting("allmenuVariant") || config.ui?.allmenuVariant || 9;
 
   const rows = [];
   for (const [key, val] of Object.entries(VARIANTS)) {
@@ -100,7 +106,9 @@ async function handler(m, { sock, db }) {
     `- *V3 Document* 📄 — Allmenu dikirim sebagai file document dengan thumbnail kecil dan verified quoted reply, terlihat seperti file resmi\n\n` +
     `- *V4 Interactive Button* 🔘 — Pesan interaktif dengan tombol single_select untuk memilih kategori dan quick_reply untuk navigasi, tampilan modern\n\n` +
     `- *V5 NativeFlow* ✨ — NativeFlow message dengan limited_time_offer badge dan interactive buttons, tampilan paling premium dan eye-catching\n\n` +
-    `> Pilih variant allmenu dari tombol di bawah 👇`;
+    `> Pilih variant allmenu dari tombol di bawah 👇
+
+🌸 *V9* adalah tampilan AllMenu default saat ini.`;
 
   await sock.sendButton(
     m.chat,

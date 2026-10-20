@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getAllPlugins } from '../../src/lib/rimuru-plugins.js'
 import config from '../../config.js'
 const pluginConfig = {
@@ -41,7 +38,7 @@ async function handler(m, { sock }) {
         `┃ ✦ \`\`\`Bypass semua cooldown\`\`\`\n` +
         `┃ ✦ \`\`\`Kontrol penuh sistem bot\`\`\`\n` +
         `┃ ✦ \`\`\`Manajemen user & group\`\`\`\n` +
-        `┃ ✦ \`\`\`Akses panel & server\`\`\`\n` +
+        `┃ ✦ \`\`\`Manajemen VPS & server\`\`\`\n` +
         `╰┈┈┈┈┈┈┈┈⬡\n\n` +
         `╭┈┈⬡「 ⚙️ *ᴄᴀʀᴀ ᴋᴇʀᴊᴀ* 」\n` +
         `┃ \`Owner ditambahkan melalui:\`\n` +

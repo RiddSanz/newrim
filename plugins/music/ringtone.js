@@ -8,7 +8,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from "node-fetch"
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "ringtone",
+  alias: [],
+  category: "music",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) throw `Contoh: ${usedPrefix + command} Iphone`
 
   await m.reply('✨cihuy otw cari ringtone...')
@@ -45,9 +63,4 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['ringtone <judul>']
-handler.tags = ['internet']
-handler.command = /^ringtone$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

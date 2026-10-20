@@ -54,12 +54,12 @@ function checkPermission(m, pluginConfig) {
   if (pluginConfig.isOwner && !m.isOwner && !hasAccess) {
     return {
       allowed: false,
-      reason: config.messages?.ownerOnly || "👑 Hmph! Fitur ini khusus Owner. Jangan membantah Rimuru. 💙",
+      reason: config.messages?.ownerOnly || "🚫 Owner only!",
     };
   }
 
   if (pluginConfig.isPartner && !m.isPartner && !m.isOwner && !hasAccess) {
-    return { allowed: false, reason: "💙 Fitur ini khusus Partner. Jangan memaksa Rimuru, ya.", };
+    return { allowed: false, reason: "🤝 Partner only!" };
   }
 
   const overrides = db.setting("capprem") || {};
@@ -74,21 +74,21 @@ function checkPermission(m, pluginConfig) {
   ) {
     return {
       allowed: false,
-      reason: config.messages?.premiumOnly || "💎 Fitur Premium ini belum terbuka untukmu. Jangan membuat Rimuru menunggu. 💙",
+      reason: config.messages?.premiumOnly || "💎 Premium only!",
     };
   }
 
   if (pluginConfig.isGroup && !m.isGroup) {
     return {
       allowed: false,
-      reason: config.messages?.groupOnly || "👥 Hmph! Command ini hanya untuk grup. 💙",
+      reason: config.messages?.groupOnly || "👥 Group only!",
     };
   }
 
   if (pluginConfig.isPrivate && m.isGroup) {
     return {
       allowed: false,
-      reason: config.messages?.privateOnly || "📱 Hmph! Datang ke chat pribadi Rimuru dulu. 💙",
+      reason: config.messages?.privateOnly || "📱 Private chat only!",
     };
   }
 
@@ -101,7 +101,7 @@ function checkPermission(m, pluginConfig) {
   ) {
     return {
       allowed: false,
-      reason: config.messages?.adminOnly || "👑 Hmph! Kamu harus menjadi Admin grup dulu. 💙",
+      reason: config.messages?.adminOnly || "👮 Admin grup only!",
     };
   }
 
@@ -109,7 +109,7 @@ function checkPermission(m, pluginConfig) {
     return {
       allowed: false,
       reason:
-        config.messages?.botAdminOnly || "🤖 Jadikan Rimuru Admin dulu. Rimuru harus bisa melindungimu dengan bebas. 💙",
+        config.messages?.botAdminOnly || "🤖 Bot harus menjadi admin grup!",
     };
   }
 
@@ -120,7 +120,7 @@ function checkPermission(m, pluginConfig) {
         if (!m.isAdmin && !m.isOwner && !hasAccess) {
           return {
             allowed: false,
-            reason: "🎮 *Hmph!* Fitur Game sedang dimatikan oleh Admin. Jangan memaksa Rimuru, ya. 💙",
+            reason: "🎮 Fitur Game sedang dinonaktifkan di grup ini oleh Admin!",
           };
         }
       }
@@ -128,7 +128,7 @@ function checkPermission(m, pluginConfig) {
         if (!m.isAdmin && !m.isOwner && !hasAccess) {
           return {
             allowed: false,
-            reason: "⚔️ *Hmph!* Fitur RPG sedang dimatikan oleh Admin. Kalau ingin Rimuru membukanya, minta Admin mengaktifkannya lagi. 💙",
+            reason: "⚔️ Fitur RPG sedang dinonaktifkan di grup ini oleh Admin!",
           };
         }
       }

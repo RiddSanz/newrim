@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from "../../config.js"
 import { getDatabase } from "../../src/lib/rimuru-database.js"
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js"
@@ -33,7 +29,6 @@ Hai! Sebelum kamu menggunakan semua fitur yang tersedia, pastikan kamu memahami 
 - Gunakan semua fitur bot dengan *bijak dan bertanggung jawab*. Jangan menyalahgunakan fitur untuk hal-hal yang merugikan orang lain.
 - Dilarang menggunakan bot untuk menyebarkan *konten SARA, ujaran kebencian, atau konten ilegal* dalam bentuk apapun.
 - *Hormati sesama pengguna* bot. Jangan menggunakan fitur untuk mengganggu, membully, atau merugikan pengguna lain.
-- Jangan mengirimkan *konten NSFW* di grup tanpa persetujuan admin grup terlebih dahulu.
 
 🔹 *ATURAN PENGGUNAAN FITUR*
 
@@ -53,7 +48,7 @@ _Dengan menggunakan bot ini, kamu dianggap sudah membaca dan menyetujui seluruh 
 
 async function handler(m, { sock }) {
     const db = getDatabase()
-    const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"
+    const botName = config.bot?.name || "Rimuru-AI"
     const customRules = db.setting("botRules")
 
     let rulesText

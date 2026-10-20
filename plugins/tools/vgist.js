@@ -36,7 +36,24 @@ async function getGistFiles(input) {
     }
 }
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "vgist",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
     if (!text) return m.reply(`Contoh:\n.gist https://gist.github.com/user/abc123`)
     await m.reply('⏳ Mengambil isi Gist...')
     try {
@@ -61,11 +78,6 @@ let handler = async (m, { conn, text }) => {
     }
 }
 
-handler.help = ['vgist <url/id>']
-handler.tags = ['tools']
-handler.command = /^vgist$/i
-
-export default handler
 
 function formatUkuranMedia(angka) {
     if (angka >= 1024 * 1024 * 1024) {
@@ -78,3 +90,5 @@ function formatUkuranMedia(angka) {
       return angka + ' B';
     }
 }
+
+export { pluginConfig as config, handler };

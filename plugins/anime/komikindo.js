@@ -76,7 +76,25 @@ async function getDetail(url) {
    HANDLER
 ========================= */
 
-let handler = async (m, { text, usedPrefix, command, conn }) => {
+const pluginConfig = {
+  name: "komikindo",
+  alias: [],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command, sock }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(
 `📚 *KomikIndo*
@@ -151,8 +169,4 @@ ${usedPrefix + command} return of top class master`
   }
 }
 
-handler.help = ["komikindo <judul>", "komikindo detail <link>"]
-handler.tags = ["anime"]
-handler.command = /^komikindo$/i
-
-export default handler
+export { pluginConfig as config, handler };

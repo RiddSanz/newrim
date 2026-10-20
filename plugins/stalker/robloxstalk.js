@@ -1,7 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import safeJson from "../../src/lib/rimuru-safe-json.js";
 import config from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
 
@@ -25,7 +21,7 @@ async function Roblox(username) {
   const search = await fetch(
     `https://users.roblox.com/v1/users/search?keyword=${username}&limit=10`,
   );
-  const searchJson = await safeJson(search);
+  const searchJson = await search.json();
 
   if (!searchJson.data || !searchJson.data.length) {
     return { error: "User tidak ditemukan" };
@@ -45,32 +41,32 @@ async function Roblox(username) {
     badges,
     inventory,
   ] = await Promise.all([
-    fetch(`https://users.roblox.com/v1/users/${userId}`).then((r) => safeJson(r, {})),
+    fetch(`https://users.roblox.com/v1/users/${userId}`).then((r) => r.json()),
     fetch(
       `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png`,
-    ).then((r) => safeJson(r, {})),
+    ).then((r) => r.json()),
     fetch(`https://friends.roblox.com/v1/users/${userId}/followers/count`).then(
-      (r) => safeJson(r, {}),
+      (r) => r.json(),
     ),
     fetch(
       `https://friends.roblox.com/v1/users/${userId}/followings/count`,
-    ).then((r) => safeJson(r, {})),
+    ).then((r) => r.json()),
     fetch(`https://friends.roblox.com/v1/users/${userId}/friends/count`).then(
-      (r) => safeJson(r, {}),
+      (r) => r.json(),
     ),
     fetch(`https://groups.roblox.com/v2/users/${userId}/groups/roles`).then(
-      (r) => safeJson(r, {}),
+      (r) => r.json(),
     ),
     fetch(`https://games.roblox.com/v2/users/${userId}/games?limit=50`).then(
-      (r) => safeJson(r, {}),
+      (r) => r.json(),
     ),
     fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=50`).then(
-      (r) => safeJson(r, {}),
+      (r) => r.json(),
     ),
     fetch(
       `https://inventory.roblox.com/v1/users/${userId}/assets/collectibles?limit=50`,
     )
-      .then((r) => safeJson(r, {}))
+      .then((r) => r.json())
       .catch(() => null),
   ]);
 
@@ -81,7 +77,7 @@ async function Roblox(username) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userIds: [userId] }),
     });
-    const presJson = await safeJson(pres, {});
+    const presJson = await pres.json();
     presence = presJson.userPresences?.[0] || null;
   } catch {}
 

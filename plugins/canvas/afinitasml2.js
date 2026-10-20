@@ -1,56 +1,47 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import * as _canvas from '@napi-rs/canvas';
-import axios from "axios";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
+import axios from "axios";
 
 const pluginConfig = {
   name: "afinitasml2",
   alias: [],
   category: "canvas",
-  description: "Membuat profil ML dengan bingkai Afinitas (Style 2)",
+  description: "Bikin card afinitas ML (versi 2) dari fotomu",
   usage: ".afinitasml2 (reply/kirim foto)",
   example: ".afinitasml2",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
 
 async function handler(m, { sock }) {
-  let buffer = null;
+  let media = null;
+  const msgObj = m.quoted?.message ? m.quoted : m;
+  const type = getContentType(msgObj.message);
+
+  if (!type || type !== "imageMessage") {
+    return m.reply(`⚠️ Harap kirim atau reply foto dengan perintah \`${m.prefix}${m.command}\``);
+  }
   
-  if (m.quoted && (m.quoted.type === "imageMessage" || m.quoted.mtype === "imageMessage")) {
-    try { buffer = await m.quoted.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else if (m.isMedia && m.type === "imageMessage") {
-    try { buffer = await m.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else {
-    try {
-      let teUrl = await sock.profilePictureUrl(m.sender, "image");
-      buffer = Buffer.from((await axios.get(teUrl, { responseType: "arraybuffer" })).data);
-    } catch (error) {
-      buffer = getAssetBuffer("pp-kosong");
-    }
-  }
-
-  if (!buffer) {
-    return m.reply(`🎮 *ᴀꜰɪɴɪᴛᴀꜱ ᴍʟ 2*\n\n> Kirim/reply gambar untuk dijadikan avatar!`);
-  }
-
-  m.react("🕕");
-
+  await m.react("🕕");
+  
   try {
+    media = await downloadMediaMessage(msgObj, "buffer", {});
+    if (!media) throw new Error("Gagal membaca media");
+
     const bgURL = "https://raw.githubusercontent.com/kayzzaoshi-code/Uploader/main/file_1772821724016.png";
 
-    const userImage = await _canvas.loadImage(buffer);
-    const bg = await _canvas.loadImage(bgURL);
+    const bgBuffer = await axios.get(bgURL, { responseType: "arraybuffer" }).then(r => r.data);
 
-    const canvas = _canvas.createCanvas(bg.width, bg.height);
+    const userImage = await loadImage(media);
+    const bg = await loadImage(Buffer.from(bgBuffer));
+
+    const canvas = createCanvas(bg.width, bg.height);
     const ctx = canvas.getContext("2d");
 
     const frame = { x: 450, y: 847, width: 205, height: 205 };
@@ -76,12 +67,13 @@ async function handler(m, { sock }) {
 
     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-    const finalBuffer = await canvas.encode("png");
-    await sock.sendMedia(m.chat, finalBuffer, null, m, { type: "image" });
-    m.react("✅");
-  } catch (error) {
-    m.react("❌");
-    m.reply(`❌ Terjadi kesalahan saat memproses gambar.`);
+    const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "📱 *Afinitas ML v2*" }, { quoted: m });
+    await m.react("✅");
+
+  } catch (err) {
+    await m.react("☢");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

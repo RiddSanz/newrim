@@ -1,10 +1,9 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import {
   generateWAMessageFromContent,
   prepareWAMessageMedia,
-} from "ourin";
+} from "rimuru";
+import { pinterest } from "btch-downloader";
+import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
 import { f } from "../../src/lib/rimuru-http.js";
 
@@ -24,6 +23,56 @@ const pluginConfig = {
   isEnabled: true,
 };
 
+function getResults(data) {
+  const candidates = [
+    data?.result?.result?.result,
+    data?.result?.result,
+    data?.result,
+    data?.data?.results,
+    data?.results,
+  ];
+
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value;
+  }
+
+  return [];
+}
+
+function getImageUrl(item) {
+  if (typeof item === "string") return item;
+  return (
+    item?.image_url ||
+    item?.image ||
+    item?.images?.orig?.url ||
+    item?.images?.['736x']?.url ||
+    item?.images?.['564x']?.url ||
+    item?.url ||
+    item?.thumbnail ||
+    null
+  );
+}
+
+async function searchPinterest(query) {
+  try {
+    const data = await pinterest(query);
+    const results = getResults(data).filter((item) => getImageUrl(item));
+    if (results.length) return results;
+  } catch (err) {
+    console.log("[PIN2] btch-downloader gagal, mencoba fallback:", err.message);
+  }
+
+  try {
+    const data = await f(
+      `https://api.cuki.biz.id/api/search/pinterest?apikey=cuki-x&query=${encodeURIComponent(query)}&type=image`,
+    );
+    return getResults(data).filter((item) => getImageUrl(item));
+  } catch (err) {
+    console.log("[PIN2] Fallback Pinterest API gagal:", err.message);
+    return [];
+  }
+}
+
 async function handler(m, { sock }) {
   const query = m.text?.trim();
 
@@ -34,71 +83,92 @@ async function handler(m, { sock }) {
   await m.react("🕕");
 
   try {
-    const data = await f(
-      `https://api.cuki.biz.id/api/search/pinterest?apikey=cuki-x&query=${encodeURIComponent(query)}&type=image`
-    );
-
-    const results = data?.data?.results?.filter(item => item.image_url);
-    if (!results || results.length === 0) {
+    const results = await searchPinterest(query);
+    if (!results.length) {
       await m.react("❌");
       return m.reply(`❌ Waduh, pencarian untuk *${query}* tidak ditemukan. Coba kata kunci lain.`);
     }
 
-    const randomItem = results[Math.floor(Math.random() * results.length)];
-    const imageUrl = randomItem.image_url;
+    // Coba beberapa hasil sampai menemukan gambar yang benar-benar bisa dimuat.
+    const shuffled = [...results].sort(() => Math.random() - 0.5);
+    let imageBuffer = null;
 
-    if (!imageUrl) {
-      await m.react("❌");
-      return m.reply("⚠️ Gambar tidak tersedia.");
+    for (const item of shuffled) {
+      const imageUrl = getImageUrl(item);
+      if (!imageUrl) continue;
+
+      try {
+        const response = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+          timeout: 15000,
+          maxContentLength: 15 * 1024 * 1024,
+        });
+        const buffer = Buffer.from(response.data);
+        if (buffer.length > 1000) {
+          imageBuffer = buffer;
+          break;
+        }
+      } catch (err) {
+        continue;
+      }
     }
 
-    const mediaMessage = await prepareWAMessageMedia({
-      image: { url: imageUrl }
-    }, { upload: sock.waUploadToServer });
+    if (!imageBuffer) {
+      await m.react("❌");
+      return m.reply("⚠️ Gambar Pinterest ditemukan, tetapi gagal dimuat.");
+    }
 
-    const msg = generateWAMessageFromContent(m.chat, {
-      viewOnceMessage: {
-        message: {
-          messageContextInfo: {},
-          interactiveMessage: {
-            header: {
-              title: "",
-              subtitle: "",
-              hasMediaAttachment: true,
-              imageMessage: mediaMessage.imageMessage
+    const mediaMessage = await prepareWAMessageMedia(
+      { image: imageBuffer },
+      { upload: sock.waUploadToServer },
+    );
+
+    const msg = generateWAMessageFromContent(
+      m.chat,
+      {
+        viewOnceMessage: {
+          message: {
+            messageContextInfo: {},
+            interactiveMessage: {
+              header: {
+                title: "",
+                subtitle: "",
+                hasMediaAttachment: true,
+                imageMessage: mediaMessage.imageMessage,
+              },
+              footer: {
+                text: "Klik tombol di bawah untuk gambar lain 👇",
+              },
+              body: {
+                text: `📸 *PINTEREST SEARCH*\n\n> Pencarian: *${query}*`,
+              },
+              nativeFlowMessage: {
+                buttons: [
+                  {
+                    name: "quick_reply",
+                    buttonParamsJson: JSON.stringify({
+                      display_text: "🔁 Next",
+                      id: `${m.prefix}pin2 ${query}`,
+                    }),
+                  },
+                ],
+              },
             },
-            footer: {
-              text: "Klik tombol di bawah untuk gambar lain 👇"
-            },
-            body: {
-              text: `📸 *PINTEREST SEARCH*\n\n> Pencarian: *${query}*`
-            },
-            nativeFlowMessage: {
-              buttons: [
-                {
-                  name: "quick_reply",
-                  buttonParamsJson: JSON.stringify({
-                    display_text: "🔁 Next",
-                    id: `${m.prefix}pin2 ${query}`
-                  })
-                }
-              ]
-            }
-          }
-        }
-      }
-    }, { quoted: m, userJid: sock.user.jid });
+          },
+        },
+      },
+      { quoted: m, userJid: sock.user.jid },
+    );
 
     await sock.relayMessage(m.chat, msg.message, {
       messageId: msg.key.id,
     });
 
     await m.react("✅");
-
   } catch (error) {
     console.error("[PIN2 Search]", error.message);
     await m.react("☢");
-    m.reply("😔 Gagal memuat pencarian Pinterest. Server mungkin sedang bermasalah.");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

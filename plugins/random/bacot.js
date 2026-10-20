@@ -5,7 +5,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import fs from 'fs'
 import moment from 'moment-timezone'
 
-let handler = async (m, { conn, usedPrefix, __dirname, text, command }) => {
+const pluginConfig = {
+  name: "bacot",
+  alias: [],
+  category: "random",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, __dirname, text, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 let tag = `@${m.sender.replace(/@.+/, '')}`
   let mentionedJid = [m.sender]
 let name = conn.getName(m.sender)
@@ -19,13 +37,8 @@ let bcod = `${pickRandom(global.bacot)}`
 let nth = `☰ ━━┉┉┈┈ *BACOT* ┈┈┉┉━━ ☰`
 m.reply(nth + `\n` + bcod)
 }
-handler.help = ['bacot']
-handler.tags = ['quotes']
-handler.command = /^(bacot)$/i
 
 handler.register = true
-
-export default handler
 
 function ucapan() {
   const time = moment.tz('Asia/Jakarta').format('HH')
@@ -85,3 +98,5 @@ global.bacot = [
 'Jangan terlalu berharap! nanti jatuhnya sakit!',
 'Ingat! Anda itu jomblo',
 'Gak tau mau ngetik apa']
+
+export { pluginConfig as config, handler };

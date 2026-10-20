@@ -1,17 +1,13 @@
 import { getDatabase } from '../../src/lib/rimuru-database.js';
 import { getGroupMode } from '../group/botmode.js';
 import { fetchGroupsSafe } from '../../src/lib/rimuru-jpm-helper.js';
-import { generateWAMessage, generateWAMessageFromContent, jidNormalizedUser } from '@itsliaaa/baileys';
+import { generateWAMessage, generateWAMessageFromContent, jidNormalizedUser } from 'rimuru';
 import config from '../../config.js';
 import crypto from 'crypto';
 import fs from 'fs';
+import { getAssetBuffer } from '../../src/lib/rimuru-asset-manager.js';
 
-let cachedThumb = null
-try {
-    if (fs.existsSync('./assets/images/rimuru2.jpg')) {
-        cachedThumb = fs.readFileSync('./assets/images/rimuru2.jpg')
-    }
-} catch (e) {}
+let cachedThumb = getAssetBuffer("rimuru2");
 
 const pluginConfig = {
     name: 'jpmalbum',
@@ -32,7 +28,7 @@ const pluginConfig = {
 const COLLECT_WINDOW = 60000
 
 function getContextInfo(title = '📢 ᴊᴘᴍ ᴀʟʙᴜᴍ', body = 'Album Broadcast') {
-    const saluranId = config.saluran?.id || '120363402057133599@newsletter'
+    const saluranId = config.saluran?.id || config.saluran?.id
     const saluranName = config.saluran?.name || config.bot?.name || 'rimuru-AI'
 
     const contextInfo = {

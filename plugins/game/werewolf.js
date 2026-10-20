@@ -1,17 +1,14 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 /**
  * 🐺 WEREWOLF GAME
  * Social deduction game for WhatsApp
  *
  * Based on reference: RTXZY-MD-pro/lib/werewolf.js
- * Enhanced for rimuruAI
+ * Enhanced for RimuruAI
  */
 import config from "../../config.js";
 import fs from "fs";
+import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 import path from "path";
 import te from "../../src/lib/rimuru-error.js";
 const pluginConfig = {
@@ -38,17 +35,12 @@ let thumbDay = null;
 let thumbWin = null;
 
 try {
-  const assetsPath = path.join(process.cwd(), "assets", "images");
-  if (fs.existsSync(path.join(assetsPath, "rimuru-games.jpg"))) {
-    thumbWW = fs.readFileSync(path.join(assetsPath, "rimuru-games.jpg"));
+  thumbWW = getAssetBuffer("rimuru-games");
+  if (fs.existsSync(path.join(process.cwd(), "assets", "images", "rimuru.jpg"))) {
+    thumbNight = fs.readFileSync(path.join(process.cwd(), "assets", "images", "rimuru.jpg"));
+    thumbDay = fs.readFileSync(path.join(process.cwd(), "assets", "images", "rimuru.jpg"));
   }
-  if (fs.existsSync(path.join(assetsPath, "rimuru.jpg"))) {
-    thumbNight = fs.readFileSync(path.join(assetsPath, "rimuru.jpg"));
-    thumbDay = fs.readFileSync(path.join(assetsPath, "rimuru.jpg"));
-  }
-  if (fs.existsSync(path.join(assetsPath, "rimuru-winner.jpg"))) {
-    thumbWin = fs.readFileSync(path.join(assetsPath, "rimuru-winner.jpg"));
-  }
+  thumbWin = getAssetBuffer("rimuru-winner");
 } catch (e) {
   console.log("[WW] Failed to load thumbnails:", e.message);
 }
@@ -95,8 +87,8 @@ const PHASE_DURATION = {
 };
 
 function wwCtx(mentions) {
-  const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-  const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+  const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+  const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
   return {
     forwardingScore: 9999,
     isForwarded: true,

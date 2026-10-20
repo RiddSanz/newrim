@@ -1,7 +1,23 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { args, isAdmin, isOwner }) => {
+const pluginConfig = {
+  name: "antilinkch",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { args, isAdmin, isOwner }) {
   if (!m.isGroup) return m.reply("Fitur ini hanya bisa dipakai di grup.")
   if (!(isAdmin || isOwner)) return m.reply("Khusus admin.")
 
@@ -72,11 +88,7 @@ handler.before = async (m, { conn, isBotAdmin, usedPrefix, isAdmin }) => {
   })
 }
 
-handler.help = ['antilinkch']
-handler.tags = ['group']
-handler.command = /^antilinkch$/i
-handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
-export default handler
+export { pluginConfig as config, handler };

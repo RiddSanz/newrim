@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import {
   getOrCreateFischUser,
@@ -32,6 +28,7 @@ import {
 import config from "../../config.js";
 import path from "path";
 import fs from "fs";
+import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 
 const FC = 15;
 const rc = (r) => RARITY_EMOJI[r] || "W";
@@ -48,13 +45,12 @@ const encCost = (r) =>
 
 let thumbFish = null;
 try {
-  const p = path.join(process.cwd(), "assets", "images", "rimuru-fishit.jpg");
-  if (fs.existsSync(p)) thumbFish = fs.readFileSync(p);
+  thumbFish = getAssetBuffer("rimuru-fishit");
 } catch (e) {}
 
 function ctx(title, body) {
-  const sId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-  const sName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+  const sId = config.saluran?.id || "120363412350560864@newsletter";
+  const sName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
   const c = {
     forwardingScore: 9999,
     isForwarded: true,

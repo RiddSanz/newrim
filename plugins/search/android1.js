@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 import axios from "axios";
 import config from "../../config.js";
@@ -24,7 +20,7 @@ const pluginConfig = {
   isEnabled: true,
 };
 
-const NEOXR_APIKEY = config.APIkey?.neoxr || "Milik-Bot-rimuruMD";
+const NEOXR_APIKEY = config.APIkey?.neoxr || "Milik-Bot-RimuruMD";
 
 async function handler(m, { sock }) {
   const db = getDatabase();
@@ -68,8 +64,8 @@ async function handler(m, { sock }) {
     };
     db.save();
 
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
     let caption = `📱 Hasil dari pencarian apk mod *${text}*\n`;
     caption += `*${apps.length}* aplikasi ditemukan\n\n`;

@@ -1,27 +1,25 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getImageProcessingLibrary } from '@itsliaaa/baileys'
+import sharp from 'sharp'
 
 let handler = async (m, { conn }) => {
-  let q = m.quoted || m
-  let mime = q.mimetype || ''
+  const q = m.quoted || m
+  const mime = q.mimetype || q.msg?.mimetype || ''
 
   if (!mime.startsWith('image/')) return m.reply('Reply gambar!')
 
-  let buffer = await q.download()
+  try {
+    const buffer = await q.download()
+    if (!buffer?.length) return m.reply('Gagal mengunduh gambar. Coba kirim ulang.')
 
-  const lib = await getImageProcessingLibrary()
-
-  let output = buffer
-  if (lib.sharp?.default) {
-    output = await lib.sharp.default(buffer)
-      .resize(512)
+    const output = await sharp(buffer)
+      .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
       .png()
       .toBuffer()
-  }
 
-  await conn.sendMessage(m.chat, { image: output }, { quoted: m })
+    await conn.sendMessage(m.chat, { image: output }, { quoted: m })
+  } catch (error) {
+    console.error('[resize] Gagal memproses gambar:', error)
+    return m.reply('Gagal mengubah ukuran gambar. Pastikan file gambar valid.')
+  }
 }
 
 handler.command = ['resize']

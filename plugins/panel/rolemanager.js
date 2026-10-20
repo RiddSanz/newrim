@@ -1,8 +1,5 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { isLid, lidToJid } from '../../src/lib/rimuru-lid.js'
-import { addRole, removeRole, listByRole, canManageRole, getUserRole, VALID_SERVERS } from '../../src/lib/rimuru-roles-cpanel.js'
+import { addRole, removeRole, listByRole, canManageRole, canViewRole, getUserRole, VALID_SERVERS } from '../../src/lib/rimuru-roles-cpanel.js'
 const ROLES = ['owner', 'ceo', 'reseller']
 const allCommands = []
 
@@ -66,6 +63,14 @@ function handler(m, { sock }) {
     const roleLabel = capitalize(role)
     
     if (action === 'list') {
+        if (!canViewRole(m.sender, server, role, m.isOwner)) {
+            const userRole = getUserRole(m.sender, server)
+            return m.reply(
+                `❌ *ᴀᴋsᴇs ᴅɪᴛᴏʟᴀᴋ*\n\n` +
+                `> Kamu tidak bisa melihat daftar *${roleLabel}* di *${serverLabel}*\n` +
+                `> Role kamu: *${userRole ? capitalize(userRole) : 'Tidak ada'}*`
+            )
+        }
         const list = listByRole(server, role)
         if (list.length === 0) {
             return m.reply(`📋 *ᴅᴀꜰᴛᴀʀ ${roleLabel.toUpperCase()} ${serverLabel}*\n\n> Belum ada ${role} terdaftar.`)

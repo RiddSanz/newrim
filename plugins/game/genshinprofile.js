@@ -10,6 +10,22 @@ const headers = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.89 Safari/537.36",
 };
 
+const pluginConfig = {
+  name: "genshinprofile",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, args }) => {
   if (!args[0]) {
     return m.reply('Harap masukkan UID Genshin Impact yang valid!');
@@ -48,9 +64,4 @@ const handler = async (m, { conn, args }) => {
   }
 };
 
-handler.help = ['genshinprofile'].map((v) => v + ' <uid>');
-handler.command = /^(genshinprofile)$/i;
-handler.tags = ["game"]
-handler.limit = false;
-
-export default handler;
+export { pluginConfig as config, handler };

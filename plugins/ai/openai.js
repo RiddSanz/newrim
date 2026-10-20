@@ -7,7 +7,24 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import FormData from 'form-data'
 
-let handler = async (m, { text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "openai",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) throw `Contoh: *${usedPrefix + command} apa itu AI?*`
 
   const message = text
@@ -54,9 +71,4 @@ let handler = async (m, { text, usedPrefix, command }) => {
   m.reply(jawab)
 }
 
-handler.help = ['openai'].map(v => v + ' <teks>')
-handler.tags = ['ai']
-handler.command = /^openai$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

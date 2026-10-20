@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from "fs";
 import path from "path";
 import te from "../../src/lib/rimuru-error.js";
@@ -30,7 +27,7 @@ const pluginConfig = {
   category: "main",
   description: "Menampilkan dan mengatur link Grup Official Bot",
   usage: ".gbbot / .setgbbot <link>",
-  example: ".setgbbot https://chat.whatsapp.com/xxx",
+  example: ".setgbbot https://chat.whatsapp.com/xxxxxxxxxxxxxxxxxxxx",
   isOwner: false,
   isPremium: false,
   isGroup: false,
@@ -54,7 +51,7 @@ async function handler(m, { sock, isOwner }) {
 
     const newLink = fullText.replace(/^[\/.!#]?setgbbot\s*/i, "").trim();
     if (!newLink || !newLink.includes("chat.whatsapp.com")) {
-      return m.reply(`❌ Masukkan link grup WhatsApp yang valid!\nContoh: \`${prefix}setgbbot https://chat.whatsapp.com/B5UZ0QAn40M7BkaeFLwZtv\``);
+      return m.reply(`❌ Masukkan link grup WhatsApp yang valid!\nContoh: \`${prefix}setgbbot https://whatsapp.com/channel/RIMURU_CHANNEL\``);
     }
 
     writeDb({ link: newLink });
@@ -67,7 +64,7 @@ async function handler(m, { sock, isOwner }) {
 
   try {
     const db = readDb();
-    const groupLink = db.link || "https://chat.whatsapp.com/B5UZ0QAn40M7BkaeFLwZtv";
+    const groupLink = db.link || "https://whatsapp.com/channel/RIMURU_CHANNEL";
     const pushName = m.pushName || "Kak";
 
     let caption = `╭───〔 🌐 *OFFICIAL COMMUNITY* 〕───\n`;

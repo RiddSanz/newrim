@@ -4,7 +4,7 @@ import {
   generateWAMessage,
   generateWAMessageFromContent,
   jidNormalizedUser,
-} from "ourin";
+} from "rimuru";
 import { getDatabase } from "./rimuru-database.js";
 import { logger } from "./rimuru-logger.js";
 import { aiodl, detectPlatform } from "../scraper/aio.js";

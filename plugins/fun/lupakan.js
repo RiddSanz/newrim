@@ -3,6 +3,22 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch';
 
+const pluginConfig = {
+  name: "lupakan",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, text, usedPrefix, command }) => {
   const quotes = [
     'Masa lalu adalah pelajaran, bukan penjara. Biarkan dirimu terbang lebih tinggi.',
@@ -34,10 +50,6 @@ Ingat, kamu lebih kuat dari yang kamu pikirkan. Masa depan penuh dengan kemungki
   await conn.sendMessage(m.chat, { text: message }, { quoted: m });
 };
 
-handler.help = ['lupakan'];
-handler.tags = ['fun'];
-handler.command = /^lupakan$/i;
-handler.limit = true;
 handler.register = true;
 
-export default handler;
+export { pluginConfig as config, handler };

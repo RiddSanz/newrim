@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import FormData from "form-data";
 import config from "../../config.js";
@@ -75,10 +71,10 @@ async function handler(m, { sock }) {
     await sock.sendMessage(
       m.chat,
       {
-        image: { url: data.result },
+        document: { url: data.result },
         mimetype: "image/jpeg",
         jpegThumbnail: thumbBuffer,
-        caption: `✨ HD by ${RIMURU_CORE_CONFIG.bot.name}`,
+        fileName: `HD_BY_${config.bot.name}.jpg`,
       },
       { quoted: m },
     );

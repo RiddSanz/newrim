@@ -1,7 +1,6 @@
 import canvas from '@napi-rs/canvas';
 const { createCanvas, loadImage } = canvas;
 import path from 'path';
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 const pluginConfig = {
     name: 'logo-glow',
     alias: ['logoglow', 'neonlogo', 'glowlogo'],

@@ -2,6 +2,7 @@ import { getDatabase } from '../../src/lib/rimuru-database.js';
 import orderPoller from '../../src/lib/orderPoller.js';
 import path from 'path';
 import fs from 'fs';
+import { getAssetBuffer } from '../../src/lib/rimuru-asset-manager.js';
 
 const pluginConfig = {
     name: 'beliproduk',
@@ -45,7 +46,7 @@ async function handler(m, { sock }) {
     const qty = parseInt(args[1]) || 1
     
     if (isNaN(productIdx) || productIdx < 0 || productIdx >= products.length) {
-        const storeImage = path.join(process.cwd(), 'assets', 'images', 'rimuru-store.jpg')
+        const storeImage = getAssetBuffer('rimuru-store')
         
         let txt = `💳 *ʙᴇʟɪ ᴅᴇɴɢᴀɴ sᴀʟᴅᴏ*\n\n`
         txt += `> Bayar produk menggunakan *Koin* in-game!\n`
@@ -93,10 +94,7 @@ async function handler(m, { sock }) {
             }
         ]
         
-        let thumbnail = null
-        if (fs.existsSync(storeImage)) {
-            thumbnail = fs.readFileSync(storeImage)
-        }
+        let thumbnail = storeImage || null
         
         return sock.sendMessage(m.chat, {
             text: txt,

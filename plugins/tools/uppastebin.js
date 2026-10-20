@@ -4,6 +4,22 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import axios from 'axios';
 const PASTEBIN_API_KEY = 'PXckLHLn4g-XTbETtJ6uRH0dQh6khXRB'; // API Key Dev Pastebin
 
+const pluginConfig = {
+  name: "up-pb",
+  alias: ["uppastebin"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, text }) => {
   if (!text) return m.reply('Harap masukkan kode yang ingin diunggah ke Pastebin!');
   await conn.sendMessage(m.chat, { text: wait }, { quoted: m });
@@ -30,10 +46,5 @@ const handler = async (m, { conn, text }) => {
     await conn.sendMessage(m.chat, { text: `❗ Gagal mengunggah ke Pastebin: ${error.message}` }, { quoted: m });
   }
 };
-handler.help = ['up-pb'];
-handler.tags = ['owner'];
-handler.command = /^(up-pb|uppastebin)$/i;
-handler.owner = true;
-handler.limit = false
 
-export default handler;
+export { pluginConfig as config, handler };

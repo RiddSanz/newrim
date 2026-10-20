@@ -1,14 +1,11 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent, proto } from "ourin";
+import { prepareWAMessageMedia, generateWAMessageFromContent, proto } from "rimuru";
 import axios from 'axios'
 import crypto from 'crypto'
 import config from '../../config.js'
 import { isLid, lidToJid } from '../../src/lib/rimuru-lid.js'
 import { checkPanelJeda, setPanelLastUsed } from '../../src/lib/rimuru-panel-jeda.js'
-import { hasAccessToServer, getUserRole, VALID_SERVERS } from '../../src/lib/rimuru-roles-cpanel.js'
+import { hasAccessToServer, getPanelAccessRole, VALID_SERVERS } from '../../src/lib/rimuru-roles-cpanel.js'
 import { isGcSeller } from './gcseller.js'
 import * as timeHelper from '../../src/lib/rimuru-time.js'
 import fs from 'fs'
@@ -102,24 +99,32 @@ function getServerConfig(pteroConfig, serverKey) {
 
 function validateServerConfig(serverConfig) {
   const missing = [];
-  if (!serverConfig?.domain) missing.push("domain");
-  if (!serverConfig?.apikey) missing.push("apikey (PTLA)");
+  const domain = String(serverConfig?.domain || '').trim();
+  if (!domain) {
+    missing.push('domain');
+  } else {
+    try {
+      const parsed = new URL(domain);
+      if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) {
+        missing.push('domain (gunakan URL http:// atau https://)');
+      }
+    } catch {
+      missing.push('domain (gunakan URL http:// atau https://)');
+    }
+  }
+  if (!String(serverConfig?.apikey || '').trim()) missing.push('apikey (PTLA/Application API key)');
+  if (!/^\d+$/.test(String(serverConfig?.egg ?? ''))) missing.push('egg (ID numerik)');
+  if (!/^\d+$/.test(String(serverConfig?.nestid ?? ''))) missing.push('nestid (ID numerik)');
+  if (!/^\d+$/.test(String(serverConfig?.location ?? ''))) missing.push('location (ID numerik)');
   return missing;
 }
 
-function getAvailableServers(pteroConfig) {
-  const available = [];
-  if (pteroConfig.server1?.domain && pteroConfig.server1?.apikey)
-    available.push("v1");
-  if (pteroConfig.server2?.domain && pteroConfig.server2?.apikey)
-    available.push("v2");
-  if (pteroConfig.server3?.domain && pteroConfig.server3?.apikey)
-    available.push("v3");
-  if (pteroConfig.server4?.domain && pteroConfig.server4?.apikey)
-    available.push("v4");
-  if (pteroConfig.server5?.domain && pteroConfig.server5?.apikey)
-    available.push("v5");
-  return available;
+function getAvailableServers(pteroConfig = {}) {
+  return VALID_SERVERS.filter((serverVersion) => {
+    const serverNumber = serverVersion.slice(1);
+    const serverConfig = pteroConfig[`server${serverNumber}`];
+    return validateServerConfig(serverConfig).length === 0;
+  });
 }
 
 async function handler(m, { sock }) {
@@ -134,7 +139,7 @@ async function handler(m, { sock }) {
 
   const gcSellerAccess = isGcSeller(m.chat, serverVersion)
   if (!gcSellerAccess && !hasAccessToServer(m.sender, serverVersion, m.isOwner)) {
-    const userRole = getUserRole(m.sender, serverVersion);
+    const userRole = getPanelAccessRole(m.sender, serverVersion);
     return m.reply(
       `❌ *ᴀᴋsᴇs ᴅɪᴛᴏʟᴀᴋ*\n\n` +
       `> Kamu tidak punya akses ke *${serverVersion.toUpperCase()}*\n` +
@@ -148,17 +153,21 @@ async function handler(m, { sock }) {
     return m.reply(jedaCheck.message);
   }
 
-  const serverConfig = getServerConfig(pteroConfig, serverKey);
+  const rawServerConfig = getServerConfig(pteroConfig, serverKey);
+  const serverConfig = rawServerConfig
+    ? { ...rawServerConfig, domain: String(rawServerConfig.domain || '').trim().replace(/\/+$/, '') }
+    : null;
   const missingConfig = validateServerConfig(serverConfig);
 
   if (missingConfig.length > 0) {
     const available = getAvailableServers(pteroConfig);
     let txt = `⚠️ *sᴇʀᴠᴇʀ ${serverVersion.toUpperCase()} ʙᴇʟᴜᴍ ᴋᴏɴꜰɪɢ*\n\n`;
+    txt += `> Bagian yang perlu diperiksa: *${missingConfig.join(', ')}*\n`;
     if (available.length > 0) {
-      txt += `> Server tersedia: *${available.join(", ")}*\n`;
+      txt += `> Server yang sudah siap: *${available.join(", ")}*\n`;
       txt += `> Contoh: \`${m.prefix}${ram}${available[0]} username\``;
     } else {
-      txt += `> Isi config pterodactyl di \`config.js\``;
+      txt += `> Lengkapi konfigurasi server di \`config.js\``;
     }
     return m.reply(txt);
   }
@@ -178,7 +187,7 @@ async function handler(m, { sock }) {
 
   if (!username) {
     const available = getAvailableServers(pteroConfig);
-    const userRole = getUserRole(m.sender, serverVersion) || "Guest";
+    const userRole = getPanelAccessRole(m.sender, serverVersion) || "Guest";
     return m.reply(
       `⚠️ *ᴄᴀʀᴀ ᴘᴀᴋᴀɪ*\n\n` +
       `> \`${m.prefix}${m.command} username\`\n` +
@@ -233,6 +242,8 @@ async function handler(m, { sock }) {
 
   await m.reply(`🕕 Membuat panel *${serverLabel}* untuk \`${targetUser.split("@")[0]}\`...`);
 
+  let createdUserId = null;
+  let createdServerId = null;
   try {
     let userRes;
     try {
@@ -252,11 +263,14 @@ async function handler(m, { sock }) {
             "Content-Type": "application/json",
             Accept: "Application/vnd.pterodactyl.v1+json",
           },
+          timeout: 20000,
         },
       );
     } catch (e) { e._step = 'create_user'; throw e; }
 
-    const user = userRes.data.attributes;
+    const user = userRes.data?.attributes;
+    if (!user?.id) throw new Error('API tidak mengembalikan ID user yang dibuat.');
+    createdUserId = user.id;
 
     let eggRes;
     try {
@@ -268,6 +282,7 @@ async function handler(m, { sock }) {
             "Content-Type": "application/json",
             Accept: "Application/vnd.pterodactyl.v1+json",
           },
+          timeout: 20000,
         },
       );
     } catch (e) { e._step = 'fetch_egg'; throw e; }
@@ -316,11 +331,14 @@ async function handler(m, { sock }) {
             "Content-Type": "application/json",
             Accept: "Application/vnd.pterodactyl.v1+json",
           },
+          timeout: 20000,
         },
       );
     } catch (e) { e._step = 'create_server'; throw e; }
 
-    const server = serverRes.data.attributes;
+    const server = serverRes.data?.attributes;
+    if (!server?.id) throw new Error('API tidak mengembalikan ID server yang dibuat.');
+    createdServerId = server.id;
 
     const ramLabel = specs.ram === 0 ? "Unlimited" : `${specs.ram / 1000} GB`;
 
@@ -333,60 +351,81 @@ async function handler(m, { sock }) {
     detailTxt += `🌐 Panel: ${serverConfig.domain}\n\n`;
     detailTxt += `⚠️ Simpan data ini, jangan bagikan ke siapapun!`;
 
-    const headerMedia = await prepareWAMessageMedia(
-      { image: getAssetBuffer("rimuru-v8") },
-      { upload: sock.waUploadToServer }
-    );
-
-    const msg = generateWAMessageFromContent(
-      targetUser,
-      {
-        viewOnceMessage: {
-          message: {
-            messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
-            interactiveMessage: proto.Message.InteractiveMessage.fromObject({
-              contextInfo: {
-                mentionedJid: [targetUser],
-                isForwarded: true,
-                forwardingScore: 999,
+    let detailSent = false;
+    const imageBuffer = getAssetBuffer("rimuru-v8");
+    if (imageBuffer) {
+      try {
+        const headerMedia = await prepareWAMessageMedia(
+          { image: imageBuffer },
+          { upload: sock.waUploadToServer },
+        );
+        const msg = generateWAMessageFromContent(
+          targetUser,
+          {
+            viewOnceMessage: {
+              message: {
+                messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+                interactiveMessage: proto.Message.InteractiveMessage.fromObject({
+                  contextInfo: {
+                    mentionedJid: [targetUser],
+                    isForwarded: true,
+                    forwardingScore: 999,
+                  },
+                  body: proto.Message.InteractiveMessage.Body.fromObject({ text: detailTxt }),
+                  footer: proto.Message.InteractiveMessage.Footer.fromObject({ text: `Panel Pterodactyl - ${serverConfig.domain}` }),
+                  header: proto.Message.InteractiveMessage.Header.fromObject({
+                    hasMediaAttachment: true,
+                    imageMessage: headerMedia.imageMessage,
+                  }),
+                  nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
+                    buttons: [
+                      { name: "cta_copy", buttonParamsJson: JSON.stringify({ display_text: "📋 Copy Username", copy_code: username }) },
+                      { name: "cta_copy", buttonParamsJson: JSON.stringify({ display_text: "📋 Copy Password", copy_code: password }) },
+                      { name: "cta_url", buttonParamsJson: JSON.stringify({ display_text: "🌐 Buka Panel", url: serverConfig.domain }) },
+                    ],
+                  }),
+                }),
               },
-              body: proto.Message.InteractiveMessage.Body.fromObject({ text: detailTxt }),
-              footer: proto.Message.InteractiveMessage.Footer.fromObject({ text: `Panel Pterodactyl - ${serverConfig.domain}` }),
-              header: proto.Message.InteractiveMessage.Header.fromObject({
-                hasMediaAttachment: true,
-                imageMessage: headerMedia.imageMessage,
-              }),
-              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
-                buttons: [
-                  {
-                    name: "cta_copy",
-                    buttonParamsJson: JSON.stringify({ display_text: "📋 Copy Username", copy_code: username }),
-                  },
-                  {
-                    name: "cta_copy",
-                    buttonParamsJson: JSON.stringify({ display_text: "📋 Copy Password", copy_code: password }),
-                  },
-                  {
-                    name: "cta_url",
-                    buttonParamsJson: JSON.stringify({ display_text: "🌐 Buka Panel", url: serverConfig.domain }),
-                  },
-                ],
-              }),
-            }),
+            },
           },
-        },
-      },
-      {}
-    );
+          {},
+        );
+        await sock.relayMessage(targetUser, msg.message, { messageId: msg.key.id });
+        detailSent = true;
+      } catch (deliveryError) {
+        // Fall back to plain text below when interactive/media delivery fails.
+      }
+    }
 
-    await sock.relayMessage(targetUser, msg.message, { messageId: msg.key.id });
+    if (!detailSent) {
+      try {
+        await sock.sendMessage(targetUser, { text: detailTxt });
+        detailSent = true;
+      } catch (deliveryError) {
+        // The server is already created; do not report it as a creation failure.
+      }
+    }
 
     await setPanelLastUsed();
-
-    if (targetUser !== m.sender) {
+    if (!detailSent) {
+      await m.reply(`✅ Panel *${serverLabel}* sudah dibuat (ID: ${createdServerId}), tetapi detail gagal dikirim ke ${targetUser.split('@')[0]}. Jangan buat ulang; hubungi owner untuk mengambil detail login.`);
+    } else if (targetUser !== m.sender) {
       await m.reply(`✅ Panel *${serverLabel}* berhasil dibuat untuk \`${targetUser.split("@")[0]}\``);
     }
   } catch (err) {
+    if (createdUserId && !createdServerId) {
+      try {
+        await axios.delete(`${String(serverConfig?.domain || '').trim().replace(/\/+$/, '')}/api/application/users/${createdUserId}`, {
+          headers: {
+            Authorization: `Bearer ${serverConfig.apikey}`,
+            Accept: 'Application/vnd.pterodactyl.v1+json',
+          },
+          timeout: 15000,
+        });
+      } catch (cleanupError) {
+        // Keep the original API error; cleanup failure shouldn't hide it.
+      }
+    }
     const rawMsg = err?.response?.data?.errors?.[0]?.detail || err?.response?.data?.message || err.message;
     const errorMap = {
       'has already been taken': `Username/email *${username}* sudah dipakai, coba username lain`,

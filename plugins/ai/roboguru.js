@@ -3,7 +3,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "roboguru",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(`Example: ${usedPrefix + command} 1+1`)
   }
@@ -38,9 +56,4 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['roboguru <pertanyaan>']
-handler.tags = ['internet']
-handler.command = /^roboguru$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

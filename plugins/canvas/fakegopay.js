@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
 
@@ -21,10 +18,16 @@ const pluginConfig = {
 };
 
 async function handler(m, { sock, text }) {
-    if (!text) return m.reply(`Format salah!\n\n> Contoh: .fakegopay 100000|500|20000|Januari`);
-    const [saldo, coin, terpakai, bulan] = text.split("|").map(v => v.trim());
-    if (!saldo || !coin || !terpakai || !bulan) return m.reply(`Pastikan semua argumen diisi dengan benar, dipisah dengan tanda |.`);
-    
+    const raw = String(text || "").trim();
+    if (!raw) return m.reply(`Format salah!\n\n> Contoh: .fakegopay 100000|500|20000|Januari`);
+
+    const parts = raw.split("|").map(v => v.trim());
+    if (parts.length !== 4 || parts.some(v => !v)) {
+        return m.reply(`Format salah!\n\n> Gunakan 4 data yang dipisah dengan |\n> Contoh: .fakegopay 100000|500|20000|Januari`);
+    }
+
+    const [saldo, coin, terpakai, bulan] = parts;
+
     await m.react("🕕");
     try {
         const url = `https://kyzznekoo.zone.id/api/canvas/fakegopay?saldo=${encodeURIComponent(saldo)}&coin=${encodeURIComponent(coin)}&terpakai=${encodeURIComponent(terpakai)}&bulan=${encodeURIComponent(bulan)}`;

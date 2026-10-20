@@ -13,7 +13,24 @@ jangan hapus wm ini banggg
 
 */
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "moveon",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   const alasanGagal = [
     "*Error: Masih menyimpan fotonya di galeri*",
     "*Error: Masih suka stalking story-nya tiap malam*",
@@ -59,8 +76,4 @@ let handler = async (m, { conn }) => {
   }, teks.length * 1600)
 }
 
-handler.help = ['moveon']
-handler.tags = ['fun']
-handler.command = /^moveon$/i
-
-export default handler
+export { pluginConfig as config, handler };

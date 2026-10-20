@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { f } from './../../src/lib/rimuru-http.js'
 import te from '../../src/lib/rimuru-error.js'
@@ -40,9 +37,7 @@ async function handler(m, { sock }) {
     m.react('🕕')
 
     try {
-        const result = await f(`https://api.neoxr.eu/api/stablediff?prompt=${encodeURIComponent(prompt)}&model=default&orientation=potrait&apikey=${config.APIkey.neoxr}`)
-        const data = result?.data
-        if (!data?.url) throw new Error("API tidak mengembalikan URL gambar")
+        const { data } = await f(`https://api.neoxr.eu/api/stablediff?prompt=${encodeURIComponent(prompt)}&model=default&orientation=potrait&apikey=${config.APIkey.neoxr}`)
 
         await sock.sendMedia(m.chat, data.url, null, m, {
             type: 'image'

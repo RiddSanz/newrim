@@ -9,7 +9,24 @@ import axios from "axios"
 import FormData from "form-data"
 import fs from "fs"
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "imgprompt",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   let q = m.quoted?.mimetype ? m.quoted : m
   if (!q.mimetype?.includes("image")) return conn.reply(m.chat, "🍭 Kirim atau reply gambar!", m)
 
@@ -35,10 +52,6 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ["imgprompt"]
-handler.tags = ["ai"]
-handler.command = /^imgprompt$/i
-handler.limit = true 
-handler.register = true 
+handler.register = true
 
-export default handler
+export { pluginConfig as config, handler };

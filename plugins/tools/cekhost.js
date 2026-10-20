@@ -213,6 +213,22 @@ const checkHost = {
   }
 };
 
+const pluginConfig = {
+  name: "checkhost",
+  alias: ["cekhost", "check"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, args, usedPrefix, command }) => {
     if (!args[0]) {
         return m.reply(`Mana host/domain nya??
@@ -297,9 +313,4 @@ ${usedPrefix}${command} google.com dns A`)
     }
 }
 
-handler.help = ['checkhost', 'cekhost']
-handler.tags = ['tools']
-handler.command = ['checkhost', 'cekhost', 'check']
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

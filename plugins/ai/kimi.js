@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "kimi",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   if (!text) return m.reply('Masukkan pertanyaan!\nContoh: .kimi apa itu bot wa')
 
   try {
@@ -14,9 +31,4 @@ let handler = async (m, { conn, text }) => {
   }
 }
 
-handler.help = ['kimi <pertanyaan>']
-handler.tags = ['ai']
-handler.command = /^kimi$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
 import { fileTypeFromBuffer } from "file-type";
 import fs from "fs";
@@ -9,7 +6,7 @@ import { config } from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
 import { handleAntiSwGc } from "../../src/lib/rimuru-group-protection.js";
 import { saluranCtx } from "../../src/lib/rimuru-context.js";
-import { generateWAMessage } from "ourin";
+import { generateWAMessage } from "rimuru";
 
 const botConfig = config;
 
@@ -300,7 +297,7 @@ async function handler(m, { sock, db }) {
           newsletterName: botConfig?.saluran?.name,
         },
       },
-      footer: "rimuru",
+      footer: "Rimuru MD",
       interactiveButtons: [
         {
           name: "single_select",

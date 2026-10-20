@@ -1,9 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import axios from 'axios';
-import te from '../../src/lib/rimuru-error.js';
-
 const pluginConfig = {
     name: "iqc2",
     alias: ["qc3"],
@@ -19,10 +13,48 @@ const pluginConfig = {
     isEnabled: true,
 };
 
+async function getImageBuffer(apiUrl) {
+    const response = await fetch(apiUrl, {
+        headers: { Accept: "image/*,application/json,text/plain;q=0.9,*/*;q=0.8" },
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok) {
+        throw new Error(`API IQC2 gagal (${response.status})`);
+    }
+
+    if (contentType.includes("image")) {
+        return Buffer.from(await response.arrayBuffer());
+    }
+
+    const raw = await response.text();
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch {
+        throw new Error("API IQC2 mengembalikan respons yang tidak valid");
+    }
+
+    const imageUrl =
+        (typeof data?.result === "string" && data.result) ||
+        data?.result?.url ||
+        data?.result?.image ||
+        data?.url ||
+        data?.image;
+
+    if (!imageUrl) {
+        throw new Error(data?.message || "Hasil gambar IQC2 tidak ditemukan");
+    }
+
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) throw new Error("Gambar hasil IQC2 gagal diambil");
+    return Buffer.from(await imageResponse.arrayBuffer());
+}
+
 async function handler(m, { sock, text }) {
     try {
         const targetText = text || (m.quoted && m.quoted.text ? m.quoted.text : "");
-        
+
         if (!targetText) {
             return m.reply(
                 `Halo *${m.pushName}*, sepertinya kamu belum memasukkan teksnya.\n\n` +
@@ -32,26 +64,43 @@ async function handler(m, { sock, text }) {
             );
         }
 
-        await m.react('🕕');
+        await m.react("🕕");
 
         const providers = ["INDOSAT", "TELKOMSEL", "XL", "TRI", "SMARTFREN", "WIFI"];
         const randomProvider = providers[Math.floor(Math.random() * providers.length)];
-        
         const now = new Date();
-        const jam = now.toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" }).replace('.', ':');
-        
-        const randomBaterai = Math.floor(Math.random() * (100 - 10 + 1)) + 10; // 10-100
+        const jam = now
+            .toLocaleTimeString("id-ID", {
+                timeZone: "Asia/Jakarta",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+            })
+            .replace('.', ':');
+        const randomBaterai = Math.floor(Math.random() * 91) + 10;
 
-        const apiUrl = `https://api.nexray.eu.cc/maker/v1/iqc?text=${encodeURIComponent(targetText)}&provider=${encodeURIComponent(randomProvider)}&jam=${encodeURIComponent(jam)}&baterai=${randomBaterai}`;
-        
-        await sock.sendMessage(m.chat, { image: { url: apiUrl } }, { quoted: m });
-        
-        await m.react('✅');
+        // Fetch server-side first; WhatsApp no longer has to dereference the API URL itself.
+        const apiUrl =
+            `https://api.nexray.eu.cc/maker/v1/iqc?text=${encodeURIComponent(targetText)}` +
+            `&provider=${encodeURIComponent(randomProvider)}` +
+            `&jam=${encodeURIComponent(jam)}` +
+            `&baterai=${randomBaterai}`;
 
+        const imageBuffer = await getImageBuffer(apiUrl);
+
+        await sock.sendMessage(
+            m.chat,
+            { image: imageBuffer, caption: "✨ *Fake Quote iOS v1 Generated!*" },
+            { quoted: m }
+        );
+
+        await m.react("✅");
     } catch (error) {
         console.error("[IQC2 Plugin Error]", error);
-        await m.react('❌');
-        m.reply(`Maaf *${m.pushName}*, terjadi kesalahan saat mencoba membuat gambar quote. Silakan coba lagi beberapa saat.`);
+        await m.react("❌");
+        await m.reply(
+            `Maaf *${m.pushName}*, terjadi kesalahan saat mencoba membuat gambar quote.\n\n> ${error?.message || "Silakan coba lagi beberapa saat."}`
+        );
     }
 }
 

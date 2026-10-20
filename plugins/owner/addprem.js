@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from "../../config.js";
 import { getDatabase } from "../../src/lib/rimuru-database.js";
 import {
@@ -41,7 +38,6 @@ function formatDate(ts) {
 }
 
 function extractTarget(m) {
-  if (!m) return "";
   if (m.quoted) return m.quoted.sender?.replace(/[^0-9]/g, "") || "";
   if (m.mentionedJid?.length)
     return m.mentionedJid[0]?.replace(/[^0-9]/g, "") || "";
@@ -55,26 +51,14 @@ function toMentionJid(value) {
 }
 
 async function handler(m, { sock, jadibotId, isJadibot }) {
-  try {
-    const db = getDatabase();
-    if (!db?.data) {
-      return m.reply("❌ Database Rimuru tidak tersedia.");
-    }
-
-    const cmd = String(m.command || "").toLowerCase();
-    if (!cmd) {
-      return m.reply("❌ Command tidak terdeteksi.");
-    }
+  const db = getDatabase();
+  const cmd = m.command.toLowerCase();
 
   const isAdd = ["addprem", "addpremium", "setprem"].includes(cmd);
   const isDel = ["delprem", "delpremium"].includes(cmd);
   const isList = ["listprem", "premlist"].includes(cmd);
 
-  if (!Array.isArray(db.data.premium)) {
-    db.data.premium = db.data.premium && typeof db.data.premium === "object"
-      ? Object.values(db.data.premium)
-      : [];
-  }
+  if (!db.data.premium) db.data.premium = [];
 
   if (isList) {
     if (isJadibot && jadibotId) {
@@ -230,9 +214,6 @@ async function handler(m, { sock, jadibotId, isJadibot }) {
 
     const jid = targetNumber + "@s.whatsapp.net";
     const user = db.getUser(jid) || db.setUser(jid);
-    if (!user) {
-      return m.reply(`❌ User *${targetNumber}* tidak bisa dibuat di database Rimuru.`);
-    }
 
     if (user.energi !== -1) {
       user.energi = config.energi?.premium || 999999;
@@ -243,7 +224,7 @@ async function handler(m, { sock, jadibotId, isJadibot }) {
     db.updateExp(jid, 200000);
     db.updateKoin(jid, 20000);
 
-    await db.save();
+    db.save();
 
     await m.react("💎");
     return m.reply(
@@ -267,30 +248,9 @@ async function handler(m, { sock, jadibotId, isJadibot }) {
       db.setUser(jid, user);
     }
 
-    await db.save();
+    db.save();
     await m.react("✅");
     return m.reply(`✅ Berhasil menghapus *${targetNumber}* dari premium`);
-  }
-
-  } catch (error) {
-    // Jangan biarkan error dari plugin berubah menjadi "handler undefined".
-    // Semua error dipastikan menjadi Error/string yang aman untuk logger.
-    const detail =
-      error instanceof Error
-        ? error
-        : new Error(
-            typeof error === "string"
-              ? error
-              : error?.message || "Unknown error pada plugin addprem",
-          );
-
-    console.error("[addprem]", detail);
-    try {
-      await m.reply(
-        `❌ Gagal menjalankan *${m?.command || "addprem"}*.\\n` +
-          `Error: ${detail.message || "Unknown error"}`,
-      );
-    } catch {}
   }
 }
 

@@ -4,7 +4,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 import fetch from 'node-fetch'
 import { load } from 'cheerio'
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "bmkggempa",
+  alias: [],
+  category: "info",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   try {
     const res = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.xml')
     const xml = await res.text()
@@ -38,9 +55,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['bmkggempa']
-handler.tags = ['info']
-handler.command = /^bmkggempa$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

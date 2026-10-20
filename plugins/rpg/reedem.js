@@ -10,7 +10,24 @@ https://whatsapp.com/channel/0029VavBc6uHAdNdbgCgOK0k
 */
 
 
-let handler = async (m, { conn, args }) => {
+const pluginConfig = {
+  name: "reedem",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, args }) {
+    const conn = sock;
   try {
     if (args.length === 0) return conn.reply(m.chat, '[❗] Silakan masukkan kode redeemnya', m)
     
@@ -43,35 +60,10 @@ let handler = async (m, { conn, args }) => {
   }
 }
 
-handler.help = ['reedem <kode>']
-handler.tags = ['rpg']
-handler.command = /^reedem$/i
-export default handler;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
 https://whatsapp.com/channel/0029VavBc6uHAdNdbgCgOK0k   
 
 Sesuaikan sama sc mu
 */
+
+export { pluginConfig as config, handler };

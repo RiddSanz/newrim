@@ -3,7 +3,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "ryo",
+  alias: [],
+  category: "sticker",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   let stickerList = [
     'https://files.catbox.moe/3udphi.webp',
     'https://files.catbox.moe/2ul4l6.webp',
@@ -28,9 +45,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['megami']
-handler.tags = ['sticker']
-handler.command = /^ryo$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

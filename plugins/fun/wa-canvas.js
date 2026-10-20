@@ -1,9 +1,6 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import axios from 'axios';
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
+import { RIMURU_CORE_CONFIG } from "../../config.js";
 import config from '../../config.js';
 const pluginConfig = {
     name: 'wa-canvas',
@@ -119,7 +116,7 @@ async function handler(m, { sock }) {
 
         const buffer = canvas.toBuffer('image/png')
 
-        const saluranId = RIMURU_CORE_CONFIG.saluran?.id || '120363402057133599@newsletter'
+        const saluranId = RIMURU_CORE_CONFIG.saluran?.id || config.saluran?.id
         const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || 'rimuru-AI'
 
         await sock.sendMessage(m.chat, {

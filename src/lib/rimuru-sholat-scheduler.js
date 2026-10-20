@@ -1,4 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import { getDatabase } from "./rimuru-database.js";
 import { logger } from "./rimuru-logger.js";
 import { CronJob } from "cron";
@@ -139,8 +138,8 @@ async function sendSholatNotifications(sholat, waktu) {
       nama: "KOTA JAKARTA",
     };
 
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
 
     let groupList = [];
     try {

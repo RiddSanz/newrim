@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 /*
 Jangan Hapus Wm Bang 
 
@@ -9,7 +6,7 @@ Jangan Hapus Wm Bang
 Ya Bgtu Lah Bisa Di Pake Jga GK tawu
 
 *[Sumber]*
-https://whatsapp.com/channel/0029Vb3u2awADTOCXVsvia28
+https://whatsapp.com/channel/RIMURU_CHANNEL
 
 *[Sumber Scrape]*
 

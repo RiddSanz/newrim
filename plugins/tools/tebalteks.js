@@ -1,5 +1,11 @@
-import fs from 'fs';
-import path from 'path';
+async function loadImageBuffer(url) {
+    const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error(`Gagal memuat gambar (${response.status})`);
+    return Buffer.from(await response.arrayBuffer());
+}
 
 const pluginConfig = {
     name: 'tebalteks',
@@ -46,7 +52,7 @@ async function handler(m, { sock }) {
     const text = m.text?.trim()
     if (!text) return m.reply('🥺 Masukin teks dulu dong, darling~')
 
-    const imgPath = path.join(process.cwd(), 'assets/images/rimuru-tebalteks.jpg')
+    const imgUrl = 'https://files.catbox.moe/n4kh4f.jpg'
 
     const hasil1 = convertFont(text, fonts.bold1)
     const hasil2 = convertFont(text, fonts.bold2)
@@ -55,7 +61,7 @@ async function handler(m, { sock }) {
 
     // 💗 INTRO
     await sock.sendMessage(m.chat, {
-        image: fs.readFileSync(imgPath),
+        image: await loadImageBuffer(imgUrl),
         caption: `💗✨ *Rimuru Mode ON...* ✨💗
 
 (｡•̀ᴗ-)✧ *Eh eh darling~!!*
@@ -97,7 +103,7 @@ Aku lagi siapin teks kamu nih... 😳💞`
 
     // 💗 RESULT
     await sock.sendMessage(m.chat, {
-        image: fs.readFileSync(imgPath),
+        image: await loadImageBuffer(imgUrl),
         caption: `╭─〔 💗 *RIMURU RESULT* 💗 〕─⬣
 │ ✨ Input : *${text}*
 ╰──────────────⬣

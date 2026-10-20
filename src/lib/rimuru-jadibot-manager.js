@@ -7,7 +7,7 @@ import {
   DisconnectReason,
   jidNormalizedUser,
   useMultiFileAuthState,
-} from "ourin";
+} from "rimuru";
 import { logger } from "./rimuru-logger.js";
 import { addJadibotOwner } from "./rimuru-jadibot-database.js";
 import { extendSocket } from "./rimuru-socket.js";
@@ -327,7 +327,7 @@ async function startJadibot(sock, m, userJid, usePairing = true) {
     default: makeWASocket,
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
-  } = await import("ourin");
+  } = await import("rimuru");
   const { version } = await fetchLatestBaileysVersion();
   const pinoModule = await import("pino");
   const pinoLogger = pinoModule.default({ level: "silent" });

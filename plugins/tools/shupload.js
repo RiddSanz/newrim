@@ -18,7 +18,6 @@ const config = {
     isEnabled: true
 }
 
-
 const BASE = "https://shz.al";
 const DEFAULT_EXPIRE = "1d";
 

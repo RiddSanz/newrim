@@ -8,7 +8,23 @@ function getRandomDate() {
   return deathTime.toDateString()
 }
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "kematian",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
   const nama = text || m.pushName || 'Kamu'
 
   const sebab = [
@@ -30,9 +46,4 @@ let handler = async (m, { text }) => {
   m.reply(`💀 *Ramalan Kematian*\n\n📛 Nama: *${nama}*\n🗓️ Tanggal: *${tanggal}*\n⚰️ Penyebab: *${penyebab}*`)
 }
 
-handler.help = ['kematian <nama opsional>']
-handler.tags = ['fun']
-handler.command = /^kematian$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

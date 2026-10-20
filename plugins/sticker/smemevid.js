@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -129,7 +126,7 @@ async function handler(m, { sock }) {
                 .on('error', (err) => reject(err))
         })
 
-        const stickerConfig = config.sticker || { packname: 'rimuru-AI', author: 'Bot' }
+        const stickerConfig = config.sticker || { packname: 'Rimuru-AI', author: 'Bot' }
 
         await sock.sendVideoAsSticker(m.chat, outputVideo, m, {
             packname: stickerConfig.packname,

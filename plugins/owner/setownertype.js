@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { getDatabase } from '../../src/lib/rimuru-database.js'
 import fs from 'fs'
@@ -59,7 +55,7 @@ async function handler(m, { sock, db }) {
 
     await sock.sendMessage(m.chat, {
         text: `🎨 *sᴇᴛ ᴏᴡɴᴇʀ ᴛʏᴘᴇ*\n\n> Type saat ini: *V${current}*\n> _${VARIANTS[current].name}_\n\n> Pilih variant owner:`,
-        footer: RIMURU_CORE_CONFIG.bot?.name || 'rimuru-AI',
+        footer: config.bot?.name || 'Rimuru-AI',
         contextInfo: {
             mentionedJid: [m.sender],
             isForwarded: true,

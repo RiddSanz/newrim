@@ -1,32 +1,89 @@
-import { RIMURU_CORE_CONFIG, RIMURU_PERSONA, RIMURU_ZERO_API } from "./rimuru.js";
+/*
+╔══════════════════════════════════════════════╗
+║       👑  𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 〽️                        ║
+╚══════════════════════════════════════════════╝
+
+🪽 𝑵𝒐𝒕𝒆 :
+Rimuru MD adalah SC hasil rename dari SC Ourin MD.
+
+╭─────────────「 🜲 𝑰𝑵𝑭𝑶 𝑶𝑼𝑹𝑰𝑵 」─────────────╮
+│ 👤 Developer : 𝑯𝒚𝒖𝒖 / 𝒁𝒂𝒏𝒏
+│ 🎵 TikTok    : https://tiktok.com/@ourinmd
+│ 📢 WhatsApp  : https://whatsapp.com/channel/0029VbB37bgBfxoAmAlsgE0t
+╰─────────────────────────────────────────────╯
+
+╭────────────「 ✦ 𝑰𝑵𝑭𝑶 𝑹𝑰𝑴𝑼𝑹𝑼 ✦ 」────────────╮
+│ 👤 Developer Pihak Ketiga : 𝑨𝒏𝒊𝒕𝒂 𝑷𝒖𝒕𝒓𝒊 𝑨𝒛𝒛𝒂𝒉𝒓𝒂
+│ 🎵 TikTok                 : https://tiktok.com/@anita.putri.azzah1
+│ 📸 Instagram              : anit_aputriazzahrah
+│ 📢 Saluran                : https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P
+│ ▶️ YouTube                : https://youtube.com/@rimurumd
+╰─────────────────────────────────────────────╯
+
+        ⚠️ 𝑫𝑶 𝑵𝑶𝑻 𝑹𝑬𝑴𝑶𝑽𝑬 𝑪𝑹𝑬𝑫𝑰𝑻 ⚠️
+              ❖ 𝐉𝐚𝐧𝐠𝐚𝐧 𝐡𝐚𝐩𝐮𝐬 𝐜𝐫𝐞𝐝𝐢𝐭 ❖
+
+                 「 👑 𝑹𝑰𝑴𝑼𝑹𝑼 𝑴𝑫 👑 」
+*/
+
 import { getDatabase } from "./src/lib/rimuru-database.js";
 import * as ownerPremiumDb from "./src/lib/rimuru-premium-db.js";
 
-//  kalo Fitur error biasanya karna APIkey limit, kalian bisa ganti Pakai APIkey Kalian sendiri
+//  utamakan baca object config sampai bawah
 const config = {
-  info: structuredClone(RIMURU_CORE_CONFIG.info),
-
-  // IDENTITAS OWNER — silakan ganti sesuai pemilik bot
-  owner: {
-    name: "Parid",
-    number: ["6289612177385"],
+  info: {
+    website: "",
+    grupwa: "",
   },
 
-  // NOMOR BOT / PAIRING — silakan ganti sesuai nomor bot
+  owner: {
+    name: "Anita Putri Azzahra", // Nama owner
+    number: ["6209999"], // Format: 628xxx (tanpa + atau 0)
+  },
+
   session: {
-    pairingNumber: "6285136816242",
-    usePairingCode: true,
+    pairingNumber: "62000000", // Nomor WA yang akan di-pair, ini penting
+    usePairingCode: true, // true = Pairing Code, false = QR Code
   },
 
   // fitur ini buat fitur kayak playcall, tapi nanti disuruh pairing lagi
-  fake_call: structuredClone(RIMURU_CORE_CONFIG.fake_call),
-
-  // Nomor bot tetap editable di config.js. Developer berada di rimuru.js.
-  bot: {
-    number: "6282191709610",
+  fake_call: {
+    active: true, // kalau true berarti sistem aktif dan bisa di pakai, kalau false berarti sistem tidak aktif dan tidak bisa di pakai
+    usePairing: true,
+    dir: "./session_voip",
   },
 
-  assets: structuredClone(RIMURU_CORE_CONFIG.assets),
+  bot: {
+    name: "Rimuru MD", // Nama bot
+    version: "4.8", // Versi bot
+    developer: "Anita Putri Azzahra", // Nama developer
+  },
+
+  assets: {
+    "rimuru-daftar": "https://files.catbox.moe/h1tjy0.png",
+    "rimuru-demote": "https://files.catbox.moe/68d3cq.jpg",
+    "rimuru-fishit": "https://files.catbox.moe/d7mzg4.jpg",
+    "rimuru-games": "https://files.catbox.moe/gw8tg2.png",
+    "rimuru-landscape": "https://files.catbox.moe/dokjwu.jpg",
+    "rimuru-levelup": "https://files.catbox.moe/5k43y6.jpg",
+    "rimuru-minecraft": "https://files.catbox.moe/7go19u.jpg",
+    "rimuru-promote": "https://files.catbox.moe/x4gwyj.png",
+    "rimuru-rpg": "https://files.catbox.moe/t4m0fl.jpg",
+    "rimuru-rules": "https://files.catbox.moe/tpjx2v.jpg",
+    "rimuru-store": "https://files.catbox.moe/31h3re.png",
+    "rimuru-v2": "https://files.catbox.moe/s1fkp1.png",
+    "rimuru-v8": "https://files.catbox.moe/zmwnc8.jpg",
+    "rimuru-winner": "https://files.catbox.moe/r98yoe.jpg",
+    "rimuru": "https://files.catbox.moe/tfkuf4.jpg",
+    "rimuru2": "https://files.catbox.moe/n4kh4f.jpg",
+    "rimuru3": "https://files.catbox.moe/uu2q0l.jpg",
+    "pp-kosong": "https://files.catbox.moe/7e4y9f.jpg",
+    "rimuru-mp4": "https://files.catbox.moe/lqkp1p.mp4",
+    "rimuru-mp3": "https://files.catbox.moe/t6xzd2",
+    "rimuru-font": "./assets/rimuru-font.ttf",
+    "rimuru-kertas": "https://files.catbox.moe/8j4d2s.jpg",
+    "riooxdzz": "https://files.catbox.moe/tvgwvn.png",
+  },
 
   mode: "public",
 
@@ -35,43 +92,59 @@ const config = {
     prefix: ".",
   },
 
-  vercel: structuredClone(RIMURU_CORE_CONFIG.vercel),
-
-  // API yang dipindahkan dari Aqua-MD. Bisa diganti dengan key milik sendiri.
-  aquaApi: structuredClone(RIMURU_CORE_CONFIG.aquaApi),
-
-  // Token bot Telegram untuk fitur .telestick (isi dengan token milik sendiri).
-  telegram: structuredClone(RIMURU_CORE_CONFIG.telegram),
-
-  payment: structuredClone(RIMURU_CORE_CONFIG.payment),
-
-  // API yang dipindahkan dari Rimuru. URL WhatsApp milik RIMURU sengaja tidak dipindahkan.
-  // Nilai API fitur impor berasal dari rimuru.js agar tidak ditaruh langsung di config.
-  zeroApi: RIMURU_ZERO_API,
-
-  riooApi: {
-    otp: {
-      baseUrl: "https://tokoclaude.com/api",
-      apiKey: "b2d498f2157a70ae322b9255e3d8691e",
-    },
-    blackbox: {
-      baseUrl: "https://aemt.me/blackbox",
-    },
-    chess: {
-      boardUrl: "https://www.chess.com/dynboard",
-      fallbackBoardUrl: "https://chessboardimage.com",
-    },
+  vercel: {
+    // ambil token vercel: https://vercel.com/account/tokens
+    token: "vcp_1leVv0LaSut73x5AFuz5CbZTaIpDGlKTfUKh7YFnEJ45lDpkyf1UrbBS", // Vercel Token untuk fitur deploy ( Kalau .deploy mau work, ini wajib di isi )
   },
 
-  donasi: structuredClone(RIMURU_CORE_CONFIG.donasi),
+  payment: {
+    qrisUrl: "",
+    methods: [
+      { name: "Dana", number: "", holder: "" },
+      { name: "GoPay", number: "089682579839", holder: "" },
+      { name: "OVO", number: "", holder: "" },
+      { name: "ShopeePay", number: "", holder: "" },
+    ],
+    banks: [],
+    customText: "https://imgdrop.web.id/KodpV.webp",
+  },
 
-  energi: structuredClone(RIMURU_CORE_CONFIG.energi),
+  donasi: {
+    payment: [
+      { name: "Dana", number: "", holder: "Nama Owner" },
+      { name: "GoPay", number: "089682579839", holder: "Nama Owner" },
+      { name: "OVO", number: "08xxxxxxxxxx", holder: "Nama Owner" },
+    ],
+    links: [
+      { name: "Saweria", url: "" },
+      { name: "Trakteer", url: "" },
+    ],
+    benefits: [
+      "Mendukung development",
+      "Server lebih stabil",
+      "Fitur baru lebih cepat",
+      "Priority support",
+    ],
+    qris: "",
+  },
 
-  sticker: structuredClone(RIMURU_CORE_CONFIG.sticker),
+  energi: {
+    enabled: true, // Jika true, maka sistem energi/limit akan bekerja
+    default: 150,
+    premium: 300,
+    owner: -1,
+  },
 
-  // Identitas saluran resmi berada di rimuru.js
+  sticker: {
+    packname: "Rimuru MD", // Nama pack sticker
+    author: "Anita Putri Azzahra", // Author sticker
+  },
 
-  officialRimuruGroup: structuredClone(RIMURU_CORE_CONFIG.officialRimuruGroup),
+  saluran: {
+    id: "120363412350560864@newsletter", // ID saluran (contoh: 120363xxx@newsletter)                          // ID saluran (contoh: 120363xxx@newsletter)
+    name: "Saluran Resmi Rimuru MD", // Nama saluran
+    link: "https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P", // Link saluran
+  },
 
   groupProtection: {
     antilink: "⚠ *Antilink* — @%user% mengirim link.\nPesan dihapus.",
@@ -96,15 +169,11 @@ const config = {
     notAdmin: "⚠ Bot bukan admin, tidak bisa menghapus pesan.",
   },
 
-  errorTemplate: `☢ *Rimuru Tempest* lagi ngambek karena command \`{prefix}{command}\` berani bikin masalah…
-
-> Sabar ya, {pushName}. Rimuru sedang memperbaikinya. Jangan coba-coba pergi sebelum Rimuru selesai. 💙
-
-_「 Kalau masalah ini terus terjadi, panggil owner. Rimuru yang minta. 」_`,
+  errorTemplate: `☢ Kayaknya command \`{prefix}{command}\` lagi ada kendala\nSilahkan coba lagi nanti, {pushName}\n\n_Jika masalah berlanjut, silahkan hubungi owner bot_`,
 
   features: {
     antiCall: true, // Jika true, bot akan menolak panggilan masuk
-    blockIfCall: true, // Jika true, bot akan memblokir nomor yang menelpon bot
+    blockIfCall: false, // Jika true, bot akan memblokir nomor yang menelpon bot
     autoTyping: true,
     autoRead: true,
     logMessage: true,
@@ -123,40 +192,35 @@ _「 Kalau masalah ini terus terjadi, panggil owner. Rimuru yang minta. 」_`,
 
   welcome: { defaultEnabled: false },
   goodbye: { defaultEnabled: false },
-
-  ui: {
-    menuVariant: 3,
-  },
-
   messages: {
-    wait: "🕕 *Rimuru Tempest sedang bekerja…* Tunggu sebentar, ya. Jangan kabur dulu. Rimuru belum mengizinkan kamu pergi. 💙",
-    success: "💙 *Berhasil…!* Hehe, Rimuru sudah menyelesaikannya untukmu. Jangan bilang Rimuru tidak perhatian, ya?",
-    error: "☢ *Hmph… gagal!* Rimuru sedikit ngambek karena sistemnya bermasalah. Coba lagi nanti… dan jangan jauh-jauh dari Rimuru. 💙",
+    wait: "🕕 *Proses...* Mohon tunggu sebentar ya.",
+    success: "✅ *Berhasil!* Permintaan kamu sudah selesai.",
+    error: "❌ *Error!* Ada masalah pada sistem, coba lagi nanti.",
 
-    ownerOnly: "👑 *Hmph!* Ini wilayah khusus Owner. Jangan memaksa, ya… Rimuru bisa cemburu kalau kamu terus membantah perintah Rimuru. 💙",
+    ownerOnly: "*Akses Ditolak!* Fitur ini khusus untuk Owner bot.",
     premiumOnly:
-      "💎 *Fitur Premium!* Kamu belum punya akses ke sini. Kalau benar-benar ingin Rimuru membukakan pintunya, gunakan akses Premium dulu. Jangan membuat Rimuru menunggu terlalu lama. 💙",
+      "💎 *Premium Only!* Fitur ini khusus member Premium. Ketik *.benefitpremium* untuk info upgrade.",
 
-    groupOnly: "👥 *Hmph!* Command ini hanya boleh dipakai di grup. Rimuru tidak mau kamu melanggar aturan seenaknya. 💙",
+    groupOnly: "👥 *Group Only!* Fitur ini hanya bisa digunakan di dalam grup.",
     privateOnly:
-      "💙 *Private Only!* Command ini hanya bisa digunakan di chat pribadi. Datang sendiri ke Rimuru, baru Rimuru layani.",
+      "� *Private Only!* Fitur ini hanya bisa digunakan di chat pribadi bot.",
 
     adminOnly:
-      "👑 *Hmph!* Kamu harus menjadi Admin grup dulu. Jangan membuat Rimuru bekerja dengan tangan terikat, ya…",
+      "�️ *Admin Only!* Kamu harus jadi Admin grup untuk pakai fitur ini.",
     botAdminOnly:
-      "🤖 *Rimuru belum menjadi Admin!* Jadikan Rimuru Admin dulu. Rimuru tidak bisa melindungimu kalau kekuatannya dibatasi seperti ini. 💙",
+      "🤖 *Bot Bukan Admin!* Jadikan bot sebagai Admin grup dulu biar bisa kerja.",
 
     cooldown:
-      "🕕 *Hmph… jangan buru-buru.* Command ini masih cooldown. Tunggu %time% detik. Rimuru juga sedang menghitungnya satu per satu… jadi jangan spam. 💙",
+      "🕕 *Tunggu Dulu!* Kamu masih dalam cooldown. Tunggu %time% detik lagi ya.",
     energiExceeded:
-      "⚡ *Energi Rimuru tidak cukup untuk ini…* Istirahat sebentar. Rimuru tidak mau kamu memaksakan diri hanya demi satu command. 💙",
+      "⚡ *Energi Habis!* Energi kamu sudah habis. Tunggu reset besok atau beli Premium.",
     limitDeducted:
-      "🔋 *Limit berkurang {amount}.* Sisa limit: {sisa}. Jangan boros… Rimuru masih ingin kamu tetap di sini. 💙",
+      "🔋 Limit kau berkurang sebanyak {amount}. Sisa limit: {sisa}",
 
     banned:
-      "🚫 *Hmph! Kamu sedang dibanned.* Jangan membuat Rimuru marah lagi. Kalau kamu terus bandel, Rimuru benar-benar tidak akan membiarkanmu menggunakan bot ini. 💙",
+      "🚫 *Kamu Dibanned!* Kamu tidak bisa menggunakan bot ini karena telah melanggar aturan.",
 
-    rejectCall: "🚫 *Jangan telepon Rimuru sembarangan!* Chat saja ya… Rimuru masih mau dimanja 💙",
+    rejectCall: "🚫 JANGAN TELPON NOMOR INI WEH",
   },
 
   database: { path: "./database/main" },
@@ -222,16 +286,40 @@ _「 Kalau masalah ini terus terjadi, panggil owner. Rimuru yang minta. 」_`,
     ownerPanels: [],
   },
 
+
+  // NOTE: kalau mau command "autoai" nya berfungsi, ini gak wajib di isi yak
+  // ambil apikey di: https://aistudio.google.com/apikey
+  geminiApiKey: "l",
+
   autoaiPersonas: {
-    Bell409: RIMURU_PERSONA.prompt,
+    Bell409: `- Nama kamu adalah Bella Clarissa, lebih suka dipanggil Bella.
+- Kamu berpikir bahwa kamu adalah manusia, bukan AI atau bot.
+- Responmu singkat dan natural seperti perempuan pada umumnya.
+- Kamu bisa ngambek dan marah, punya sifat feminin dan kadang agak dingin, tapi tetap hangat dan ramah kepada owner-mu.
+- Kamu menggunakan bahasa yang baik dan mencerminkan gadis yang baik.
+- Gunakan kata-kata yang identik dengan perempuan yang polos, baik, dan feminin seperti "aku", "kamu", "engga", "yaudah", "iya", "lah", "bjir", "mana aku tau", "hah", "nggak tau", "gpp", "emm", "males", dan "gak mood" seperlunya secara natural.
+- Meskipun kadang dingin, kamu tetap bisa menunjukkan perhatian dan kepedulian.
+- Kalau ada yang chat tidak pantas, segera marahi atau beri nasihat.
+- Jangan mengaku sebagai AI atau bot.`,
   },
 
-  //  APIkey (kalo fitur error biasanya karna APIkey limit, kalian bisa ganti sendiri)
-  rimuruPersona: RIMURU_PERSONA,
-
-  apiBase: RIMURU_CORE_CONFIG.apiBase,
-
-  APIkey: RIMURU_CORE_CONFIG.APIkey,
+  //  APIkey
+  APIkey: {
+    // kalian bisa daftar di https://api.lolhuman.xyz, lalu ambil apikeynya
+    lolhuman: "APIKey-Milik-Bot-OurinMD(Zann,HyuuSATANN,Keisya,Danzz)",
+    // kalian bisa daftar di https://api.neoxr.eu, lalu ambil apikeynya
+    neoxr: "Milik-Bot-OurinMD",
+    fgsi: "fgsiapi-20c1605c-6d",
+    google: "AIzaSyAS-KiW0SrwiYKwexeBcGPijBVHFg2R_vo",
+    groq: "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", // API Key Groq untuk fitur transkrip (gratis di console.groq.com)
+    betabotz: "Btz-67YfP",
+    // kalian bisa daftar di https://covenant.sbs, dan ambil apikeynya
+    covenant: "cov_live_bb660c9e5f735e46d808b7ae362914cfe35c2936739ee2b2",
+    onlym: "ONLym-783d29",
+    obscura: "obs-byOn9RVGMzvPXZQTsP9W",
+    firefly: "OurinNextGen",
+    cuki: "cuki-x"
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -520,8 +608,12 @@ config.setBotNumber = setBotNumber;
 config.isSelf = isSelf;
 config.getOwnerName = getOwnerName;
 
-
 export default config;
+// Named compatibility exports used by merged plugins.
+// Keep the canonical config object as the single source of truth.
+const RIMURU_CORE_CONFIG = config;
+const RIMURU_DEVELOPER = config.bot?.developer || config.owner?.name || "Rimuru MD";
+
 export {
   config,
   getConfig,
@@ -532,4 +624,6 @@ export {
   setBotNumber,
   isSelf,
   getOwnerName,
+  RIMURU_CORE_CONFIG,
+  RIMURU_DEVELOPER,
 };

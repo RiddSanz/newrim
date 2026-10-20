@@ -1,7 +1,4 @@
-import { RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
+import { RIMURU_DEVELOPER } from "../../config.js";
 import axios from 'axios';
 import _sharp from 'sharp';
 import config from '../../config.js';
@@ -82,8 +79,8 @@ async function handler(m, { sock }) {
     await sock.sendStickerPack(m.chat, buffers, m, {
       name: packName,
       packname: packName,
-      publisher: RIMURU_DEVELOPER || 'Rimuru-MD',
-      author: RIMURU_DEVELOPER || 'Rimuru-MD',
+      publisher: RIMURU_DEVELOPER || 'RimuruMD',
+      author: RIMURU_DEVELOPER || 'RimuruMD',
       description: `Telegram sticker pack: ${packName}`,
       emojis: ['❤'],
     });

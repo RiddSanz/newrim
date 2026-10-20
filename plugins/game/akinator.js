@@ -8,7 +8,24 @@ if (!global.akinatorSessions) global.akinatorSessions = {}
 const buildQuestion = (aki) =>
   `*🧞 AKINATOR*\n\n❓ *Pertanyaan ${aki.step + 1}:*\n${aki.question}\n\n📊 Progress: ${Math.round(aki.progress)}%\n\n*Jawab:*\n1️⃣ Ya\n2️⃣ Tidak\n3️⃣ Tidak Tahu\n4️⃣ Mungkin\n5️⃣ Mungkin Tidak\n0️⃣ Kembali\n\n> Ketik *.akistop* untuk berhenti`
 
-let handler = async (m, { conn, command }) => {
+const pluginConfig = {
+  name: "akinator",
+  alias: ["aki", "akistop"],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, command }) {
+    const conn = sock;
   const id = m.chat
 
   if (/^akistop$/i.test(command)) {
@@ -31,8 +48,4 @@ let handler = async (m, { conn, command }) => {
   }
 }
 
-handler.help = ['akinator', 'aki']
-handler.tags = ['game']
-handler.command = /^(akinator|aki|akistop)$/i
-
-export default handler
+export { pluginConfig as config, handler };

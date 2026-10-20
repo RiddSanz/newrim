@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import moment from "moment-timezone";
 import config from "../../config.js";
 import { getDatabase } from "../../src/lib/rimuru-database.js";
@@ -13,7 +9,7 @@ import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
 import { saluranCtx } from "../../src/lib/rimuru-context.js";
 import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "ourin";
+import { prepareWAMessageMedia, generateWAMessageFromContent } from "rimuru";
 function resolvePlaceholders(
   template,
   username,
@@ -44,7 +40,7 @@ function resolvePlaceholders(
     .replace(/{date}/gi, now.format("DD/MM/YYYY"))
     .replace(/{time}/gi, now.format("HH:mm"))
     .replace(/{day}/gi, dayId)
-    .replace(/{bot}/gi, RIMURU_CORE_CONFIG.bot?.name || "rimuru")
+    .replace(/{bot}/gi, config.bot?.name || "Rimuru")
     .replace(/{prefix}/gi, prefix);
 }
 const pluginConfig = {
@@ -175,8 +171,8 @@ async function sendWelcomeMessage(sock, groupJid, participant, groupMeta) {
       groupMeta?.owner?.split("@")[0] || "",
       config.command?.prefix || ".",
     );
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
+    const saluranId = config.saluran?.id || "120363412350560864@newsletter";
+    const saluranName = config.saluran?.name || config.bot?.name || "Rimuru-AI";
     if (welcomeType === 2) {
       const cardBody = groupData?.welcomeMsg
         ? resolvePlaceholders(
@@ -189,52 +185,36 @@ async function sendWelcomeMessage(sock, groupJid, participant, groupMeta) {
           config.command?.prefix || ".",
         )
         : `Selamat datang di grup *${groupName}* 🎉\nMember ke-${memberCount}`;
-
-      // WhatsApp interactive cards cannot receive a plain { url } in imageMessage.
-      // Prepare/upload the remote profile picture first, then insert the generated
-      // imageMessage protobuf into the carousel header.
-      let carouselImageMessage;
-      try {
-        const media = await prepareWAMessageMedia(
-          { image: { url: ppUrl } },
-          { upload: sock.waUploadToServer },
-        );
-        carouselImageMessage = media?.imageMessage;
-      } catch (mediaError) {
-        console.error("Welcome V2 media preparation failed:", mediaError);
-        carouselImageMessage = null;
-      }
-
-      const cardHeader = carouselImageMessage
-        ? { title: "Welcome", hasMediaAttachment: true }
-        : { title: "Welcome", hasMediaAttachment: false };
-
-      const card = {
-        header: carouselImageMessage
-          ? { imageMessage: carouselImageMessage, hasMediaAttachment: true }
-          : { title: "👋 Welcome", hasMediaAttachment: false },
-        body: { text: cardBody },
-        footer: { text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI" },
-        nativeFlowMessage: {
-          buttons: [
-            {
-              name: "quick_reply",
-              buttonParamsJson: JSON.stringify({
-                display_text: "👋 Halo @" + userName,
-                id: "hi",
-              }),
-            },
-          ],
-        },
-      };
-
       await sock.sendMessage(groupJid, {
         interactiveMessage: {
-          body: { text: `👋 Welcome *@${userName}*` },
-          footer: { text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI" },
-          header: cardHeader,
+          body: {
+            text: `👋 Welcome *@${userName}*`,
+          },
+          footer: { text: config.bot?.name || "Rimuru-AI" },
+          header: { title: "Welcome", hasMediaAttachment: false },
           carouselMessage: {
-            cards: [card],
+            cards: [
+              {
+                header: {
+                  imageMessage: { url: ppUrl },
+                },
+                body: {
+                  text: cardBody,
+                },
+                footer: { text: config.bot?.name || "Rimuru-AI" },
+                nativeFlowMessage: {
+                  buttons: [
+                    {
+                      name: "quick_reply",
+                      buttonParamsJson: JSON.stringify({
+                        display_text: "👋 Halo @" + userName,
+                        id: "hi",
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
             messageVersion: 1,
             carouselCardType: 1,
           },
@@ -332,7 +312,7 @@ async function sendWelcomeMessage(sock, groupJid, participant, groupMeta) {
                 text: text
               },
               footer: {
-                text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI"
+                text: config.bot?.name || "Rimuru-AI"
               },
               contextInfo: {
                 mentionedJid: [realParticipant],

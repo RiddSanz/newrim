@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from "../../config.js";
 import * as timeHelper from "../../src/lib/rimuru-time.js";
 import { CronJob } from "cron";
@@ -34,8 +30,8 @@ function formatDuration(ms) {
 }
 
 function getCtx() {
-  const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "";
-  const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "";
+  const saluranId = config.saluran?.id || "";
+  const saluranName = config.saluran?.name || config.bot?.name || "";
   const ctx = { forwardingScore: 1, isForwarded: true };
   if (saluranId && saluranId !== "-@newsletter") {
     ctx.forwardedNewsletterMessageInfo = {
@@ -369,7 +365,7 @@ function startGiveawayChecker(sock, db) {
       try {
         const { getDatabase } = await import("../../src/lib/rimuru-database.js");
         const currentDb = getDatabase();
-        const { getSocket } = await import("../../src/handler.js");
+        const { getSocket } = await import("../../src/connection.js");
         const currentSock = getSocket();
         if (!currentSock) return;
 

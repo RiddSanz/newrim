@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, command }) => {
+const pluginConfig = {
+  name: "bansos",
+  alias: ["korupsi"],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, command }) {
+    const conn = sock;
     let user = global.db.data.users[m.sender]
     let randomaku = Math.floor(Math.random() * 101)
     let randomkamu = Math.floor(Math.random() * 101)
@@ -25,14 +42,7 @@ let handler = async (m, { conn, command }) => {
     } else m.reply(`Silahkan Menunggu ${timers} Untuk ${command} Lagi`)
 }
 
-handler.help = ['korupsi']
-handler.tags = ['rpg']
-handler.command = /^(bansos|korupsi)$/i
 handler.register = true
-handler.group = true
-handler.rpg = true
-export default handler
-
 function pickRandom(list) {
     return list[Math.floor(Math.random() * list.length)]
 }
@@ -49,3 +59,5 @@ function capitalize(word) {
 }
 
 const toRupiah = number => parseInt(number).toLocaleString().replace(/,/gi, ".")
+
+export { pluginConfig as config, handler };

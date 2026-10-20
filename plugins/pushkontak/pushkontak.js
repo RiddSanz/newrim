@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from "fs";
 import path from "path";
 import { getDatabase } from "../../src/lib/rimuru-database.js";
@@ -79,8 +75,7 @@ function buildVcf(contacts) {
 }
 
 function resolveParticipants(metadata, botId, senderJid, skipAdmin = false) {
-  const participants = Array.isArray(metadata?.participants) ? metadata.participants : [];
-  return participants
+  return metadata.participants
     .filter((p) => {
       if (skipAdmin && (p.admin === "admin" || p.admin === "superadmin"))
         return false;
@@ -131,7 +126,7 @@ function nativeFlowMsg(m, title, buttons) {
   return {
     interactiveMessage: {
       title,
-      footer: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+      footer: config.bot?.name || "Rimuru-AI",
       image: cachedThumb,
       contextInfo: {
         mentionedJid: [m.sender],
@@ -141,7 +136,7 @@ function nativeFlowMsg(m, title, buttons) {
       nativeFlowMessage: {
         messageParamsJson: JSON.stringify({
           limited_time_offer: {
-            text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
+            text: config.bot?.name || "Rimuru-AI",
             url: "",
             copy_code: "Push Kontak",
             expiration_time: Date.now() * 7,
@@ -606,11 +601,7 @@ async function startPush(m, sock, text) {
 
   try {
     const db = getDatabase();
-    const metadata = m.groupMetadata || await sock.groupMetadata(m.chat).catch(() => null);
-    if (!metadata?.participants?.length) {
-      m.react("❌");
-      return m.reply(`❌ *GAGAL*\n\n🚫 Tidak dapat mengambil daftar member grup. Pastikan bot masih berada di grup dan memiliki akses metadata.`);
-    }
+    const metadata = m.groupMetadata;
     const botId = sock.user.id.split(":")[0] + "@s.whatsapp.net";
     const s = getPushSettings(db);
     const participants = resolveParticipants(
@@ -760,11 +751,7 @@ async function pushkontakAnswerHandler(m, sock) {
     session.step = "confirm";
 
     const db = getDatabase();
-    const metadata = m.groupMetadata || await sock.groupMetadata(m.chat).catch(() => null);
-    if (!metadata?.participants?.length) {
-      clearSession(m.sender);
-      return m.reply(`❌ *GAGAL*\n\n🚫 Tidak dapat mengambil daftar member grup. Pastikan bot masih berada di grup dan memiliki akses metadata.`);
-    }
+    const metadata = m.groupMetadata;
     const botId = sock.user.id.split(":")[0] + "@s.whatsapp.net";
     const s = getPushSettings(db);
     const participants = resolveParticipants(

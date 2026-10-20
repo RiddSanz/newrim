@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import config from "../../config.js";
 import te from "../../src/lib/rimuru-error.js";
@@ -33,7 +30,7 @@ async function handler(m, { sock }) {
 
     await m.react("🔍");
 
-    const apikey = config.APIkey?.neoxr || "Milik-Bot-rimuruMD";
+    const apikey = config.APIkey?.neoxr || "Milik-Bot-RimuruMD";
     const data = await rimuruApi.apiFaa.get(
       "/faa/google-image",
       {
@@ -56,16 +53,13 @@ async function handler(m, { sock }) {
         };
       }),
     );
-    for (let i = 0; i < album.length; i++) {
-      await sock.sendMessage(
-        m.chat,
-        {
-          image: album[i].image,
-          caption: i === 0 ? `🔎 *Hasil gambar:* ${query}` : "",
-        },
-        { quoted: m },
-      );
-    }
+    await sock.sendMessage(
+      m.chat,
+      {
+        albumMessage: album,
+      },
+      { quoted: m },
+    );
   } catch (error) {
     console.log(error);
     await m.react("☢");

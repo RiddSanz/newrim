@@ -8,7 +8,24 @@ Instagram: https://instagram.com/tulisan.ku.id
 ini wm gw cok jan di hapus
 */
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "bomb",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   conn.bomb = conn.bomb || {}
   let id = m.chat
   let timeout = 180000
@@ -49,11 +66,6 @@ let handler = async (m, { conn }) => {
   ]
 }
 
-handler.help = ['bomb']
-handler.tags = ['game']
-handler.command = /^bomb$/i
-
-export default handler
 
 handler.before = async function (m, { conn }) {
   conn.bomb = conn.bomb || {}
@@ -133,3 +145,5 @@ function randomInt(min,max){
 function formatNumber(n){
   return n.toLocaleString()
 }
+
+export { pluginConfig as config, handler };

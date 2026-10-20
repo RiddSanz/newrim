@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "bunuh",
+  alias: ["hitman"],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
     let user = global.db.data.users[m.sender]
 
     if (!user.lastmisi) user.lastmisi = 0
@@ -41,14 +58,7 @@ let handler = async (m, { conn }) => {
     }, 27000)
 }
 
-handler.help = ['bunuh', 'hitman']
-handler.tags = ['rpg']
-handler.command = /^(bunuh|hitman)$/i
 handler.register = true
-handler.rpg = true
-handler.limit = true
-
-export default handler
 
 function clockString(ms) {
     let h = Math.floor(ms / 3600000)
@@ -58,3 +68,5 @@ function clockString(ms) {
 }
 
 const toRupiah = n => parseInt(n).toLocaleString().replace(/,/g, ".")
+
+export { pluginConfig as config, handler };

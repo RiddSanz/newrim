@@ -1,7 +1,23 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { args, isAdmin, isOwner }) => {
+const pluginConfig = {
+  name: "antidana",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { args, isAdmin, isOwner }) {
   if (!m.isGroup) return m.reply("Fitur ini hanya dapat digunakan dalam grup.")
   if (!(isAdmin || isOwner)) return m.reply("Maaf, fitur ini hanya dapat digunakan oleh admin grup.")
 
@@ -78,11 +94,7 @@ handler.before = async (m, { conn, isBotAdmin, usedPrefix }) => {
   })
 }
 
-handler.command = /^antidana$/i
-handler.help = ["antidana"]
-handler.tags = ["group"]
-handler.group = true
 handler.admin = true
 handler.botAdmin = true
 
-export default handler
+export { pluginConfig as config, handler };

@@ -38,7 +38,24 @@ async function scrapeCodeSearch(query) {
   }
 }
 
-let handler = async (m, { text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "searchcode",
+  alias: [],
+  category: "search",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command }) {
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) throw `Contoh:\n${usedPrefix + command} downloader tiktok `
 
   let res = await scrapeCodeSearch(text)
@@ -50,9 +67,5 @@ let handler = async (m, { text, usedPrefix, command }) => {
 
   await m.reply(`🔍 Hasil pencarian untuk: *${text}*\n\n${teks}`)
 }
-handler.help = ['searchcode'].map(v => v + ' <query>')
-handler.tags = ['tools']
-handler.command = /^searchcode$/i
-handler.limit = false
 
-export default handler
+export { pluginConfig as config, handler };

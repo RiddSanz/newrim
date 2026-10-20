@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { getRoles, getUserRole, getAccessibleServers, VALID_SERVERS } from '../../src/lib/rimuru-roles-cpanel.js'
 const pluginConfig = {
@@ -23,7 +20,16 @@ async function handler(m, { sock }) {
     const pteroConfig = config.pterodactyl
     const prefix = m.prefix || '.'
     
-    const getStatus = (cfg) => (cfg?.domain && cfg?.apikey) ? '✅' : '❌'
+    const getStatus = (cfg) => {
+        if (!cfg?.domain || !cfg?.apikey) return '❌'
+        try {
+            const url = new URL(String(cfg.domain).trim())
+            if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return '❌'
+        } catch { return '❌' }
+        return /^\d+$/.test(String(cfg.egg ?? '')) &&
+            /^\d+$/.test(String(cfg.nestid ?? '')) &&
+            /^\d+$/.test(String(cfg.location ?? '')) ? '✅' : '❌'
+    }
     
     const serverStatuses = {
         v1: getStatus(pteroConfig?.server1),
@@ -34,7 +40,7 @@ async function handler(m, { sock }) {
     }
     
     const userServers = getAccessibleServers(m.sender)
-    const userRoleList = userServers.map(s => `${s.server.toUpperCase()}:${s.role}`).join(', ') || 'Tidak ada'
+    const userRoleList = userServers.map(s => `${s.server.toUpperCase()}:${s.role === 'ownerPanel' ? 'Owner Panel' : s.role === 'seller' ? 'Seller' : s.role}`).join(', ') || 'Tidak ada'
     
     let txt = `🖥️ *ᴄᴘᴀɴᴇʟ ᴍᴇɴᴜ v2.0*\n\n`
     txt += `> V1: ${serverStatuses.v1} | V2: ${serverStatuses.v2} | V3: ${serverStatuses.v3} | V4: ${serverStatuses.v4} | V5: ${serverStatuses.v5}\n`
@@ -107,7 +113,7 @@ async function handler(m, { sock }) {
     txt += `┃ \`${prefix}turnon\` | \`${prefix}turnoff\` | \`${prefix}restartvps\`\n`
     txt += `╰───────────────\n\n`
     
-    txt += `> _Powered by ${config.info?.website || 'rimuruAI'}_`
+    txt += `> _Powered by ${config.info?.website || 'Rimuru MD'}_`
     
     await m.reply(txt)
 }

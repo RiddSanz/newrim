@@ -5,17 +5,28 @@ import fs from 'fs'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "jadwaltv",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
 	if (!text) throw 'Input Query'
 	let res = await jadwalTV(text)
 	let txt = res.result.map((v) => `[${v.jam.replace('WIB', ' WIB')}] ${v.acara}`).join`\n`
 	m.reply(`Jadwal TV ${res.channel}\n\n${txt}`)
 }
-handler.help = ['jadwaltv']
-handler.tags = ['tools']
-handler.command = /^jadwaltv$/i
-
-export default handler
 
 async function jadwalTV(name) {
 	let list = JSON.parse(fs.readFileSync('../../src/jadwaltv.json', 'utf-8'))
@@ -59,3 +70,5 @@ async function listJadwalTV() {
 	]
 }
 */
+
+export { pluginConfig as config, handler };

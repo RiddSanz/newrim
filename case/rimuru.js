@@ -191,8 +191,8 @@ async function handleCommand(m, sock) {
                 forwardingScore: 9999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363400911374213@newsletter",
-                  newsletterName: "rimuru Case System",
+                  newsletterJid: "120363412350560864@newsletter",
+                  newsletterName: "Rimuru Case System",
                   serverMessageId: 127,
                 },
               },
@@ -279,8 +279,8 @@ async function handleCommand(m, sock) {
                 forwardingScore: 9999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363400911374213@newsletter",
-                  newsletterName: "rimuru Plugin System",
+                  newsletterJid: "120363412350560864@newsletter",
+                  newsletterName: "Rimuru Plugin System",
                   serverMessageId: 127,
                 },
               },
@@ -306,14 +306,11 @@ async function handleCommand(m, sock) {
         return { handled: false };
     }
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : String(error ?? "Unknown error");
     console.error("[CaseHandler] Error:", error);
     try {
-      await m.reply(`❌ *ᴇʀʀᴏʀ*\n\n> ${errorMessage}`);
+      await m.reply(`❌ *ᴇʀʀᴏʀ*\n\n> ${error.message}`);
     } catch {}
-    return { handled: true, error: errorMessage };
+    return { handled: true, error: error.message };
   }
 }
 

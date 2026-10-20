@@ -3,7 +3,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn, text, command }) => {
+const pluginConfig = {
+  name: "mikutalk",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, command }) {
+    const conn = sock;
   let apikey = 'planaai'
   if (!text) throw `Kirim teks yang mau diucapkan Miku!\n\nContoh: .${command} Haloo Hilman`
   
@@ -24,9 +41,4 @@ let handler = async (m, { conn, text, command }) => {
   }
 }
 
-handler.help = ['mikutalk <teks>']
-handler.tags = ['tools', 'sound']
-handler.command = /^mikutalk$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

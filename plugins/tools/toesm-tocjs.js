@@ -7,7 +7,23 @@ creator : hilman
 follow my channel https://whatsapp.com/channel/0029VbAYjQgKrWQulDTYcg2K
 */
 
-let handler = async (m, { command }) => {
+const pluginConfig = {
+  name: "toesm",
+  alias: ["tocjs"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { command }) {
   if (!m.quoted) return m.reply('✨ reply code nya')
 
   let q = m.quoted
@@ -45,9 +61,4 @@ let handler = async (m, { command }) => {
   m.reply(output)
 }
 
-handler.help = ['toesm', 'tocjs']
-handler.tags = ['tools']
-handler.command = /^(toesm|tocjs)$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

@@ -1,9 +1,6 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
-import { generateWAMessageFromContent } from "ourin";
+import { generateWAMessageFromContent } from "rimuru";
 import sharp from "sharp";
 
 const pluginConfig = {
@@ -75,7 +72,7 @@ async function handler(m, { sock, text }) {
             address: `🎤 ${firstResult.artist} | ⏱️ ${firstResult.duration}`
           },
           contentText: contentText,
-          footerText: '🚀 rimuru - Spotify Search',
+          footerText: '🚀 Rimuru MD - Spotify Search',
           headerType: 6,
         },
       };

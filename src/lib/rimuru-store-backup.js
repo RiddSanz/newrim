@@ -1,7 +1,7 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
 import fs from 'fs'
 import path from 'path'
 import archiver from 'archiver'
+import config from '../../config.js'
 import * as timeHelper from './rimuru-time.js'
 const DATABASE_DIR = path.join(process.cwd(), 'database')
 const TEMP_DIR = path.join(process.cwd(), 'temp')
@@ -134,7 +134,7 @@ async function sendStoreBackup(sock) {
             `┃ 🔖 Schema: v${SCHEMA_VERSION}\n` +
             `╰┈┈┈┈┈┈┈┈⬡\n\n` +
             `> Type-safe backup. Kompatibel dengan versi mendatang.\n` +
-            `> ${RIMURU_CORE_CONFIG.bot?.name || 'rimuru-AI'} Store Backup System`
+            `> ${config.bot?.name || 'Rimuru-AI'} Store Backup System`
         
         await sock.sendMessage(ownerJid, {
             document: { url: backupInfo.path },

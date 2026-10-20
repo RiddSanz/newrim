@@ -55,7 +55,24 @@ async function generateMath(level) {
   }
 }
 
-let handler = async (m, { conn, text }) => {
+const pluginConfig = {
+  name: "maths",
+  alias: [],
+  category: "game",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text }) {
+    const conn = sock;
   const level = text && modes[text] ? text : pickRandom(Object.keys(modes))
 
   global.maths = global.maths || {}
@@ -79,10 +96,6 @@ let handler = async (m, { conn, text }) => {
   }
 }
 
-handler.command = /^maths$/i
-handler.tags = ["game"]
-handler.help = ["maths"]
-handler.limit = false
 
 // Auto-check jawaban
 handler.all = async function (m) {
@@ -105,4 +118,4 @@ handler.all = async function (m) {
   }
 }
 
-export default handler
+export { pluginConfig as config, handler };

@@ -12,7 +12,25 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
   ✺ API     : https://zelapioffciall.koyeb.app
 */
 
-let handler = async (m, { conn, usedPrefix, command }) => { 
+const pluginConfig = {
+  name: "proxy",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || "."; 
     try {
         await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
         
@@ -49,10 +67,6 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     }
 };
 
-handler.help = ['proxy'];
-handler.tags = ['tools'];
-handler.command = /^(proxy)$/i;
-handler.limit = true;
 handler.register = false; // true kan jika ada fitur register atau daftar di bot mu.
 
-export default handler;
+export { pluginConfig as config, handler };

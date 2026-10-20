@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import config from '../../config.js'
 import { getDatabase } from '../../src/lib/rimuru-database.js'
 
@@ -8,7 +5,7 @@ const pluginConfig = {
     name: 'botmode',
     alias: ['setmode', 'mode'],
     category: 'owner',
-    description: 'Mengatur mode bot (md/cpanel/store/pushkontak/all)',
+    description: 'Mengatur mode bot (md/cpanel/store/pushkontak/otp/all)',
     usage: '.botmode <mode>',
     example: '.botmode store',
     isOwner: true,
@@ -23,7 +20,7 @@ const pluginConfig = {
 const VALID_MODES = ['md', 'cpanel', 'store', 'pushkontak', 'otp', 'all']
 
 const MODE_DESCRIPTIONS = {
-    md: 'Mode default, semua fitur kecuali panel/store/pushkontak',
+    md: 'Mode default, semua fitur kecuali panel/store/pushkontak/otp',
     cpanel: 'Mode panel, main + group + sticker + owner + tools + panel',
     store: 'Mode store manual, main + group + sticker + owner + store',
     pushkontak: 'Mode pushkontak, main + group + sticker + owner + pushkontak',

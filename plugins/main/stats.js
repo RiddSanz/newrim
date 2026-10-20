@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import os from "os";
 import te from "../../src/lib/rimuru-error.js";
 
@@ -59,7 +56,7 @@ async function handler(m, { sock, db, uptime, config: botConfig }) {
     const premiumUsers = Object.values(users).filter((u) => u.premium).length;
 
     const statsObj = {
-      bot: botConfig?.bot?.name || "rimuru-AI",
+      bot: botConfig?.bot?.name || "Rimuru-AI",
       version: `v${botConfig?.bot?.version || "1.0.0"}`,
       uptime: formatUptime(uptime),
       database: {

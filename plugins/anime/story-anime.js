@@ -1,17 +1,29 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "stor",
+  alias: ["ya", "nime", "nimestor"],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
 		
 			await conn.sendMessage(m.chat, { video: { url: dir[Math.floor(Math.random() * dir.length)] }, caption: `_Random Story Anime_` }, { quoted: m })
 	}
 
-handler.help = ['storyanime', 'animestory']
-handler.tags = ['anime']
-handler.command = /^(stor(i|y)a?nime|a?nimestor(i|y))$/i
-handler.limit = true
-
-export default handler
 
 const dir = [
 'https://telegra.ph/file/0d4fb93951c620aacb229.mp4',
@@ -94,3 +106,5 @@ const dir = [
 'https://telegra.ph/file/4a9dc4ba09484791dfa9a.mp4',
 'https://telegra.ph/file/91d8701c2783775637125.mp4',
 ]
+
+export { pluginConfig as config, handler };

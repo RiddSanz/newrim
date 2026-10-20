@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
@@ -12,7 +9,7 @@ const execFileAsync = promisify(execFile);
 const pluginConfig = {
   name: "pinkgreen",
   category: "maker",
-  description: "Efek pink-green bergaya Rimuru by Anita 2",
+  description: "Efek pink-green bergaya Rimuru by Anita Putri Azzahra 2",
   usage: ".pinkgreen <reply/kirim gambar>",
   example: ".pinkgreen",
   isOwner: false,

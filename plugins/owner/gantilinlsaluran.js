@@ -1,13 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 const pluginConfig = {
     name: 'gantilinksaluran',
     alias: ['setlinksaluran'],
     category: 'owner',
     description: 'Mengganti semua link saluran di SC',
     usage: '.gantilinksaluran|link',
-    example: '.gantilinksaluran|https://whatsapp.com/channel/0029VbAh3OwGOj9nf1CHs23U',
+    example: '.gantilinksaluran|https://whatsapp.com/channel/RIMURU_CHANNEL',
     isOwner: true,
     cooldown: 3,
     isEnabled: true
@@ -20,7 +19,7 @@ async function handler(m) {
 
     if (!input) {
         return m.reply(`Contoh:
-.gantilinksaluran|https://whatsapp.com/channel/0029VbAh3OwGOj9nf1CHs23U`)
+.gantilinksaluran|https://whatsapp.com/channel/RIMURU_CHANNEL`)
     }
 
     const newLink = input.trim()

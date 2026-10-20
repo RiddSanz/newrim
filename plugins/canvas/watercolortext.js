@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import te from "../../src/lib/rimuru-error.js";
 import config from "../../config.js";
 import axios from "axios";
@@ -11,7 +8,7 @@ const pluginConfig = {
   category: "canvas",
   description: "Buat gambar teks dengan efek watercolor",
   usage: ".watercolortext <teks>",
-  example: ".watercolortext rimuru",
+  example: ".watercolortext RIMURU",
   isOwner: false,
   isPremium: false,
   isGroup: false,
@@ -26,7 +23,7 @@ async function handler(m, { sock }) {
 
   if (!text) {
     return m.reply(
-      `🎨 *ᴡᴀᴛᴇʀᴄᴏʟᴏʀ ᴛᴇxᴛ*\n\n> Masukkan teks yang ingin dijadikan gambar\n\n\`Contoh: ${m.prefix}watercolortext rimuru\``,
+      `🎨 *ᴡᴀᴛᴇʀᴄᴏʟᴏʀ ᴛᴇxᴛ*\n\n> Masukkan teks yang ingin dijadikan gambar\n\n\`Contoh: ${m.prefix}watercolortext RIMURU\``,
     );
   }
 

@@ -13,6 +13,22 @@ jangan hapus wm ini banggg
 
 */
 
+const pluginConfig = {
+  name: "spamtag",
+  alias: [],
+  category: "group",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: true,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 const handler = async (m, { conn, text, args, participants }) => {
   try {
     if (!text) return m.reply('❌ Tag orangnya dulu bang, contoh: .spamtag @user')
@@ -41,15 +57,11 @@ const handler = async (m, { conn, text, args, participants }) => {
   }
 }
 
-handler.command = ['spamtag']
-handler.help = ['spamtag @user']
-handler.tags = ['group']
-handler.group = true
 handler.admin = true
 handler.botAdmin = false
-
-export default handler
 
 function delay(ms) {
   return new Promise(res => setTimeout(res, ms))
 }
+
+export { pluginConfig as config, handler };

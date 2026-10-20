@@ -118,7 +118,25 @@ const codeAI = {
     }
 }
 
-let handler = async (m, { conn, command, text, usedPrefix }) => {
+const pluginConfig = {
+  name: "promptcode",
+  alias: ["detectbug", "convertcode", "explaincode", "imagesolve"],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, command, text, prefix }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     try {
         if (command === 'promptcode') {
             if (!text.includes('|')) return m.reply(`Format: ${usedPrefix + command} bahasa|prompt`)
@@ -176,9 +194,4 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
     }
 }
 
-handler.help = ['promptcode', 'detectbug', 'convertcode', 'explaincode', 'imagesolve']
-handler.tags = ['tools']
-handler.command = /^(promptcode|detectbug|convertcode|explaincode|imagesolve)$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

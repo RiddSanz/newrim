@@ -1,24 +1,20 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
-import { getAssetBuffer } from "../../src/lib/rimuru-asset-manager.js";
-import * as _canvas from '@napi-rs/canvas';
-import axios from "axios";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { downloadMediaMessage, getContentType } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
 
 const pluginConfig = {
   name: "fakefbkomen",
-  alias: [],
+  alias: ["fbkomen", "komenfb"],
   category: "canvas",
-  description: "Membuat gambar fake komentar Facebook",
-  usage: ".fakefbkomen Nama|Komentar (reply/kirim foto)",
-  example: ".fakefbkomen Misaki|Halo semuanya!",
+  description: "Bikin gambar komentar palsu facebook",
+  usage: ".fakefbkomen <nama>|<komentar> (reply/kirim foto)",
+  example: ".fakefbkomen Fauzan|Ini komentar saya",
   isOwner: false,
   isPremium: false,
   isGroup: false,
   isPrivate: false,
-  cooldown: 10,
-  energi: 1,
+  cooldown: 5,
+  energi: 2,
   isEnabled: true,
 };
 
@@ -58,39 +54,29 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 
 async function handler(m, { sock }) {
   const text = m.text?.trim();
-  if (!text) {
-    return m.reply(`🎮 *ꜰᴀᴋᴇ ꜰʙ ᴋᴏᴍᴇɴ*\n\n> Masukkan data Nama dan Komentar dengan pemisah |\n\n*ᴄᴏɴᴛᴏʜ ᴘᴇɴɢɢᴜɴᴀᴀɴ:*\n> \`${m.prefix}fakefbkomen Fauzan|Halo semuanya!\``);
+  if (!text || !text.includes("|")) {
+    return m.reply(`⚠️ Harap masukkan nama dan komentar yang dipisahkan dengan tanda |!\nContoh: \`${m.prefix}${m.command} Fauzan|Ini komentar\``);
   }
 
-  const parts = text.split("|");
-  const nama = parts[0]?.trim();
-  const komentar = parts.slice(1).join("|")?.trim();
+  const [nama, ...komenArr] = text.split("|");
+  const komentar = komenArr.join("|").trim();
 
-  if (!nama || !komentar) {
-    return m.reply(`❌ Format salah! Harus ada Nama dan Komentar. Contoh: \`${m.prefix}fakefbkomen Fauzan|Halo semuanya!\``);
+  let media = null;
+  const msgObj = m.quoted?.message ? m.quoted : m;
+  const type = getContentType(msgObj.message);
+
+  if (!type || type !== "imageMessage") {
+    return m.reply(`⚠️ Harap kirim atau reply foto dengan perintah \`${m.prefix}${m.command}\``);
   }
-
-  let buffer = null;
-  if (m.quoted && (m.quoted.type === "imageMessage" || m.quoted.mtype === "imageMessage")) {
-    try { buffer = await m.quoted.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else if (m.isMedia && m.type === "imageMessage") {
-    try { buffer = await m.download(); } catch (e) { return m.reply(te(m.prefix, m.command, m.pushName)); }
-  } else {
-    try {
-      let teUrl = await sock.profilePictureUrl(m.sender, "image");
-      buffer = Buffer.from((await axios.get(teUrl, { responseType: "arraybuffer" })).data);
-    } catch (error) {
-      buffer = getAssetBuffer("pp-kosong");
-    }
-  }
-
-  if (!buffer) return m.reply(`❌ Kirim/reply gambar untuk dijadikan profil FB!`);
-
-  m.react("🕕");
-
+  
+  await m.react("🕕");
+  
   try {
-    const avatar = await _canvas.loadImage(buffer);
-    const canvas = _canvas.createCanvas(1280, 780);
+    media = await downloadMediaMessage(msgObj, "buffer", {});
+    if (!media) throw new Error("Gagal membaca media");
+
+    const avatar = await loadImage(media);
+    const canvas = createCanvas(1280, 780);
     const ctx = canvas.getContext("2d");
 
     ctx.fillStyle = "#1877f2";
@@ -114,22 +100,20 @@ async function handler(m, { sock }) {
     const postHeaderY = postY + 20;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(postX + 30 + 25, postHeaderY + 25, 25, 0, Math.PI * 2);
+    ctx.arc(postX + 30, postHeaderY + 20, 25, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
     
-    // Draw avatar in small circle
-    const aspect = avatar.width / avatar.height;
-    let sw = avatar.width, sh = avatar.height, sx = 0, sy = 0;
-    if (aspect > 1) { sw = avatar.height; sx = (avatar.width - sw) / 2; } 
-    else { sh = avatar.width; sy = (avatar.height - sh) / 2; }
-    
-    ctx.drawImage(avatar, sx, sy, sw, sh, postX + 30, postHeaderY, 50, 50);
+    // Potong tengah untuk avatar agar proporsional
+    const minSide = Math.min(avatar.width, avatar.height);
+    const cropX = (avatar.width - minSide) / 2;
+    const cropY = (avatar.height - minSide) / 2;
+    ctx.drawImage(avatar, cropX, cropY, minSide, minSide, postX + 5, postHeaderY, 50, 50);
     ctx.restore();
 
     ctx.fillStyle = "#050505";
     ctx.font = "bold 15px sans-serif";
-    ctx.fillText(nama, postX + 70, postHeaderY + 25);
+    ctx.fillText(nama.trim(), postX + 70, postHeaderY + 25);
 
     ctx.fillStyle = "#65676b";
     ctx.font = "13px sans-serif";
@@ -139,21 +123,7 @@ async function handler(m, { sock }) {
     const imgY = postHeaderY + 80;
     const imgW = postWidth - 60;
     const imgH = 300;
-    
-    // Draw big image without stretching
-    const bannerAspect = imgW / imgH;
-    let bsw = avatar.width, bsh = avatar.height, bsx = 0, bsy = 0;
-    const imgAspect = avatar.width / avatar.height;
-
-    if (imgAspect > bannerAspect) {
-        bsw = avatar.height * bannerAspect;
-        bsx = (avatar.width - bsw) / 2;
-    } else {
-        bsh = avatar.width / bannerAspect;
-        bsy = (avatar.height - bsh) / 2;
-    }
-    
-    ctx.drawImage(avatar, bsx, bsy, bsw, bsh, imgX, imgY, imgW, imgH);
+    ctx.drawImage(avatar, imgX, imgY, imgW, imgH);
 
     ctx.fillStyle = "#050505";
     ctx.font = "16px sans-serif";
@@ -163,12 +133,13 @@ async function handler(m, { sock }) {
     ctx.font = "bold 15px sans-serif";
     ctx.fillText("👍 Suka · 💬 Komentar · ↗️ Bagikan", postX + 30, postY + 580);
 
-    const finalBuffer = await canvas.encode("png");
-    await sock.sendMedia(m.chat, finalBuffer, null, m, { type: "image" });
-    m.react("✅");
-  } catch (error) {
-    m.react("❌");
-    m.reply(`❌ Terjadi kesalahan saat memproses gambar.`);
+    const buffer = await canvas.encode("png");
+    await sock.sendMessage(m.chat, { image: buffer, caption: "💬 *Fake FB Comment*" }, { quoted: m });
+    await m.react("✅");
+
+  } catch (err) {
+    await m.react("☢");
+    m.reply(te(m.prefix, m.command, m.pushName));
   }
 }
 

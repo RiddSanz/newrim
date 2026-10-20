@@ -3,7 +3,24 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "animelatest",
+  alias: ["latestanime"],
+  category: "anime",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   try {
     const res = await fetch('https://api.sansekai.my.id/api/anime/latest')
     const data = await res.json()
@@ -32,9 +49,4 @@ let handler = async (m, { conn }) => {
   }
 }
 
-handler.help = ['animelatest']
-handler.tags = ['anime']
-handler.command = /^(animelatest|latestanime)$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

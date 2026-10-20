@@ -9,7 +9,7 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
  * Creator : Hilman
  */
 
-import { proto, generateWAMessageFromContent, generateWAMessageContent } from '@itsliaaa/baileys'
+import { proto, generateWAMessageFromContent, generateWAMessageContent } from 'rimuru'
 
 async function getSlide(url) {
   const res = await fetch(`https://www.tikwm.com/api/?url=${url}&hd=1`)
@@ -25,7 +25,25 @@ async function createImage(url, conn) {
   return imageMessage
 }
 
-let handler = async (m, { text, usedPrefix, command, conn }) => {
+const pluginConfig = {
+  name: "ttimg",
+  alias: ["tiktokimg"],
+  category: "download",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { text, prefix, command, sock }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(`Contoh:\n${usedPrefix + command} https://vt.tiktok.com/xxxx`)
   }
@@ -109,10 +127,6 @@ Total: ${images.length}`
   }
 }
 
-handler.help = ['ttimg', 'tiktokimg']
-handler.tags = ['downloader']
-handler.command = /^(ttimg|tiktokimg)$/i
-handler.limit = true
 handler.register = true
 
-export default handler
+export { pluginConfig as config, handler };

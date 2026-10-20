@@ -66,7 +66,25 @@ const gemini = {
 
 
 // ====== HANDLER AI RIMURU ======
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "elainaai",
+  alias: [],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(`✨ Contoh:\n${usedPrefix + command} halo Rimuru`)
   }
@@ -120,9 +138,4 @@ User adalah seseorang yang membuat Rimuru nyaman untuk ngobrol panjang. Kalau us
   }
 }
 
-handler.help = ['elainaai <teks>']
-handler.tags = ['ai']
-handler.command = /^elainaai$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

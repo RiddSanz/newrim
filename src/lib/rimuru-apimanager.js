@@ -22,22 +22,22 @@ const HTTPS_AGENT = new https.Agent({
 });
 
 /**
- * @typedef {Object} rimuruApiAuthShape
+ * @typedef {Object} RimuruApiAuthShape
  * @property {Object<string, any>} [headers]
  * @property {Object<string, any>} [params]
  */
 
 /**
- * @typedef {Object} rimuruApiProviderShape
+ * @typedef {Object} RimuruApiProviderShape
  * @property {string} baseURL
- * @property {rimuruApiAuthShape} [auth]
+ * @property {RimuruApiAuthShape} [auth]
  * @property {Object<string, string>} [headers]
  * @property {number} [cacheTTL]
  * @property {number} [timeout]
  */
 
 /**
- * @typedef {Object} rimuruApiRequestOptions
+ * @typedef {Object} RimuruApiRequestOptions
  * @property {string} [method]
  * @property {Object<string, any>} [params]
  * @property {any} [data]
@@ -52,7 +52,7 @@ const HTTPS_AGENT = new https.Agent({
  */
 
 /**
- * @typedef {Object} rimuruApiMultipartFile
+ * @typedef {Object} RimuruApiMultipartFile
  * @property {string} [name]
  * @property {Buffer|import('stream').Readable|string} [value]
  * @property {Buffer|import('stream').Readable|string} [buffer]
@@ -64,9 +64,9 @@ const HTTPS_AGENT = new https.Agent({
 /**
  * Client provider untuk pemanggilan API per namespace.
  */
-class rimuruApiProvider {
+class RimuruApiProvider {
   /**
-   * @param {rimuruApiManager} mgr
+   * @param {RimuruApiManager} mgr
    * @param {string} name
    */
   constructor(mgr, name) {
@@ -76,7 +76,7 @@ class rimuruApiProvider {
 
   /**
    * @param {string} ep
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   request(ep, opt = {}) {
@@ -86,7 +86,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   get(ep, params = {}, opt = {}) {
@@ -97,7 +97,7 @@ class rimuruApiProvider {
    * @param {string} ep
    * @param {Object<string, any>} [params]
    * @param {number} [ttl]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   cache(ep, params = {}, ttl = 15000, opt = {}) {
@@ -107,7 +107,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   post(ep, data = {}, opt = {}) {
@@ -117,7 +117,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   put(ep, data = {}, opt = {}) {
@@ -127,7 +127,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   del(ep, params = {}, opt = {}) {
@@ -137,7 +137,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   patch(ep, data = {}, opt = {}) {
@@ -147,7 +147,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   delete(ep, params = {}, opt = {}) {
@@ -157,7 +157,7 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   head(ep, params = {}, opt = {}) {
@@ -166,7 +166,7 @@ class rimuruApiProvider {
 
   /**
    * @param {string} ep
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<string>}
    */
   text(ep, opt = {}) {
@@ -175,7 +175,7 @@ class rimuruApiProvider {
 
   /**
    * @param {string} ep
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<Buffer>}
    */
   buffer(ep, opt = {}) {
@@ -184,7 +184,7 @@ class rimuruApiProvider {
 
   /**
    * @param {string} ep
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   stream(ep, opt = {}) {
@@ -194,8 +194,8 @@ class rimuruApiProvider {
   /**
    * @param {string} ep
    * @param {Object<string, any>} [fields]
-   * @param {rimuruApiMultipartFile[]|Object<string, any>} [files]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiMultipartFile[]|Object<string, any>} [files]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   multipart(ep, fields = {}, files = [], opt = {}) {
@@ -233,7 +233,7 @@ class rimuruApiProvider {
   }
 }
 
-class CovenantApiProvider extends rimuruApiProvider {
+class CovenantApiProvider extends RimuruApiProvider {
   gpt4(input, opt = {}) {
     return this.get("/api/ai/gpt4", this.asParams(input, "question"), opt);
   }
@@ -271,7 +271,7 @@ class CovenantApiProvider extends rimuruApiProvider {
   }
 }
 
-class NeoxrApiProvider extends rimuruApiProvider {
+class NeoxrApiProvider extends RimuruApiProvider {
   whatMusic(input, opt = {}) {
     return this.get("/api/whatmusic", this.asParams(input, "url"), opt);
   }
@@ -329,7 +329,7 @@ class NeoxrApiProvider extends rimuruApiProvider {
   }
 }
 
-class CukiApiProvider extends rimuruApiProvider {
+class CukiApiProvider extends RimuruApiProvider {
   tiktokPhoto(params = {}, opt = {}) {
     return this.get("/api/search/tiktokfoto", params, opt);
   }
@@ -363,7 +363,7 @@ class CukiApiProvider extends rimuruApiProvider {
   }
 }
 
-class ApiFaaProvider extends rimuruApiProvider {
+class ApiFaaProvider extends RimuruApiProvider {
   googleImage(params = {}, opt = {}) {
     return this.get("/faa/google-image", params, opt);
   }
@@ -413,7 +413,7 @@ class ApiFaaProvider extends rimuruApiProvider {
   }
 }
 
-class rimuruMainApiProvider extends rimuruApiProvider {
+class RimuruMainApiProvider extends RimuruApiProvider {
   ytmp4(input, opt = {}) {
     return this.get("/api/ytmp4", this.asParams(input, "url"), opt);
   }
@@ -447,7 +447,7 @@ class rimuruMainApiProvider extends rimuruApiProvider {
   }
 }
 
-class NexrayApiProvider extends rimuruApiProvider {
+class NexrayApiProvider extends RimuruApiProvider {
   geminiTts(input, opt = {}) {
     return this.get("/ai/gemini-tts", this.asParams(input, "text"), opt);
   }
@@ -481,13 +481,13 @@ class NexrayApiProvider extends rimuruApiProvider {
   }
 }
 
-class YupraApiProvider extends rimuruApiProvider {
+class YupraApiProvider extends RimuruApiProvider {
   brat(input, opt = {}) {
     return this.get("/api/image/brat", this.asParams(input, "text"), opt);
   }
 }
 
-class EmiliabotApiProvider extends rimuruApiProvider {
+class EmiliabotApiProvider extends RimuruApiProvider {
   textToSpeech(input, opt = {}) {
     return this.get("/tools/text-to-speech", this.asParams(input, "text"), opt);
   }
@@ -497,7 +497,7 @@ class EmiliabotApiProvider extends rimuruApiProvider {
   }
 }
 
-class AzbryApiProvider extends rimuruApiProvider {
+class AzbryApiProvider extends RimuruApiProvider {
   tiktokSearch(input, opt = {}) {
     return this.get("/api/search/ttsearch", this.asParams(input, "q"), opt);
   }
@@ -524,13 +524,13 @@ class AzbryApiProvider extends rimuruApiProvider {
   }
 }
 
-class YuulabsApiProvider extends rimuruApiProvider {
+class YuulabsApiProvider extends RimuruApiProvider {
   tiktok(input, opt = {}) {
     return this.get("/api/downloader/tiktok", this.asParams(input, "url"), opt);
   }
 }
 
-class ZenzxzApiProvider extends rimuruApiProvider {
+class ZenzxzApiProvider extends RimuruApiProvider {
   youtube(input, opt = {}) {
     return this.get("/download/youtube", this.asParams(input, "url"), opt);
   }
@@ -544,7 +544,7 @@ class ZenzxzApiProvider extends rimuruApiProvider {
   }
 }
 
-class FgsiApiProvider extends rimuruApiProvider {
+class FgsiApiProvider extends RimuruApiProvider {
   enchantVideo(fields = {}, files = [], opt = {}) {
     return this.multipart("/api/tools/enchantVideo", fields, files, opt);
   }
@@ -562,9 +562,9 @@ class FgsiApiProvider extends rimuruApiProvider {
 }
 
 /**
- * API manager terpusat untuk provider eksternal rimuru.
+ * API manager terpusat untuk provider eksternal Rimuru.
  */
-class rimuruApiManager {
+class RimuruApiManager {
   /**
    * @param {{ timeout?: number, userAgent?: string, cacheMax?: number, httpAgent?: http.Agent, httpsAgent?: https.Agent }} [opt]
    */
@@ -612,7 +612,7 @@ class rimuruApiManager {
 
   /**
    * @param {string} name
-   * @returns {rimuruApiProvider}
+   * @returns {RimuruApiProvider}
    */
   provider(name) {
     if (!this.hasProvider(name)) {
@@ -623,7 +623,7 @@ class rimuruApiManager {
 
   /**
    * @param {string} name
-   * @returns {rimuruApiProviderShape}
+   * @returns {RimuruApiProviderShape}
    */
   getProviderConfig(name) {
     const cfg = this.providers[name];
@@ -635,8 +635,8 @@ class rimuruApiManager {
 
   /**
    * @param {string} name
-   * @param {rimuruApiProviderShape} cfg
-   * @returns {rimuruApiProvider}
+   * @param {RimuruApiProviderShape} cfg
+   * @returns {RimuruApiProvider}
    */
   registerProvider(name, cfg) {
     this.providers[name] = this.mergeProvider(this.providers[name], cfg);
@@ -646,8 +646,8 @@ class rimuruApiManager {
 
   /**
    * @param {string} name
-   * @param {Partial<rimuruApiProviderShape>} cfg
-   * @returns {rimuruApiProvider}
+   * @param {Partial<RimuruApiProviderShape>} cfg
+   * @returns {RimuruApiProvider}
    */
   extendProvider(name, cfg) {
     return this.registerProvider(name, cfg);
@@ -656,7 +656,7 @@ class rimuruApiManager {
   /**
    * @param {string} name
    * @param {string} baseURL
-   * @returns {rimuruApiProvider}
+   * @returns {RimuruApiProvider}
    */
   setBaseURL(name, baseURL) {
     return this.extendProvider(name, { baseURL });
@@ -668,7 +668,7 @@ class rimuruApiManager {
       neoxr: NeoxrApiProvider,
       cuki: CukiApiProvider,
       apiFaa: ApiFaaProvider,
-      rimuru: rimuruMainApiProvider,
+      rimuru: RimuruMainApiProvider,
       nexray: NexrayApiProvider,
       yupra: YupraApiProvider,
       emiliabot: EmiliabotApiProvider,
@@ -695,7 +695,7 @@ class rimuruApiManager {
   }
 
   makeProviderClient(name) {
-    const ProviderClass = this.providerClasses?.[name] || rimuruApiProvider;
+    const ProviderClass = this.providerClasses?.[name] || RimuruApiProvider;
     return new ProviderClass(this, name);
   }
 
@@ -752,7 +752,7 @@ class rimuruApiManager {
   /**
    * @param {string} provider
    * @param {string} endpoint
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   async request(provider, endpoint, opt = {}) {
@@ -801,7 +801,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   get(provider, endpoint, params = {}, opt = {}) {
@@ -811,7 +811,7 @@ class rimuruApiManager {
   /**
    * @param {string} provider
    * @param {string} endpoint
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<string>}
    */
   text(provider, endpoint, opt = {}) {
@@ -823,7 +823,7 @@ class rimuruApiManager {
    * @param {string} endpoint
    * @param {Object<string, any>} [params]
    * @param {number} [ttl]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   cacheGet(provider, endpoint, params = {}, ttl = 15000, opt = {}) {
@@ -838,7 +838,7 @@ class rimuruApiManager {
   /**
    * @param {string} provider
    * @param {string} endpoint
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<Buffer>}
    */
   buffer(provider, endpoint, opt = {}) {
@@ -851,7 +851,7 @@ class rimuruApiManager {
   /**
    * @param {string} provider
    * @param {string} endpoint
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   stream(provider, endpoint, opt = {}) {
@@ -862,7 +862,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   post(provider, endpoint, data = {}, opt = {}) {
@@ -873,7 +873,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   put(provider, endpoint, data = {}, opt = {}) {
@@ -884,7 +884,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {any} [data]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   patch(provider, endpoint, data = {}, opt = {}) {
@@ -895,7 +895,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   del(provider, endpoint, params = {}, opt = {}) {
@@ -910,7 +910,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   head(provider, endpoint, params = {}, opt = {}) {
@@ -925,7 +925,7 @@ class rimuruApiManager {
    * @param {string} provider
    * @param {string} endpoint
    * @param {Object<string, any>} [params]
-   * @param {rimuruApiRequestOptions} [opt]
+   * @param {RimuruApiRequestOptions} [opt]
    * @returns {Promise<any>}
    */
   delete(provider, endpoint, params = {}, opt = {}) {
@@ -1253,7 +1253,9 @@ class rimuruApiManager {
   }
 }
 
-const rimuruApi = new rimuruApiManager();
+const rimuruApi = new RimuruApiManager();
+// Backward-compatible named export used by the Rioo bridge and merged plugins.
+const rimuruApiManager = rimuruApi;
 
-export { rimuruApiManager, rimuruApiProvider, rimuruApi };
+export { RimuruApiManager, RimuruApiProvider, rimuruApi, rimuruApiManager };
 export default rimuruApi;

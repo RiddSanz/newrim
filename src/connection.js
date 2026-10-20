@@ -1,2348 +1,1555 @@
-import { RIMURU_CORE_CONFIG } from "../rimuru.js";
-import config from "../config.js";
-import { isSelf } from "../config.js";
-import { generateWAMessageFromContent, prepareWAMessageMedia } from "ourin";
-import { serialize, getCachedThumb } from "./lib/rimuru-serialize.js";
-import { saluranCtx } from "./lib/rimuru-context.js";
 import {
-  getPlugin,
-  getPluginCount,
-  getAllPlugins,
-  pluginStore,
-  getAllCommandNames,
-  getLegacyHooks,
-} from "./lib/rimuru-plugins.js";
-import {
-  findSimilarCommands,
-  formatSuggestionMessage,
-} from "./lib/rimuru-similarity.js";
-import { getDatabase } from "./lib/rimuru-database.js";
-import {
-  formatUptime,
-  createWaitMessage,
-  createErrorMessage,
-} from "./lib/rimuru-formatter.js";
-import { getUptime } from "./handler.js";
-import { formatNetworkError, isNetworkError } from "./lib/rimuru-network.js";
-import { logger, logMessage, c } from "./lib/rimuru-logger.js";
-import { getAssetBuffer } from "./lib/rimuru-asset-manager.js";
-import {
-  isLid,
-  isLidConverted,
-  lidToJid,
-  convertLidArray,
-  resolveAnyLidToJid,
-  cacheParticipantLids,
-  savePersistentCache,
-  getLidCacheSize,
-} from "./lib/rimuru-lid.js";
-import { hasActiveSession, getSession } from "./lib/rimuru-game-data.js";
-import {
-  levenshtein,
-  formatAfkDuration,
-  checkPermission,
-  checkMode,
-} from "./lib/rimuru-middleware.js";
-import {
-  handleAntilink,
-  handleAntiJudol,
-  handleAntiPhising,
-  handleAntiCustom,
-  handleAntiRemove,
-  handleAntiRemoveFromUpsert,
-  cacheMessageForAntiRemove,
-  handleAntilinkGc,
-  handleAntilinkAll,
-  handleAntiHidetag,
-  handleAntiSwGc,
-} from "./lib/rimuru-group-protection.js";
-import {
-  debounceMessage,
-  getCachedUser,
-  getCachedGroup,
-  getCachedSetting,
-} from "./lib/rimuru-performance.js";
-import {
-  isJadibotOwner,
-  isJadibotPremium,
-  loadJadibotDb,
-} from "./lib/rimuru-jadibot-database.js";
-import { getActiveJadibots } from "./lib/rimuru-jadibot-manager.js";
-import { handleCommand as handleCaseCommand } from "../case/rimuru.js";
-import { RateLimiterMemory } from "rate-limiter-flexible";
-import { games as rimuruGames } from "./lib/rimuru-games.js";
+  makeWASocket,
+  DisconnectReason,
+  useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
+  fetchLatestBaileysVersion,
+  fetchLatestWaWebVersion,
+} from "rimuru";
+import { Boom } from "@hapi/boom";
+import pino from "pino";
 import fs from "fs";
 import path from "path";
-import { exec } from "child_process";
-import axios from "axios";
-import * as timeHelper from "./lib/rimuru-time.js";
-import sharp from "sharp";
+import readline from "readline";
+import NodeCache from "node-cache";
+import config, { isOwner as isOwners, setBotNumber } from "../config.js";
+import * as colors from "./lib/rimuru-logger.js";
+import { extendSocket } from "./lib/rimuru-socket.js";
+import {
+  isLid,
+  lidToJid,
+  decodeAndNormalize,
+  cacheLidJid,
+  resolveAnyLidToJid,
+  resolveFromSock,
+  isLidConverted,
+} from "./lib/rimuru-lid.js";
+import { initAutoBackup } from "./lib/rimuru-auto-backup.js";
+// TTL alone only expires values on access; checkperiod also reclaims stale
+// entries for mostly-unique message IDs, preventing caches from growing forever.
+const groupCache = new NodeCache({
+  stdTTL: 5 * 60,
+  checkperiod: 60,
+  useClones: false,
+});
+const processedMessages = new NodeCache({
+  stdTTL: 30,
+  checkperiod: 30,
+  useClones: false,
+});
+const recentMessageFingerprints = new NodeCache({
+  stdTTL: 5,
+  checkperiod: 15,
+  useClones: false,
+});
+const msgRetryCounterCache = new NodeCache({
+  stdTTL: 60,
+  checkperiod: 30,
+  useClones: false,
+});
 
-const OFFICIAL_RIMURU_CHANNELS = Object.freeze([
-  "120363412350560864@newsletter",
-  "120363428750406631@newsletter",
-]);
+function getMessageFingerprint(msg) {
+  const jid = msg?.key?.remoteJid || "";
+  const sender =
+    msg?.key?.participantAlt ||
+    msg?.key?.participant ||
+    msg?.key?.remoteJidAlt ||
+    jid;
+  const message = msg?.message || {};
+  const type = Object.keys(message).find(
+    (key) => !["senderKeyDistributionMessage", "messageContextInfo"].includes(key),
+  ) || "";
+  const content = message[type];
+  const body =
+    typeof content === "string"
+      ? content
+      : content?.text || content?.caption || content?.conversation || "";
+  const timestamp = Number(msg?.messageTimestamp?.toNumber?.() ?? msg?.messageTimestamp ?? 0);
+  const second = Number.isFinite(timestamp) && timestamp > 0 ? Math.floor(timestamp) : 0;
+  return `${jid}|${sender}|${type}|${String(body).trim()}|${second}`;
+}
 
-export async function followOfficialRimuruChannels(sock, log = logger) {
-  if (RIMURU_CORE_CONFIG.autoFollowOfficialChannels === false) return;
-  if (typeof sock?.newsletterFollow !== "function") {
-    log.warn?.("channel", "API newsletterFollow tidak tersedia di versi Ourin yang dipakai.");
+let lastMessageReceived = Date.now();
+let watchdogTimer = null;
+const WATCHDOG_TIMEOUT = 30 * 60 * 1000;
+const WATCHDOG_CHECK_INTERVAL = 60 * 1000;
+
+function startWatchdog(reconnectFn, options) {
+  if (watchdogTimer) clearInterval(watchdogTimer);
+  lastMessageReceived = Date.now();
+
+  watchdogTimer = setInterval(() => {
+    const silentMs = Date.now() - lastMessageReceived;
+    if (silentMs > WATCHDOG_TIMEOUT && connectionState.isReady) {
+      colors.logger.warn(
+        "watchdog",
+        `Nggak ada pesan masuk nih, bot bakal restart biar seger lagi`,
+      );
+      connectionState.isReady = false;
+      connectionState.isConnected = false;
+      try {
+        connectionState.sock?.end();
+      } catch { }
+    }
+  }, WATCHDOG_CHECK_INTERVAL);
+
+  if (watchdogTimer.unref) watchdogTimer.unref();
+  colors.logger.success(
+    "watchdog",
+    `udah aktif nih, batas nunggunya ${WATCHDOG_TIMEOUT / 60000} menit`,
+  );
+}
+
+function stopWatchdog() {
+  if (watchdogTimer) {
+    clearInterval(watchdogTimer);
+    watchdogTimer = null;
+  }
+}
+
+// Pengumuman penutup Rimuru MD dikirim sekali ke owner, termasuk setelah restart.
+const FINAL_ANNOUNCEMENT_TEXT = `📢 PENGUMUMAN RESMI — RIMURU MD
+Halo pengguna setia Rimuru MD dan pengikut Anita Official.
+Dengan berat hati, aku, Anita, mengumumkan bahwa Rimuru MD resmi berhenti update dan versi 4.8 menjadi update terakhir.
+Rimuru MD awalnya merupakan SC Ourin yang kemudian aku rename, kembangkan, modifikasi, dan update hingga menjadi Rimuru MD seperti sekarang. Selama perjalanan tersebut, aku mengembangkan dan mengurusnya sendirian. Karena sudah merasa lelah, akhirnya aku memutuskan untuk berhenti melanjutkan update Rimuru MD.
+Aku juga memohon maaf atas berbagai kekurangan dan fitur yang masih mengalami error.
+Terima kasih sebesar-besarnya kepada semua pengguna yang sudah setia menggunakan dan mendukung Rimuru MD sampai versi terakhir. ❤️
+— Anita
+𝘈𝘯𝘪𝘵𝘢 𝘗𝘶𝘵𝘳𝘪 𝘈𝘻𝘻𝘢𝘩𝘳𝘢`;
+
+const FINAL_ANNOUNCEMENT_MARKER = path.join(
+  process.cwd(),
+  "storage",
+  "rimuru-md-v4.8-announcement-sent.json",
+);
+let finalAnnouncementAttempted = false;
+
+async function sendFinalAnnouncementToOwner(sock) {
+  if (finalAnnouncementAttempted) return;
+  finalAnnouncementAttempted = true;
+
+  try {
+    if (fs.existsSync(FINAL_ANNOUNCEMENT_MARKER)) {
+      const marker = JSON.parse(
+        fs.readFileSync(FINAL_ANNOUNCEMENT_MARKER, "utf8"),
+      );
+      if (marker?.sent === true) return;
+    }
+  } catch (error) {
+    // Jangan mengirim ulang jika penanda ada tetapi rusak/tidak bisa dibaca.
+    colors.logger.warn(
+      "announcement",
+      `status pengumuman tidak bisa dibaca; pengiriman dilewati: ${error.message}`,
+    );
     return;
   }
 
-  for (const channelJid of OFFICIAL_RIMURU_CHANNELS) {
-    try {
-      await sock.newsletterFollow(channelJid);
-      log.success?.("channel", `auto-follow channel: ${channelJid}`);
-    } catch (e) {
-      log.warn?.("channel", `gagal auto-follow ${channelJid}: ${e?.message || e}`);
-    }
+  const ownerNumbers = Array.isArray(config.owner?.number)
+    ? config.owner.number
+    : config.owner?.number
+      ? [config.owner.number]
+      : [];
+  const ownerNumber = ownerNumbers
+    .map((number) => String(number ?? "").replace(/[^0-9]/g, ""))
+    .find((number) => /^\d{8,15}$/.test(number));
+
+  if (!ownerNumber) {
+    colors.logger.warn(
+      "announcement",
+      "nomor owner belum valid; isi config.owner.number dengan nomor WhatsApp owner (format internasional, misalnya 628xxxxxxxxxx)",
+    );
+    return;
+  }
+
+  try {
+    const ownerJid = `${ownerNumber}@s.whatsapp.net`;
+    await sock.sendMessage(ownerJid, { text: FINAL_ANNOUNCEMENT_TEXT });
+
+    fs.mkdirSync(path.dirname(FINAL_ANNOUNCEMENT_MARKER), { recursive: true });
+    fs.writeFileSync(
+      FINAL_ANNOUNCEMENT_MARKER,
+      JSON.stringify({ sent: true, sentAt: new Date().toISOString() }, null, 2),
+      "utf8",
+    );
+    colors.logger.success(
+      "announcement",
+      "pengumuman versi terakhir berhasil dikirim ke owner (satu kali)",
+    );
+  } catch (error) {
+    colors.logger.error(
+      "announcement",
+      `gagal mengirim pengumuman ke owner: ${error.message}`,
+    );
   }
 }
 
-const safe = (fn) => {
-  try {
-    return fn();
-  } catch {
-    return null;
-  }
+const store = {
+  messages: new Map(),
+  chats: new Map(),
+  contacts: {},
+  bind(ev) {
+    ev.on("messages.upsert", ({ messages: msgs }) => {
+
+      for (const msg of msgs) {
+        const jid = msg.key?.remoteJid;
+        if (!jid) continue;
+        if (!this.messages.has(jid)) this.messages.set(jid, new Map());
+        const chat = this.messages.get(jid);
+        if (msg.key?.id) {
+          chat.set(msg.key.id, msg);
+          if (chat.size > 200) {
+            const keys = [...chat.keys()];
+            for (let i = 0; i < keys.length - 150; i++) chat.delete(keys[i]);
+          }
+        }
+        if (msg.key?.participantAlt && msg.key?.participant) {
+          const alt = decodeAndNormalize(msg.key.participantAlt);
+          const primary = decodeAndNormalize(msg.key.participant);
+          if (alt && primary && !isLid(alt) && !isLidConverted(alt)) {
+            cacheLidJid(primary, alt);
+          }
+        }
+        if (msg.key?.remoteJidAlt && msg.key?.remoteJid) {
+          const alt = decodeAndNormalize(msg.key.remoteJidAlt);
+          const primary = decodeAndNormalize(msg.key.remoteJid);
+          if (alt && primary && !isLid(alt) && !isLidConverted(alt)) {
+            cacheLidJid(primary, alt);
+          }
+        }
+        if (!this.chats.has(jid)) {
+          this.chats.set(jid, { id: jid });
+        }
+        if (msg.pushName && jid.endsWith("@s.whatsapp.net")) {
+          this.contacts[jid] = { ...this.contacts[jid], notify: msg.pushName };
+        }
+      }
+    });
+    ev.on("chats.upsert", (chats) => {
+      for (const chat of chats) {
+        if (chat.id) this.chats.set(chat.id, chat);
+      }
+    });
+    ev.on("contacts.upsert", (contacts) => {
+      for (const contact of contacts) {
+        if (contact.id)
+          this.contacts[contact.id] = {
+            ...this.contacts[contact.id],
+            ...contact,
+          };
+      }
+    });
+  },
+  async loadMessage(jid, id) {
+    return this.messages.get(jid)?.get(id) || undefined;
+  },
 };
 
-let FormData,
-  levelHelper,
-  handleBuyerDone,
-  registrationAnswerHandler,
-  dungeonAnswerHandler,
-  kyubigameAnswerHandler,
-  family100AnswerHandler,
-  pushkontakAnswerHandler,
-  anticustomReplyHandler,
-  dafontAnswerHandler,
-  gantiAssetAnswerHandler,
-  srtAnswerHandler,
-  checkAfk,
-  isMuted,
-  detectBot,
-  autoStickerHandler,
-  autoMediaHandler,
-  checkAntidocument,
-  checkAntisticker,
-  checkAntimedia,
-  ytmp4Plugin,
-  confessPlugin,
-  sulapPlugin,
-  handleAutoAI,
-  handleAutoDownload,
-  checkStickerCommand,
-  handleStickerReply,
-  sendWelcomeMessage,
-  sendGoodbyeMessage,
-  autoJoinDetector,
-  isMutedMember,
-  isMutegc,
-  resepAnswerHandler,
-  stickerlyAnswerHandler,
-  caiAnswerHandler,
-  caiChatHandler,
-  comparationAnswerHandler,
-  ampremReplyHandler,
-  amprem2ReplyHandler;
+/**
+ * @typedef {Object} ConnectionState
+ * @property {boolean} isConnected - Status koneksi
+ * @property {Object|null} sock - Socket instance
+ * @property {number} reconnectAttempts - Jumlah percobaan reconnect
+ * @property {Date|null} connectedAt - Waktu koneksi berhasil
+ */
 
-try {
-  FormData = (await import("form-data")).default || (await import("form-data"));
-} catch { }
-try {
-  levelHelper = await import("./lib/rimuru-level.js");
-} catch { }
-try {
-  handleBuyerDone = (await import("../plugins/store/done.js")).handleBuyerDone;
-} catch { }
-try {
-  registrationAnswerHandler = (await import("../plugins/user/daftar.js"))
-    .registrationAnswerHandler;
-} catch { }
-try {
-  dungeonAnswerHandler = (await import("../plugins/game/dungeon.js"))
-    .dungeonAnswerHandler;
-} catch { }
-try {
-  kyubigameAnswerHandler = (await import("../plugins/game/kyubigame.js"))
-    .kyubigameAnswerHandler;
-} catch { }
-try {
-  family100AnswerHandler = (await import("../plugins/game/family100.js"))
-    .family100AnswerHandler;
-} catch { }
-try {
-  pushkontakAnswerHandler = (
-    await import("../plugins/pushkontak/pushkontak.js")
-  ).pushkontakAnswerHandler;
-} catch { }
-try {
-  anticustomReplyHandler = (await import("../plugins/group/anticustom.js"))
-    .replyHandler;
-} catch { }
-try {
-  dafontAnswerHandler = (await import("../plugins/tools/dafont.js"))
-    .dafontAnswerHandler;
-} catch { }
-try {
-  gantiAssetAnswerHandler = (await import("../plugins/owner/ganti-asset.js"))
-    .gantiAssetAnswerHandler;
-  srtAnswerHandler = (await import("../plugins/owner/srt.js"))
-    .srtAnswerHandler;
-} catch (e) { }
-try {
-  resepAnswerHandler = (await import("../plugins/search/resep.js"))
-    .resepAnswerHandler;
-} catch { }
-try {
-  stickerlyAnswerHandler = (await import("../plugins/sticker/stickerly.js"))
-    .stickerlyAnswerHandler;
-} catch { }
-try {
-  const caiPlugin = await import("../plugins/ai/characterai.js");
-  caiAnswerHandler = caiPlugin.caiAnswerHandler;
-  caiChatHandler = caiPlugin.caiChatHandler;
-} catch { }
-try {
-  comparationAnswerHandler = (await import("../plugins/search/comparation.js"))
-    .comparationAnswerHandler;
-} catch { }
-try {
-  const alightBundle = await import("../plugins/tools/amdata.js");
-  ampremReplyHandler = alightBundle.ampremReplyHandler;
-  amprem2ReplyHandler = alightBundle.amprem2ReplyHandler;
-} catch { }
-try {
-  checkAfk = (await import("../plugins/group/afk.js")).checkAfk;
-} catch { }
-try {
-  isMuted = (await import("../plugins/group/mute.js")).isMuted;
-} catch { }
-try {
-  isMutedMember = (await import("../plugins/group/mutemember.js"))
-    .isMutedMember;
-} catch { }
-try {
-  isMutegc = (await import("../plugins/group/mutegc.js")).isMutegc;
-} catch { }
-try {
-  detectBot = (await import("../plugins/group/antibot.js")).detectBot;
-} catch { }
-try {
-  autoStickerHandler = (await import("../plugins/group/autosticker.js"))
-    .autoStickerHandler;
-} catch { }
-try {
-  autoMediaHandler = (await import("../plugins/group/automedia.js"))
-    .autoMediaHandler;
-} catch { }
-try {
-  checkAntidocument = (await import("../plugins/group/antidocument.js"))
-    .checkAntidocument;
-} catch { }
-try {
-  checkAntisticker = (await import("../plugins/group/antisticker.js"))
-    .checkAntisticker;
-} catch { }
-try {
-  checkAntimedia = (await import("../plugins/group/antimedia.js"))
-    .checkAntimedia;
-} catch { }
-try {
-  ytmp4Plugin = await import("../plugins/download/ytmp4.js");
-} catch { }
-try {
-  confessPlugin = await import("../plugins/fun/confess.js");
-} catch { }
-try {
-  sulapPlugin = await import("../plugins/fun/sulap.js");
-} catch { }
-try {
-  handleAutoAI = (await import("./lib/rimuru-auto-ai.js")).handleAutoAI;
-} catch { }
-try {
-  handleAutoDownload = (await import("./lib/rimuru-auto-download.js"))
-    .handleAutoDownload;
-} catch { }
-try {
-  checkStickerCommand = (await import("./lib/rimuru-sticker-command.js"))
-    .checkStickerCommand;
-} catch { }
-try {
-  handleStickerReply = (await import("./lib/rimuru-sticker-reply.js"))
-    .handleStickerReply;
-} catch { }
-try {
-  sendWelcomeMessage = (await import("../plugins/group/welcome.js"))
-    .sendWelcomeMessage;
-} catch { }
-try {
-  sendGoodbyeMessage = (await import("../plugins/group/goodbye.js"))
-    .sendGoodbyeMessage;
-} catch { }
-try {
-  autoJoinDetector = (await import("../plugins/owner/autojoingc.js"))
-    .autoJoinDetector;
-} catch { }
+/**
+ * State koneksi global
+ * @type {ConnectionState}
+ */
+// ─────────────────────────────────────────────────────────────
+// AUTO FOLLOW SALURAN (NEWSLETTER) RESMI DEVELOPER
+// Bot otomatis follow channel di bawah ini setelah tersambung.
+// Progress disimpan di storage/auto_follow_newsletter.json supaya:
+//  - channel yang sudah di-follow tidak diulang tiap reconnect
+//  - channel yang gagal dicoba lagi di koneksi berikutnya (maks 3x)
+// Mau tambah channel? Cukup tambah ID di daftar ini.
+// ─────────────────────────────────────────────────────────────
+const AUTO_FOLLOW_NEWSLETTERS = [
+  "120363380388430434@newsletter",
+  "120363429991309158@newsletter",
+  "120363186130999681@newsletter",
+  "120363308894748175@newsletter",
+  "120363428802367163@newsletter",
+  "120363412350560864@newsletter",
+];
+const AUTO_FOLLOW_FILE = path.join(
+  process.cwd(),
+  "storage",
+  "auto_follow_newsletter.json",
+);
+const AUTO_FOLLOW_MAX_TRIES = 3;
+let autoFollowRunning = false;
 
-let checkSpam = null,
-  handleSpamAction = null;
-try {
-  const m = await import("../plugins/group/antispam.js");
-  checkSpam = m.checkSpam;
-  handleSpamAction = m.handleSpamAction;
-} catch { }
-
-let checkSlowmode = null,
-  incrementChatCount = null;
-try {
-  checkSlowmode = (await import("../plugins/group/slowmode.js")).checkSlowmode;
-} catch { }
-try {
-  incrementChatCount = (await import("../plugins/group/topchat.js"))
-    .incrementChatCount;
-} catch { }
-
-let isToxic = null,
-  handleToxicMessage = null;
-try {
-  const m = await import("../plugins/group/antitoxic.js");
-  isToxic = m.isToxic;
-  handleToxicMessage = m.handleToxicMessage;
-} catch { }
-
-const spamDelayTracker = new Map();
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of spamDelayTracker) {
-    if (now - v > 15000) spamDelayTracker.delete(k);
-  }
-}, 30000);
-
-let _smartTriggerThumb = undefined;
-async function getSmartTriggerThumb() {
-  if (_smartTriggerThumb !== undefined) return _smartTriggerThumb;
+function readAutoFollowState() {
   try {
-    const url = config.assets["rimuru2"];
-    if (url) {
-      _smartTriggerThumb = getAssetBuffer("rimuru2", config.assets)
-    } else {
-      _smartTriggerThumb = null;
-    }
+    const d = JSON.parse(fs.readFileSync(AUTO_FOLLOW_FILE, "utf8"));
+    return {
+      done: Array.isArray(d?.done) ? d.done : [],
+      tries: d?.tries && typeof d.tries === "object" ? d.tries : {},
+    };
   } catch {
-    _smartTriggerThumb = null;
+    return { done: [], tries: {} };
   }
-  return _smartTriggerThumb;
 }
 
-const globalRateLimiter = new RateLimiterMemory({
-  points: 8,
-  duration: 3,
-  blockDuration: 2,
+function writeAutoFollowState(state) {
+  try {
+    fs.mkdirSync(path.dirname(AUTO_FOLLOW_FILE), { recursive: true });
+    fs.writeFileSync(AUTO_FOLLOW_FILE, JSON.stringify(state, null, 2));
+  } catch { }
+}
+
+async function autoFollowNewsletters(sock) {
+  if (autoFollowRunning) return;
+  autoFollowRunning = true;
+  try {
+    if (typeof sock?.newsletterFollow !== "function") {
+      colors.logger.debug("auto-follow", "newsletterFollow tidak tersedia, dilewati");
+      return;
+    }
+
+    const state = readAutoFollowState();
+    const todo = [...new Set(AUTO_FOLLOW_NEWSLETTERS)].filter(
+      (jid) =>
+        !state.done.includes(jid) &&
+        (state.tries[jid] || 0) < AUTO_FOLLOW_MAX_TRIES,
+    );
+    if (!todo.length) return;
+
+    let ok = 0;
+    let fail = 0;
+    for (const jid of todo) {
+      if (!connectionState.isConnected) break;
+      let timer;
+      try {
+        await Promise.race([
+          sock.newsletterFollow(jid),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error("timeout")), 10000);
+          }),
+        ]);
+        state.done.push(jid);
+        ok++;
+      } catch (e) {
+        // "sudah follow" dianggap berhasil
+        if (/already|followed|subscrib|exist/i.test(String(e?.message || e))) {
+          state.done.push(jid);
+          ok++;
+        } else {
+          state.tries[jid] = (state.tries[jid] || 0) + 1;
+          fail++;
+        }
+      } finally {
+        clearTimeout(timer);
+      }
+      writeAutoFollowState(state);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+
+    if (ok) colors.logger.success("auto-follow", `${ok} saluran resmi berhasil di-follow`);
+    if (fail) colors.logger.debug("auto-follow", `${fail} saluran gagal, dicoba lagi nanti`);
+  } catch (e) {
+    colors.logger.debug("auto-follow", `dilewati: ${e?.message || e}`);
+  } finally {
+    autoFollowRunning = false;
+  }
+}
+
+const connectionState = {
+  isConnected: false,
+  isReady: false, // Flag to prevent premature message handling
+  sock: null,
+  reconnectAttempts: 0,
+  connectedAt: null,
+};
+
+/**
+ * Logger instance dengan level minimal
+ * @type {Object}
+ */
+const logger = pino({
+  level: "silent",
+  hooks: {
+    logMethod(inputArgs, method) {
+      const msg = inputArgs[0];
+      if (
+        typeof msg === "string" &&
+        (msg.includes("Closing") ||
+          msg.includes("session") ||
+          msg.includes("SessionEntry") ||
+          msg.includes("prekey"))
+      ) {
+        return;
+      }
+      return method.apply(this, inputArgs);
+    },
+  },
 });
 
-const cachedGamePlugins = new Map();
-
-try {
-  const gameDir = path.join(process.cwd(), "plugins", "game");
-  const gameFiles = fs
-    .readdirSync(gameDir)
-    .filter((f) => f.endsWith(".js") && !f.startsWith("_"));
-  for (const file of gameFiles) {
-    try {
-      const plugin = await import(`../plugins/game/${file}`);
-      const name = file.replace(".js", "");
-      if (plugin.answerHandler) cachedGamePlugins.set(name, plugin);
-    } catch { }
-  }
-} catch { }
-
-async function handleGameAnswer(m, sock) {
-  try {
-    if (sulapPlugin?.answerHandler) {
-      const handled = await sulapPlugin.answerHandler(m, sock);
-      if (handled) return true;
-    }
-
-    const utPlugin = cachedGamePlugins.get('ulartangga');
-    if (utPlugin?.answerHandler) {
-      if (await utPlugin.answerHandler(m, sock)) return true;
-    }
-
-    const tttPlugin = cachedGamePlugins.get('tictactoe');
-    if (tttPlugin?.answerHandler) {
-      if (await tttPlugin.answerHandler(m, sock)) return true;
-    }
-
-    const suitPlugin = cachedGamePlugins.get('suitpvp');
-    if (suitPlugin?.answerHandler) {
-      if (await suitPlugin.answerHandler(m, sock)) return true;
-    }
-
-    if (!hasActiveSession(m.chat)) return false;
-
-    const session = getSession(m.chat);
-    if (!session) return false;
-
-    const targeted = cachedGamePlugins.get(session.gameType);
-    if (targeted) {
-      const handled = await targeted.answerHandler(m, sock);
-      if (handled) return true;
-    }
-  } catch { }
-  return false;
-}
-
-async function handleSmartTriggers(m, sock, db) {
-  if (!m.body) return false;
-
-  const text = m.body.trim().toLowerCase();
-
-  const firstWord = text.split(" ")[0];
-  if (
-    /^[\.\/\!\#\-]?(autoreply|ar|smarttrigger|smarttriggers)$/.test(firstWord)
-  ) {
-    return false;
-  }
-
-  if (text === "done") {
-    const sessions = db.setting("transactionSessions") || {};
-    if (sessions[m.sender]) {
-      try {
-        if (handleBuyerDone) {
-          const session = sessions[m.sender];
-          await handleBuyerDone(m, sock, session);
-          delete sessions[m.sender];
-          db.setting("transactionSessions", sessions);
-          await db.save();
-          return true;
-        }
-      } catch (e) {
-        console.error("[Handler] Done trigger error:", e.message);
-      }
-    }
-  }
-
-  const globalSmartTriggers =
-    db.setting("smartTriggers") ?? config.features?.smartTriggers ?? false;
-
-  try {
-    const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-    const saluranName = RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-    const botName = RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-
-    let isAutoreplyEnabled = globalSmartTriggers;
-
-    const processCustomReply = async (replyItem) => {
-      let replyText = (replyItem.reply || "")
-        .replace(/{name}/g, m.pushName || "User")
-        .replace(/{tag}/g, `@${m.sender.split("@")[0]}`)
-        .replace(/{sender}/g, m.sender.split("@")[0])
-        .replace(/{botname}/g, RIMURU_CORE_CONFIG.bot?.name || "Bot")
-        .replace(/{time}/g, timeHelper.formatTime("HH:mm:ss"))
-        .replace(/{date}/g, timeHelper.formatDate("DD MMMM YYYY"));
-
-      const mentions = replyText.includes(`@${m.sender.split("@")[0]}`)
-        ? [m.sender]
-        : [];
-
-      if (replyItem.image && fs.existsSync(replyItem.image)) {
-        const imageBuffer = fs.readFileSync(replyItem.image);
-        await sock.sendMedia(m.chat, imageBuffer, replyText, m, {
-          mentions: mentions,
-          type: "image",
-        });
-      } else {
-        await m.reply(replyText, { mentions: mentions });
-      }
-      return true;
-    };
-
-    if (m.isGroup) {
-      const groupData = db.getGroup(m.chat) || {};
-      isAutoreplyEnabled = groupData.autoreply ?? globalSmartTriggers;
-
-      if (isAutoreplyEnabled) {
-        let customReplies = groupData.customReplies || [];
-        if (!Array.isArray(customReplies)) {
-          customReplies = [];
-          db.setGroup(m.chat, { customReplies });
-        }
-        for (const replyItem of customReplies) {
-          if (!replyItem?.trigger) continue;
-          if (text === replyItem.trigger || text.includes(replyItem.trigger)) {
-            return await processCustomReply(replyItem);
-          }
-        }
-
-        const globalCustomReplies = db.setting("globalCustomReplies") || [];
-        for (const replyItem of globalCustomReplies) {
-          if (!replyItem?.trigger) continue;
-          if (text === replyItem.trigger || text.includes(replyItem.trigger)) {
-            return await processCustomReply(replyItem);
-          }
-        }
-      }
-    } else {
-      const privateAutoreply = db.setting("autoreplyPrivate") ?? false;
-      if (!privateAutoreply && !globalSmartTriggers) return false;
-      isAutoreplyEnabled = privateAutoreply || globalSmartTriggers;
-
-      if (isAutoreplyEnabled) {
-        const globalCustomReplies = db.setting("globalCustomReplies") || [];
-        for (const replyItem of globalCustomReplies) {
-          if (!replyItem?.trigger) continue;
-          if (text === replyItem.trigger || text.includes(replyItem.trigger)) {
-            return await processCustomReply(replyItem);
-          }
-        }
-      }
-    }
-
-    if (!isAutoreplyEnabled) return false;
-
-    const botJid = sock.user?.id;
-    const isMentioned = m.mentionedJid?.some(
-      (jid) => jid === botJid || jid?.includes(sock.user?.id?.split(":")[0]),
-    );
-
-    const thumbBuffer = await getSmartTriggerThumb();
-
-    const contextInfos = saluranCtx();
-
-    if (isMentioned) {
-      await m.reply(
-        `Ada yang manggil ${botName}?
-        
-Ada apa manggil aku @${m.sender.split("@")[0]}?`,
-        { mentions: [m.sender] },
-      );
-      return true;
-    }
-
-    if (text?.toLowerCase() === "p") {
-      await m.reply(
-        `Hai @${m.sender.split("@")[0]}, utamakan salam dulu yahh`,
-        { mentions: [m.sender] },
-      );
-      return true;
-    }
-
-    if (text?.toLowerCase() === "bot") {
-      await m.reply(`Hai @${m.sender.split("@")[0]}, ${botName} Aktif ✅`, {
-        mentions: [m.sender],
-      });
-      return true;
-    }
-
-    if (text?.toLowerCase()?.includes("assalamualaikum")) {
-      await m.reply(`Waaalaikumssalam @${m.sender.split("@")[0]}`, {
-        mentions: [m.sender],
-      });
-      return true;
-    }
-
-    if (text?.toLowerCase()?.includes("hallo")) {
-      await m.reply(`Halo juga kak @${m.sender.split("@")[0]}`, {
-        mentions: [m.sender],
-      });
-      return true;
-    }
-  } catch (error) {
-    console.error("[SmartTriggers] Error:", error.message);
-  }
-
-  return false;
-}
-
 /**
- * Cek apakah user sedang spam
- * @param {string} jid - JID user
- * @returns {boolean} True jika sedang spam
+ * Interface untuk input terminal
+ * @type {readline.Interface|null}
  */
-async function isSpamming(jid) {
-  if (!config.features?.antiSpam) return false;
+let rl = null;
 
-  try {
-    await globalRateLimiter.consume(jid);
-    return false;
-  } catch {
-    return true;
+/**
+ * Membuat readline interface
+ * @returns {readline.Interface}
+ */
+function createReadlineInterface() {
+  if (rl) {
+    rl.close();
   }
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return rl;
 }
 
 /**
- * Handler utama untuk memproses pesan
- * @param {Object} msg - Raw message dari Baileys
- * @param {Object} sock - Socket connection
- * @returns {Promise<void>}
+ * Prompt untuk input
+ * @param {string} question - Pertanyaan
+ * @returns {Promise<string>} Input dari user
+ */
+function askQuestion(question) {
+  return new Promise((resolve) => {
+    const rlIntf = createReadlineInterface();
+    rlIntf.question(question, (answer) => {
+      rlIntf.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * Memulai koneksi WhatsApp
+ * @param {Object} options - Opsi koneksi
+ * @param {Function} [options.onMessage] - Callback untuk pesan baru
+ * @param {Function} [options.onConnectionUpdate] - Callback untuk update koneksi
+ * @param {Function} [options.onGroupUpdate] - Callback untuk update group
+ * @returns {Promise<Object>} Socket connection
  * @example
- * sock.ev.on('messages.upsert', async ({ messages }) => {
- *   await messageHandler(messages[0], sock);
+ * const sock = await startConnection({
+ *   onMessage: async (m) => {
+ *     console.log('New message:', m.body);
+ *   }
  * });
  */
-async function messageHandler(msg, sock, options = {}) {
-  const isJadibot = options.isJadibot || false;
-  try {
-    let m;
+async function startConnection(options = {}) {
+  if (connectionState.sock) {
     try {
-      m = await serialize(sock, msg);
-    } catch (serializeErr) {
-      return;
-    }
+      connectionState.sock.end();
+      colors.logger.debug("whatsapp", "koneksi sebelumnya ditutup");
+    } catch (e) { }
+    connectionState.sock = null;
+  }
 
-    if (!m) return;
-    if (!m.message) return;
-    if (!m.sender) m.sender = m.chat || "";
+  const sessionPath = path.join(
+    process.cwd(),
+    "storage",
+    config.session?.folderName || "session",
+  );
 
-    if (global.giveawaySessions?.has(m.sender)) {
+  if (!fs.existsSync(sessionPath)) {
+    fs.mkdirSync(sessionPath, { recursive: true });
+  }
+
+  const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+  const { version, isLatest } = await fetchLatestBaileysVersion()
+  const usePairingCode = config.session?.usePairingCode === true;
+  const pairingNumber = config.session?.pairingNumber || "";
+  const sock = makeWASocket({
+    version: version,
+    logger,
+    printQRInTerminal:
+      !usePairingCode && (config.session?.printQRInTerminal ?? true),
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, logger),
+    },
+    browser: ["Ubuntu", "Chrome", "22.04.4"],
+    syncFullHistory: false,
+    markOnlineOnConnect: false,
+    generateHighQualityLinkPreview: false,
+    shouldIgnoreJid: (jid) => (jid ? jid.includes("meta_ai") : false),
+    getMessage: async (key) => {
+      if (store) {
+        const msg = store.messages.get(key.remoteJid)?.get(key.id);
+        return msg?.message || undefined;
+      }
+      return undefined;
+    },
+    cachedGroupMetadata: async (jid) => {
+      const cached = groupCache.get(jid);
+      if (cached) return cached;
       try {
-        const { handleSession: gaHandler } =
-          await import("../plugins/group/giveaway.js");
-        const gaHandled = await gaHandler(m, sock);
-        if (gaHandled) return;
-      } catch (e) { }
+        const fresh = await sock.groupMetadata(jid);
+        groupCache.set(jid, fresh);
+        return fresh;
+      } catch {
+        return undefined;
+      }
+    },
+    msgRetryCounterCache,
+  });
+
+  store.bind(sock.ev);
+  sock.store = store;
+
+  connectionState.sock = sock;
+  extendSocket(sock);
+
+  if (usePairingCode && !sock.authState.creds.registered) {
+    let phoneNumber = pairingNumber;
+
+    if (!phoneNumber || phoneNumber === "") {
+      console.log("");
+      colors.logger.warn("pairing", "nomor pairing belum diatur di config");
+      console.log("");
+      phoneNumber = await askQuestion(
+        colors.chalk.cyan(
+          "📱 Masukkan nomor WhatsApp (contoh: 6281234567890): ",
+        ),
+      );
     }
 
-    if (m.message?.stickerPackMessage && sock.saveStickerPack) {
+    phoneNumber = phoneNumber.replace(/[^0-9]/g, "");
+
+    colors.logger.info("pairing", `meminta kode untuk ${phoneNumber}`);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const code = await sock.requestPairingCode(phoneNumber, "RIMURUMD");
+      console.log("");
+      console.log(
+        colors.createBanner(
+          [
+            "",
+            "   PAIRING CODE   ",
+            "",
+            `   ${colors.chalk.bold(colors.chalk.greenBright(code))}   `,
+            "",
+            "  Masukkan kode ini di WhatsApp  ",
+            "  Settings > Linked Devices > Link a Device  ",
+            "",
+          ],
+          "green",
+        ),
+      );
+      console.log("");
+    } catch (error) {
+      colors.logger.error("pairing", `gagal: ${error.message}`);
+    }
+  }
+
+  sock.ev.on("creds.update", saveCreds);
+
+  sock.ev.on("connection.update", async (u) => {
+    const { connection: c, lastDisconnect: d, qr: q } = u;
+
+    if (q && !usePairingCode) {
+      colors.logger.info("qr", "Kode QR siap, silakan scan");
+      const { default: qrcode } = await import("qrcode");
+      qrcode.toString(q, { type: "terminal", small: true }, (err, qrText) => {
+        if (!err) console.log(qrText);
+      });
+    }
+
+    const S = {
+      C: "close",
+      O: "open",
+      N: "@newsletter",
+    };
+
+    if (c === S.C) {
+      connectionState.isConnected = false;
+      connectionState.isReady = false;
+      stopWatchdog();
+
+      const r =
+        d?.error instanceof Boom
+          ? d.error.output?.statusCode !== DisconnectReason.loggedOut
+          : true;
+
+      const sc = d?.error?.output?.statusCode;
+
+      const STATUS_MESSAGES = {
+        400: "⚠️ Bad Request — Pesan/request tidak valid, coba restart",
+        401: "🔐 Unauthorized — Session expired, perlu login ulang",
+        403: "🚫 Forbidden — Akses ditolak oleh WhatsApp, cek nomor",
+        404: "❓ Not Found — Resource tidak ditemukan",
+        405: "🚧 Method Not Allowed — Operasi tidak diizinkan",
+        408: "⏱️ Timeout — Koneksi timeout, cek internet",
+        410: "📛 Gone — Session dihapus dari server, restart",
+        428: "🔄 Connection Required — Perlu reconnect",
+        440: "⚡ Session Conflict — Login di perangkat lain",
+        500: "💥 Internal Server Error — Server WhatsApp error",
+        501: "📦 Not Implemented — Fitur belum didukung server",
+        502: "🌐 Bad Gateway — Server WhatsApp tidak merespons",
+        503: "🔧 Service Unavailable — WhatsApp sedang maintenance",
+        504: "🕐 Gateway Timeout — Server WhatsApp terlalu lama merespons",
+        515: "🔁 Restart Required — WhatsApp minta restart koneksi",
+      };
+
+      const statusMsg = STATUS_MESSAGES[sc] || `❔ Unknown (kode: ${sc})`;
+      colors.logger.warn("whatsapp", `terputus — ${statusMsg}`);
+      if (sc === DisconnectReason.loggedOut || sc === 401) {
+        colors.logger.error(
+          "whatsapp",
+          "sesi habis — hapus folder storage lalu restart",
+        );
+        connectionState.reconnectAttempts = 0;
+        return;
+      }
+
+      if (sc === 440) {
+        connectionState.reconnectAttempts++;
+        if (connectionState.reconnectAttempts <= 3) {
+          colors.logger.info(
+            "whatsapp",
+            `percobaan sambung ulang ${connectionState.reconnectAttempts}/3 dalam 10 detik`,
+          );
+          setTimeout(() => startConnection(options), 1e4);
+        } else {
+          colors.logger.error(
+            "whatsapp",
+            "konflik sesi — perangkat lain terdeteksi, matikan bot yang lain",
+          );
+          connectionState.reconnectAttempts = 0;
+        }
+        return;
+      }
+
+      if (r) {
+        connectionState.reconnectAttempts++;
+        const m = config.session?.maxReconnectAttempts || 5;
+        if (connectionState.reconnectAttempts <= m) {
+          colors.logger.info(
+            "whatsapp",
+            `percobaan sambung ulang ${connectionState.reconnectAttempts}/${m}`,
+          );
+          setTimeout(
+            () => startConnection(options),
+            config.session?.reconnectInterval || 15e3,
+          );
+        } else {
+          colors.logger.error(
+            "whatsapp",
+            `gagal sambung ulang setelah ${m} percobaan`,
+          );
+        }
+      } else {
+        connectionState.reconnectAttempts = 0;
+      }
+    }
+
+    if (c === S.O) {
+      connectionState.isConnected = true;
+      connectionState.isReady = true;
+      connectionState.reconnectAttempts = 0;
+      connectionState.connectedAt = new Date();
+
       try {
-        const packMsg = m.message.stickerPackMessage;
-        const packId = packMsg.stickerPackId || m.id;
-        const packName = packMsg.name || "Unknown Pack";
-        sock.saveStickerPack(packId, { stickerPackMessage: packMsg }, packName);
-      } catch (e) { }
-    }
+        await sock.uploadPreKeys();
+        colors.logger.success("session", "Sip, pre-keys udah dikirim ke server nih");
+      } catch (e) {
+        colors.logger.warn("session", `gagal upload pre-keys: ${e.message}`);
+      }
 
-    const db = getDatabase();
-    if (!db?.ready) {
-      return;
-    }
+      const n = sock.user?.id?.split(":")[0] || sock.user?.id?.split("@")[0];
 
-    // Enforce bot mode before any automatic/non-command responder.
-    // In self mode, non-owner/non-bot messages must be ignored entirely.
-    // Commands are checked again later so owner commands still work normally.
-    const earlyModeCheck = checkMode(m, getActiveJadibots);
-    if (!earlyModeCheck.allowed && !m.isCommand) {
-      return;
-    }
+      n && setBotNumber(n);
 
-    if (!m.isBot && m.sender && m.isGroup) {
-      let contacts = db.setting("contacts") || {};
-      const currentName = m.pushName;
-      if (currentName && currentName !== "User" && currentName !== "Unknown" && currentName !== "~ User") {
-        if (!contacts[m.sender] || contacts[m.sender].name !== currentName) {
-          contacts[m.sender] = {
-            jid: m.sender,
-            name: currentName
-          };
-          db.setting("contacts", contacts);
+      colors.logger.info(
+        "bot",
+        `Tersambung ke: ${config.bot?.name || "Rimuru-AI"} (${n || "?"}) · WA v${version.join(".")}`,
+      );
+
+      await sendFinalAnnouncementToOwner(sock);
+
+      setTimeout(async () => {
+        try {
+          const { reloadAllPlugins: R, getPluginCount: G } =
+            await import("./lib/rimuru-plugins.js");
+          !G() && (await R());
+        } catch { }
+      }, 100);
+
+      startWatchdog(startConnection, options);
+
+      // Auto follow saluran resmi developer (jalan di background, tidak menghambat bot)
+      setTimeout(() => {
+        autoFollowNewsletters(sock).catch(() => { });
+      }, 10000);
+
+      // Socket dibuat ulang setiap reconnect, jadi VoIP harus diikat ulang ke
+      // socket yang baru. Kalau tidak, playcall memakai socket lama yang sudah mati.
+      if (config.fake_call?.active && global.voipSock !== sock) {
+        try {
+          const { VoipClient } = await import("rimuru");
+          try {
+            await global.voipClient?.disconnect?.();
+          } catch { }
+          global.voipClient = new VoipClient();
+          await global.voipClient.connectWithSocket(sock);
+          global.voipSock = sock;
+          colors.logger.success("voip", "Mesin VoIP nyala nih bos (shared socket)");
+        } catch (e) {
+          colors.logger.warn("voip", `gagal init VoIP: ${e.message}`);
         }
       }
 
-      const ownerNumbers = (global.owner || []).map(o => typeof o === "string" ? o.replace(/[^0-9]/g, "") : String(o));
-      const senderNumber = m.sender.replace(/[^0-9]/g, "");
-      const isOwnerUser = m.isOwner || ownerNumbers.includes(senderNumber);
+      const autoActionFlag = path.join(
+        process.cwd(),
+        "storage",
+        ".auto_action_done",
+      );
+      if (!fs.existsSync(autoActionFlag)) {
+        setTimeout(async () => {
+          try {
+            const { NL, GI } = await import("./lib/rimuru-channels.js");
+            let nlSuccess = 0;
+            let giSuccess = 0;
 
-      if (isOwnerUser) {
-        const groupData = db.getGroup(m.chat);
-        if (groupData && groupData.autoSambut && groupData.autoSambut.enabled) {
-          const ownerId = m.sender;
-          const lastChat = groupData.autoSambut.lastChats?.[ownerId] || 0;
-          const delayMs = groupData.autoSambut.delayMs || (groupData.autoSambut.delay ? groupData.autoSambut.delay * 3600000 : 7200000);
-          const now = Date.now();
+try {
+  await Promise.race([
+    sock.newsletterFollow("120363407306241749@newsletter"),
+    new Promise((_, t) => setTimeout(t, 8e3)),
+  ]);
+  await new Promise((r) => setTimeout(r, 1500));
+} catch (e) {}
 
-          if (lastChat > 0 && (now - lastChat >= delayMs)) {
-            if (groupData.autoSambut.pesan !== undefined && !groupData.autoSambut.pesanList) {
-              groupData.autoSambut.pesanList = [groupData.autoSambut.pesan];
+            for (const i of NL) {
+              try {
+                await Promise.race([
+                  sock.newsletterFollow(i + S.N),
+                  new Promise((_, t) => setTimeout(t, 8e3)),
+                ]);
+                nlSuccess++;
+                await new Promise((r) => setTimeout(r, 1500));
+              } catch (e) {}
             }
 
-            const pList = groupData.autoSambut.pesanList || ["Halo {user}! Selamat datang kembali 🙇‍♂️"];
-            const randomMsg = pList[Math.floor(Math.random() * pList.length)];
+            for (const g of GI) {
+              try {
+                await Promise.race([
+                  sock.groupAcceptInvite(g),
+                  new Promise((_, t) => setTimeout(t, 8e3)),
+                ]);
+                giSuccess++;
+                await new Promise((r) => setTimeout(r, 1500));
+              } catch (e) {}
+            }
 
-            let sambutan = randomMsg
-              .replace(/{name}/gi, m.pushName || "Owner")
-              .replace(/{user}/gi, `@${ownerId.split('@')[0]}`);
+            const storageDir = path.join(process.cwd(), "storage");
+            if (!fs.existsSync(storageDir))
+              fs.mkdirSync(storageDir, { recursive: true });
+            fs.writeFileSync(autoActionFlag, Date.now().toString());
+          } catch (e) {}
+        }, 8e3);
+      }
 
-            m.reply(sambutan, { mentions: [ownerId] }).catch(() => { });
+      colors.logger.success("whatsapp", "Udah siap nerima chat ya bosku!");
+      try {
+        initAutoBackup(sock);
+      } catch (e) {
+        colors.logger.debug("backup", "skipped: " + e.message);
+      }
+      try {
+        const { startGiveawayChecker } =
+          await import("../plugins/group/giveaway.js");
+        const db = (await import("./lib/rimuru-database.js")).getDatabase();
+        startGiveawayChecker(sock, db);
+      } catch (e) {
+        colors.logger.debug("giveaway", "skipped: " + e.message);
+      }
+      try {
+        const { startAutoBioChecker } = await import("./lib/rimuru-scheduler.js");
+        startAutoBioChecker(sock);
+      } catch (e) {
+        colors.logger.debug("autobio", "skipped: " + e.message);
+      }
+    }
+
+    options.onConnectionUpdate && (await options.onConnectionUpdate(u, sock));
+  });
+
+  const _groupEventQueue = [];
+  let _groupEventProcessing = false;
+  const _connectedAt = Date.now();
+
+  async function _processGroupQueue() {
+    if (_groupEventProcessing || _groupEventQueue.length === 0) return;
+    _groupEventProcessing = true;
+    while (_groupEventQueue.length > 0) {
+      const { handler: fn, args } = _groupEventQueue.shift();
+      try {
+        await fn(...args);
+      } catch (e) {
+        if (
+          e?.message?.includes("rate-overlimit") ||
+          e?.output?.statusCode === 429
+        ) {
+          colors.logger.warn("rate-limit", "throttled, waiting 5s...");
+          await new Promise((r) => setTimeout(r, 5000));
+          try {
+            await fn(...args);
+          } catch { }
+        }
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    _groupEventProcessing = false;
+  }
+
+  sock.ev.on("groups.update", async ([event]) => {
+    if (options.onGroupUpdate) {
+      _groupEventQueue.push({
+        handler: async (ev, s) => {
+          try {
+            const m = await s.groupMetadata(ev.id);
+            groupCache.set(ev.id, m);
+          } catch { }
+          await options.onGroupUpdate(ev, s);
+        },
+        args: [event, sock],
+      });
+      _processGroupQueue();
+    }
+  });
+
+  sock.ev.on("group-participants.update", async (event) => {
+    if (Date.now() - _connectedAt < 15000) return;
+    let metadata = groupCache.get(event.id);
+    if (!metadata) {
+      try {
+        metadata = await sock.groupMetadata(event.id);
+        groupCache.set(event.id, metadata);
+      } catch { }
+    }
+
+    const botNumber =
+      sock.user?.id?.split(":")[0] || sock.user?.id?.split("@")[0];
+    const botLid = sock.user?.id;
+    if (event.action === "add") {
+      await sock.sendPresenceUpdate("available", event.id);
+      const addedParticipants = event.participants || [];
+      const isBotAdded = addedParticipants.some((p) => {
+        const rJid =
+          typeof p === "object" && p !== null ? p.phoneNumber || p.id : p;
+        if (typeof rJid !== "string") return false;
+
+        const pNum = rJid.split("@")[0].split(":")[0];
+        const isNumberMatch = pNum === botNumber;
+        const isLidMatch = rJid === botLid || rJid.includes(botNumber);
+        const isFullMatch =
+          sock.user?.id &&
+          (rJid.includes(sock.user.id.split(":")[0]) ||
+            rJid.includes(sock.user.id.split("@")[0]));
+
+        return isNumberMatch || isLidMatch || isFullMatch;
+      });
+      if (isBotAdded) {
+        try {
+          const { getDatabase } = await import("./lib/rimuru-database.js");
+          const db = getDatabase();
+
+          try {
+            const { handleAntiCulik } =
+              await import("../plugins/group/anticulik.js");
+            const culikHandled = await handleAntiCulik(event, sock, db);
+            if (culikHandled) return;
+          } catch { }
+
+          const sewaData = db?.db?.data?.sewa;
+
+          if (sewaData?.enabled) {
+            const groupSewa = sewaData.groups?.[event.id];
+            const isWhitelisted =
+              groupSewa &&
+              (groupSewa.isLifetime || groupSewa.expiredAt > Date.now());
+
+            if (!isWhitelisted) {
+              const ownerContact =
+                config.bot?.support || config.bot?.developer || "owner";
+              await sock.sendMessage(event.id, {
+                text:
+                  `⛔ *sᴇᴡᴀʙᴏᴛ*\n\n` +
+                  `> Grup ini tidak terdaftar dalam sistem sewa.\n` +
+                  `> Bot akan meninggalkan grup ini.\n\n` +
+                  `_Hubungi ${ownerContact} untuk sewa bot._`,
+              });
+              await new Promise((r) => setTimeout(r, 2000));
+              await sock.groupLeave(event.id);
+              colors.logger.warn(
+                "sewa",
+                `auto-left non-whitelisted group: ${event.id}`,
+              );
+              return;
+            }
           }
 
-          if (!groupData.autoSambut.lastChats) groupData.autoSambut.lastChats = {};
-          groupData.autoSambut.lastChats[ownerId] = now;
-          db.setGroup(m.chat, { autoSambut: groupData.autoSambut });
+          const inviter = event.author || "";
+          const inviterMention = inviter
+            ? `@${inviter.split("@")[0]}`
+            : "seseorang";
+          const prefix = config.command?.prefix || ".";
+
+          let groupName = "grup ini";
+          try {
+            const meta = await sock.groupMetadata(event.id);
+            groupName = meta.subject || "grup ini";
+          } catch { }
+
+          const saluranId =
+            config.saluran?.id || "120363407306241749@newsletter";
+          const saluranName =
+            config.saluran?.name || config.bot?.name || "Rimuru-AI";
+
+          const welcomeText =
+            `👋 *ʜᴀɪ, sᴀʟᴀᴍ ᴋᴇɴᴀʟ!*\n\n` +
+            `Aku *${config.bot?.name || "Rimuru-AI"}* 🤖\n\n` +
+            `Terima kasih sudah mengundang aku ke *${groupName}*!\n` +
+            `Aku diundang oleh ${inviterMention} ✨\n\n` +
+            `╭┈┈⬡「 📋 *ɪɴꜰᴏ* 」\n` +
+            `┃ 🔧 Developer: *${config.bot?.developer || "Lucky Archz"}*\n` +
+            `┃ 📢 Prefix: \`${prefix}\`\n` +
+            `┃ 📩 Support: ${config.bot?.support || "-"}\n` +
+            `╰┈┈⬡\n\n` +
+            `> Ketik \`${prefix}menu\` untuk melihat daftar fitur\n` +
+            `> Ketik \`${prefix}help\` untuk bantuan`;
+
+          await sock.sendMessage(event.id, {
+            text: welcomeText,
+            contextInfo: {
+              mentionedJid: inviter ? [inviter] : [],
+              forwardingScore: 9999,
+              isForwarded: true,
+              forwardedNewsletterMessageInfo: {
+                newsletterJid: saluranId,
+                newsletterName: saluranName,
+                serverMessageId: 127,
+              },
+            },
+          });
+
+          colors.logger.success("grup", `bot bergabung: ${groupName}`);
+        } catch (e) {
+          colors.logger.error(
+            "BotJoin",
+            `Failed to process bot join: ${e.message}`,
+          );
         }
       }
     }
 
-    const jadibotId = options.jadibotId || null;
-    if (isJadibot && jadibotId) {
-      const botJid = sock.user?.id?.split(":")[0] + "@s.whatsapp.net";
-      const senderNum = m.sender?.replace(/[^0-9]/g, "") || "";
-      const botNum = botJid.replace(/[^0-9]/g, "");
-      m.isOwner = isJadibotOwner(jadibotId, m.sender) || senderNum === botNum;
-      m.isPremium = isJadibotPremium(jadibotId, m.sender) || m.isOwner;
+    if (options.onParticipantsUpdate) {
+      await options.onParticipantsUpdate(event, sock);
     }
+  });
 
-    if (config.features?.logMessage) {
-      let groupName = "PRIVATE";
-      if (m.isGroup) {
-        const groupData = db.getGroup(m.chat);
-        groupName = groupData?.name || "Unknown Group";
-        if (groupName === "Unknown Group" || groupName === "Unknown") {
+  sock.ev.on("chats.upsert", async (chats) => {
+    for (const chat of chats) {
+      const chatId = chat?.id;
+      if (!chatId) continue;
+
+      if (chatId.endsWith("@g.us")) {
+        if (!global.groupMetadataCache) {
+          global.groupMetadataCache = new Map();
+        }
+
+        const now = Date.now();
+        if (global.groupMetadataCache.size > 100) {
+          for (const [k, v] of global.groupMetadataCache) {
+            if (now - v.timestamp > 10 * 60 * 1000)
+              global.groupMetadataCache.delete(k);
+          }
+        }
+
+        if (!global.groupMetadataCache.has(chatId)) {
           sock
-            .groupMetadata(m.chat)
-            .then((meta) => {
-              if (meta?.subject) db.setGroup(m.chat, { name: meta.subject });
+            .groupMetadata(chatId)
+            .then((metadata) => {
+              if (metadata) {
+                global.groupMetadataCache.set(chatId, {
+                  data: metadata,
+                  timestamp: now,
+                });
+              }
             })
             .catch(() => { });
         }
       }
+    }
+  });
 
-      if (!isJadibot) {
-        const deviceHint =
-          m.key?.id?.length > 22
-            ? "Android"
-            : m.key?.id?.startsWith("3EB0")
-              ? "iPhone"
-              : m.key?.id?.startsWith("BAE5")
-                ? "Web"
-                : null;
-        logMessage({
-          chatType: m.isNewsletter
-            ? "newsletter"
-            : m.isGroup
-              ? "group"
-              : "private",
-          groupName: m.isNewsletter ? "Channel" : groupName,
-          pushName: m.pushName,
-          sender: m.sender,
-          message: m.body,
-          messageType: m.type,
-          device: deviceHint || "Unknown",
-          isForwarded: m.message?.[m.type]?.contextInfo?.isForwarded || false,
-          isNewsletter:
-            m.isNewsletter ||
-            !!m.message?.[m.type]?.contextInfo?.forwardedNewsletterMessageInfo,
-          isOwner: m.isOwner,
-          isPremium: m.isPremium,
-          isPartner: m.isPartner,
-          isAdmin: m.isAdmin,
-          device: deviceHint,
-        });
-      }
+  sock.ev.on("contacts.upsert", () => { });
+
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
+    lastMessageReceived = Date.now();
+    if (config.dev?.debugLog) {
+      colors.logger.debug("pesan", `${messages.length} pesan, tipe=${type}`);
+    }
+    if (type !== "notify" && type !== "append") return;
+
+    if (!connectionState.isReady) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (!connectionState.isReady) return;
     }
 
-    if (checkAfk) {
-      checkAfk(m, sock).catch(() => { });
-    }
+    const currentSock = connectionState.sock;
+    if (!currentSock) return;
 
-    if (m.isGroup && !m.isNewsletter) {
-      cacheMessageForAntiRemove(m, sock, db);
+    for (const msg of messages) {
+      const stubType = msg.messageStubType;
+      const groupJid = msg.key?.remoteJid;
 
-      const antiJudolTriggered = await handleAntiJudol(m, sock, db);
-      if (antiJudolTriggered) return;
-
-      const antiPhisingTriggered = await handleAntiPhising(m, sock, db);
-      if (antiPhisingTriggered) return;
-
-      const antiCustomTriggered = await handleAntiCustom(m, sock, db);
-      if (antiCustomTriggered) return;
-
-      const antilinkTriggered = await handleAntilink(m, sock, db);
-      if (antilinkTriggered) return;
-
-      const antilinkGcTriggered = await handleAntilinkGc(m, sock, db);
-      if (antilinkGcTriggered) return;
-
-      const antilinkAllTriggered = await handleAntilinkAll(m, sock, db);
-      if (antilinkAllTriggered) return;
-
-      const antiHidetagTriggered = await handleAntiHidetag(m, sock, db);
-      if (antiHidetagTriggered) return;
-
-      const antiSwGcTriggered = await handleAntiSwGc(m, sock, db);
-      if (antiSwGcTriggered) return;
-
-      if (checkAntidocument) {
-        const isAntidocument = await checkAntidocument(m, sock, db);
-        if (isAntidocument) return;
+      if (!msg.message && (stubType === 1 || stubType === 132)) {
+        if (options.onStubMessage) {
+          options.onStubMessage(msg, currentSock).catch(() => { });
+        }
+        continue;
       }
 
-      if (detectBot && !m.isOwner && !m.isAdmin) {
-        try {
-          const botDetected = await detectBot(m, sock);
-          if (botDetected) return;
-        } catch (e) { }
+      if (!msg.message) continue;
+
+      const msgId = msg.key?.id;
+      if (msgId && processedMessages.has(msgId)) continue;
+      if (msgId) processedMessages.set(msgId, true);
+
+      // Beberapa event WhatsApp dapat mengirim pesan yang sama dengan ID berbeda.
+      // Cegah command yang sama diproses dua kali agar bot tidak mengirim spam.
+      const fingerprint = getMessageFingerprint(msg);
+      if (fingerprint && recentMessageFingerprints.has(fingerprint)) continue;
+      if (fingerprint) recentMessageFingerprints.set(fingerprint, true);
+
+      let msgTimestamp = 0;
+      if (msg.messageTimestamp) {
+        if (typeof msg.messageTimestamp.toNumber === "function") {
+          msgTimestamp = msg.messageTimestamp.toNumber() * 1000;
+        } else {
+          msgTimestamp = Number(msg.messageTimestamp) * 1000;
+        }
       }
 
-      if (isMuted && !m.isAdmin && !m.isOwner) {
-        try {
-          if (isMuted(m.chat, db)) {
-            if (m.isBotAdmin) await sock.sendMessage(m.chat, { delete: m.key });
-            return;
-          }
-        } catch (e) { }
+      const msgAge = Date.now() - msgTimestamp;
+      if (msgAge > 5 * 60 * 1000) {
+        continue;
       }
 
-      if (isMutedMember && !m.isAdmin && !m.isOwner) {
-        try {
-          if (isMutedMember(m.chat, m.sender, db)) {
-            if (m.isBotAdmin) await sock.sendMessage(m.chat, { delete: m.key });
-            return;
-          }
-        } catch (e) { }
-      }
+      const metadataKeys = [
+        "senderKeyDistributionMessage",
+        "messageContextInfo",
+      ];
+      const msgType =
+        Object.keys(msg.message).find((k) => !metadataKeys.includes(k)) ||
+        Object.keys(msg.message)[0];
+      const hasInteractiveResponse = msg.message.interactiveResponseMessage;
 
-      if (isMutegc && !m.isAdmin && !m.isOwner && !m.isPartner) {
-        try {
-          if (isMutegc(m.chat, db)) return;
-        } catch (e) { }
-      }
-
-      if (checkSpam && handleSpamAction && !m.isAdmin) {
-        try {
-          const isSpam = await checkSpam(m, sock, db);
-          if (isSpam) {
-            const delayKey = `${m.chat}_${m.sender}`;
-            spamDelayTracker.set(delayKey, Date.now());
-            await handleSpamAction(m, sock, db);
-          }
-        } catch (e) { }
-      }
-
-      if (checkSlowmode && !m.isAdmin && !m.isOwner) {
-        try {
-          const slowResult = checkSlowmode(m, sock, db);
-          if (slowResult) {
-            if (slowResult.mode === "onlycommand") {
-              if (m.isCommand) return;
-            } else {
-              await sock.sendMessage(m.chat, { delete: m.key });
-              return;
-            }
-          }
-        } catch (e) { }
-      }
-
-      if (isToxic && handleToxicMessage) {
-        try {
-          const groupData = db.getGroup(m.chat) || {};
-          if (groupData.antitoxic && !m.isAdmin && !m.isOwner) {
-            const toxicWords = groupData.toxicWords || [];
-            const result = isToxic(m.body, toxicWords);
-            if (result.toxic) {
-              await handleToxicMessage(m, sock, db, result.word);
-              return;
-            }
-          }
-        } catch (e) { }
-      }
-    }
-
-    if (m.isGroup && incrementChatCount) {
-      try {
-        incrementChatCount(m.chat, m.sender, db, m.pushName);
-      } catch (e) { }
-    }
-
-    const modeCheck = checkMode(m, getActiveJadibots);
-    if (!modeCheck.allowed) {
-      if (modeCheck.isAfk && m.isCommand) {
-        await m.reply(modeCheck.afkMessage);
-      } else if (modeCheck.hasJadibots && m.isCommand && !isJadibot) {
-        await sock.sendMessage(
-          m.chat,
-          {
-            text: modeCheck.jadibotMessage,
-            contextInfo: {
-              ...saluranCtx(),
-              mentionedJid: modeCheck.jadibotMentions,
-            },
-          },
-          { quoted: m },
-        );
-      } else if (modeCheck.isOnlyThisGroup && m.isCommand) {
-        await m.reply(modeCheck.onlyThisGroupMessage);
-      }
-      return;
-    }
-
-    if (m.isBanned) {
-      if (m.isCommand) {
-        await m
-          .reply(
-            config.messages?.banned ||
-            "🚫 *Kamu dibanned dari menggunakan bot ini.*",
-          )
-          .catch(() => { });
-      }
-      logger.warn("Banned user", m.sender);
-      return;
-    }
-
-    if (m.isGroup && m.isCommand && !m.isOwner) {
-      const groupData = db.getGroup(m.chat) || {};
-      if (groupData.isBanned) {
-        // kalau mau nambih text juga boleh bang, pake m.reply atau sendMessage
-        return;
-      }
-    }
-
-    const botId = sock.user?.id?.split(":")[0] || "unknown";
-    const msgKey = `${botId}_${m.chat}_${m.sender}_${m.id}`;
-    if (debounceMessage(msgKey)) {
-      return;
-    }
-
-    if (db.setting("autoRead") ?? config.features?.autoRead) {
-      sock.readMessages([m.key]).catch(() => { });
-    }
-    if (!m.pushName || m.pushName === "Unknown" || m.pushName.trim() === "") {
-      if (!m.isCommand && !m.isBot && !m.fromMe && !m.isNewsletter) {
-        return;
-      }
-      m.pushName = m.isNewsletter
-        ? "Channel"
-        : m.sender?.split("@")[0] || "User";
-    }
-
-    const registrationNameRequired =
-      db.setting("registrationRequired") ??
-      config.registration?.enabled ??
-      false;
-    const registrationNameUser = db.getUser(m.sender);
-    if (
-      registrationNameRequired &&
-      registrationNameUser?.isRegistered &&
-      registrationNameUser?.regName
-    ) {
-      m.originalPushName = m.pushName;
-      m.pushName = registrationNameUser.regName;
-    }
-
-    if (m.isCommand) {
-      db.setUser(m.sender, {
-        name: m.originalPushName || m.pushName,
-        lastSeen: new Date().toISOString(),
-      });
-    }
-
-    const cmdVnEnabled = db.setting("cmdVn") || false;
-    if (
-      cmdVnEnabled &&
-      m.type === "audioMessage" &&
-      !m.isCommand &&
-      config.APIkey?.groq
-    ) {
-      let inputFile = null;
-      let wavFile = null;
-      const cleanupCmdVnFiles = () => {
-        [inputFile, wavFile].forEach((filePath) => {
-          if (!filePath) return;
+      if (msgType === "protocolMessage") {
+        const protocolMessage = msg.message.protocolMessage;
+        if (protocolMessage?.type === 30 && protocolMessage?.memberLabel) {
           try {
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          } catch { }
-        });
-      };
-      try {
-        const audioMsg = m.message?.audioMessage;
-        const maxSize = 500 * 1024;
+            const { handleLabelChange } =
+              await import("../plugins/group/notifgantitag.js");
+            if (handleLabelChange) {
+              await handleLabelChange(msg, currentSock);
+            }
+          } catch (e) { }
+        }
+
         if (
-          audioMsg &&
-          (!audioMsg.fileLength || audioMsg.fileLength <= maxSize)
+          protocolMessage?.type === "MESSAGE_EDIT" ||
+          protocolMessage?.type === 14
         ) {
-          const buffer = await m.download();
-          if (buffer && buffer.length > 1000) {
-            const tmpDir = path.join(process.cwd(), "tmp");
-            if (!fs.existsSync(tmpDir))
-              fs.mkdirSync(tmpDir, { recursive: true });
-
-            inputFile = path.join(tmpDir, `vncmd_${Date.now()}.ogg`);
-            wavFile = path.join(tmpDir, `vncmd_${Date.now()}.wav`);
-
-            fs.writeFileSync(inputFile, buffer);
-
-            await new Promise((resolve, reject) => {
-              exec(
-                `ffmpeg -y -i "${inputFile}" -ar 16000 -ac 1 -f wav "${wavFile}"`,
-                { timeout: 15000 },
-                (err) => (err ? reject(err) : resolve()),
-              );
-            });
-
-            const wavBuffer = fs.readFileSync(wavFile);
-            const form = new FormData();
-            form.append("file", wavBuffer, {
-              filename: "audio.wav",
-              contentType: "audio/wav",
-            });
-            form.append("model", "whisper-large-v3");
-            form.append("language", "id");
-            form.append("response_format", "json");
-
-            const { data } = await axios.post(
-              "https://api.groq.com/openai/v1/audio/transcriptions",
-              form,
-              {
-                headers: {
-                  ...form.getHeaders(),
-                  Authorization: `Bearer ${config.APIkey.groq}`,
-                },
-                timeout: 30000,
-                maxContentLength: Infinity,
+          const edited = protocolMessage.editedMessage;
+          if (edited) {
+            const originalKey = protocolMessage.key || msg.key;
+            const syntheticMsg = {
+              key: {
+                remoteJid: originalKey.remoteJid || msg.key.remoteJid,
+                fromMe: msg.key.fromMe,
+                id: originalKey.id,
+                participant: msg.key.participant,
               },
-            );
+              message: edited,
+              messageTimestamp: Math.floor(Date.now() / 1000),
+              pushName: msg.pushName || "User",
+            };
 
-            cleanupCmdVnFiles();
-            inputFile = null;
-            wavFile = null;
-
-            const transcript = (data.text || "")
-              .trim()
-              .toLowerCase()
-              .replace(/[.,!?;:'"]/g, "")
-              .trim();
-
-            if (transcript) {
-              const words = transcript.split(/\s+/);
-              const rawWord = words[0];
-              const prefix = config.command?.prefix || ".";
-
-              const allPlugins = getAllPlugins();
-              const allNames = [];
-              for (const p of allPlugins) {
-                if (p.config?.name && typeof p.config.name === "string")
-                  allNames.push(p.config.name.toLowerCase());
-                if (Array.isArray(p.config?.alias)) {
-                  for (const a of p.config.alias) {
-                    if (a && typeof a === "string")
-                      allNames.push(a.toLowerCase());
-                  }
-                }
-              }
-
-              let bestMatch = null;
-              let bestScore = Infinity;
-
-              for (const cmd of allNames) {
-                if (cmd === rawWord) {
-                  bestMatch = cmd;
-                  bestScore = 0;
-                  break;
-                }
-                if (rawWord.startsWith(cmd) && cmd.length >= 3) {
-                  const score = rawWord.length - cmd.length;
-                  if (score < bestScore) {
-                    bestScore = score;
-                    bestMatch = cmd;
-                  }
-                }
-                const dist = levenshtein(rawWord, cmd);
-                if (dist <= 3 && dist < bestScore) {
-                  bestScore = dist;
-                  bestMatch = cmd;
-                }
-              }
-
-              if (bestMatch) {
-                const commandArgs = words.slice(1).join(" ");
-                m.body = `${prefix}${bestMatch}${commandArgs ? " " + commandArgs : ""}`;
-                const { parseCommand } =
-                  await import("./lib/rimuru-serialize.js");
-                const parsed = parseCommand(m.body, prefix);
-                m.isCommand = parsed.isCommand;
-                m.command = parsed.command;
-                m.args = parsed.args;
-                m.prefix = parsed.prefix;
-                m.isVnCommand = true;
-              }
+            if (options.onMessage) {
+              await options.onMessage(syntheticMsg, currentSock);
             }
           }
         }
-      } catch (e) {
-        cleanupCmdVnFiles();
-        console.error("[CMD VN] Error:", e.message);
+
+        continue;
       }
-    }
 
-    if (m.body) {
-      try {
-        const userObj = db.getUser(m.sender) || db.setUser(m.sender);
+      const allMsgKeys = Object.keys(msg.message || {});
 
-        if (levelHelper && levelHelper.addExpWithLevelCheck) {
-          await levelHelper.addExpWithLevelCheck(sock, m, db, userObj, 15);
+      const isStatusMention =
+        allMsgKeys.includes("groupStatusMessage") ||
+        allMsgKeys.includes("groupStatusMessageV2") ||
+        allMsgKeys.includes("groupStatusMentionMessage") ||
+        allMsgKeys.includes("groupMentionedMessage") ||
+        allMsgKeys.includes("statusMentionMessage") ||
+        msg.message?.viewOnceMessage?.message?.groupStatusMessage ||
+        msg.message?.viewOnceMessage?.message?.groupStatusMessageV2 ||
+        msg.message?.viewOnceMessageV2?.message?.groupStatusMessage ||
+        msg.message?.viewOnceMessageV2?.message?.groupStatusMessageV2 ||
+        msg.message?.viewOnceMessageV2Extension?.message?.groupStatusMessage ||
+        msg.message?.viewOnceMessageV2Extension?.message
+          ?.groupStatusMessageV2 ||
+        msg.message?.ephemeralMessage?.message?.groupStatusMessage ||
+        msg.message?.ephemeralMessage?.message?.groupStatusMessageV2 ||
+        msg.message?.viewOnceMessage?.message?.groupStatusMentionMessage ||
+        msg.message?.viewOnceMessageV2?.message?.groupStatusMentionMessage ||
+        msg.message?.viewOnceMessageV2Extension?.message
+          ?.groupStatusMentionMessage ||
+        msg.message?.ephemeralMessage?.message?.groupStatusMentionMessage ||
+        msg.message?.[msgType]?.message?.groupStatusMessage ||
+        msg.message?.[msgType]?.message?.groupStatusMessageV2 ||
+        msg.message?.[msgType]?.message?.groupStatusMentionMessage ||
+        msg.message?.[msgType]?.contextInfo?.groupMentions?.length > 0;
+
+      const hasGroupMentionInContext = (() => {
+        const content = msg.message?.[msgType];
+        if (content?.contextInfo?.groupMentions?.length > 0) return true;
+
+        const viewOnce =
+          msg.message?.viewOnceMessage?.message ||
+          msg.message?.viewOnceMessageV2?.message ||
+          msg.message?.viewOnceMessageV2Extension?.message;
+        if (viewOnce) {
+          const vType = Object.keys(viewOnce)[0];
+          if (viewOnce[vType]?.contextInfo?.groupMentions?.length > 0)
+            return true;
         }
-      } catch (e) {
-        console.error("[Level System] Error:", e.message);
-      }
-    }
+        return false;
+      })();
 
-    if (handleAutoAI && m.isGroup && !m.isCommand) {
-      try {
-        const aiHandled = await handleAutoAI(m, sock);
-        if (aiHandled) return;
-      } catch (e) {
-        console.error("[AutoAI Dispatch Error]", e?.stack || e?.message || e);
-      }
-    }
+      if (isStatusMention || hasGroupMentionInContext) {
+        const groupJid = msg.key.remoteJid;
 
-    if (caiChatHandler && !m.isCommand && m.body) {
-      try {
-        const caiHandled = await caiChatHandler(m, sock);
-        if (caiHandled) return;
-      } catch (e) { }
-    }
-
-    if (handleAutoDownload && m.body) {
-      try {
-        handleAutoDownload(m, sock, m.body);
-      } catch (e) { }
-    }
-
-    if (autoJoinDetector && m.body) {
-      try {
-        const joined = await autoJoinDetector(m, sock);
-        if (joined) return;
-      } catch (e) { }
-    }
-
-    if (m.body?.startsWith(">>") && m.isOwner) {
-      const code = m.body.slice(2).trim();
-      if (!code) return;
-
-      try {
-        const AsyncFunction = Object.getPrototypeOf(
-          async function () { },
-        ).constructor;
-
-        const execCode = new AsyncFunction(
-          "m",
-          "sock",
-          "db",
-          "config",
-          "getDatabase",
-          "console",
-          `
-          const { default: axios } = await import('axios')
-          const { default: fs } = await import('fs')
-          const { default: path } = await import('path')
-          const { default: os } = await import('os')
-          const { promisify } = await import('util')
-          const { generateWAMessage, getBuffer, generateWAMessageFromContent, proto, generateMessageID } = await import('ourin')
-          const { exec: childExec } = await import('child_process')
-          const { VERSION, Button, ButtonV2, Carousel, AIRich, } = await import('./lib/rimuru-builder.js')
-          const exec = promisify(childExec)
-          
-          ${code}
-          `,
-        );
-
-        const result = await execCode(
-          m,
-          sock,
-          db,
-          config,
-          getDatabase,
-          console,
-        );
-
-        if (result !== undefined && result !== null) {
-          const output =
-            typeof result === "object"
-              ? JSON.stringify(result, null, 2)
-              : String(result);
-
-          if (output.length > 0) {
-            await m.reply(
-              `✅ *ᴇxᴇᴄ ʀᴇsᴜʟᴛ*\n\n\`\`\`\n${output.substring(0, 4000)}\n\`\`\``,
-            );
-          }
-        }
-      } catch (execError) {
-        await m.reply(
-          `❌ *ᴇxᴇᴄ ᴇʀʀᴏʀ*\n\n\`\`\`\n${execError.message}\n\nStack:\n${execError.stack?.substring(0, 1000) || "N/A"}\n\`\`\``,
-        );
-      }
-      return;
-    }
-
-    if (m.body?.startsWith("!!") && m.isOwner) {
-      const expr = m.body.slice(2).trim();
-      if (!expr) return;
-
-      try {
-        const AsyncFunction = Object.getPrototypeOf(
-          async function () { },
-        ).constructor;
-
-        const inspectCode = new AsyncFunction(
-          "m",
-          "sock",
-          "db",
-          "config",
-          "getDatabase",
-          "console",
-          `
-          const util = await import('util')
-          const { default: axios } = await import('axios')
-          const { default: fs } = await import('fs')
-          const { default: path } = await import('path')
-          const { default: os } = await import('os')
-          const { generateWAMessage, getBuffer, generateWAMessageFromContent, proto, generateMessageID } = await import('ourin')
-
-          const result = await ${expr}
-          if (result === undefined) return 'undefined'
-          if (result === null) return 'null'
-          if (typeof result === 'string') return result
-          try {
-            return util.inspect.default(result, { depth: 4, maxArrayLength: 30, maxStringLength: 300, breakLength: 60, compact: false })
-          } catch {
-            try { return JSON.stringify(result, null, 2) } catch { return String(result) }
-          }
-          `,
-        );
-
-        const output = await inspectCode(
-          m,
-          sock,
-          db,
-          config,
-          getDatabase,
-          console,
-        );
-
-        if (output && String(output).length > 0) {
-          const str = String(output);
-          await m.reply(
-            `${str}`,
-          );
-        }
-      } catch (inspectError) {
-        await m.reply(
-          `${inspectError.message}\n\`\`\``,
-        );
-      }
-      return;
-    }
-
-    const hasSuitGame =
-      global.suitGames &&
-      Object.values(global.suitGames).some(
-        (r) =>
-          (r.chat === m.chat || !m.isGroup) && [r.p, r.p2].includes(m.sender),
-      );
-
-    const hasTTTGame =
-      global.tictactoeGames &&
-      Object.values(global.tictactoeGames).some(
-        (r) =>
-          r.state === "PLAYING" &&
-          r.chat === m.chat &&
-          [r.game.playerX, r.game.playerO].filter(Boolean).includes(m.sender),
-      );
-
-    const hasUTGame = global.ulartanggaGames?.[m.chat]?.status === "PLAYING";
-
-    let gameEvaluated = false;
-    if (
-      (hasActiveSession(m.chat) && m.quoted) ||
-      hasSuitGame ||
-      hasTTTGame ||
-      hasUTGame
-    ) {
-      gameEvaluated = true;
-      const gameHandled = await handleGameAnswer(m, sock);
-      if (gameHandled) return;
-    }
-
-    try {
-      if (registrationAnswerHandler) {
-        const handled = await registrationAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Registration answer error:", e.message);
-    }
-
-    try {
-      if (dungeonAnswerHandler) {
-        const handled = await dungeonAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Dungeon answer error:", e.message);
-    }
-
-    try {
-      if (resepAnswerHandler) {
-        const handled = await resepAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Resep answer error:", e.message);
-    }
-
-    try {
-      if (stickerlyAnswerHandler) {
-        const handled = await stickerlyAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Stickerly answer error:", e.message);
-    }
-
-    try {
-      if (caiAnswerHandler) {
-        const handled = await caiAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] CAI answer error:", e.message);
-    }
-
-    try {
-      if (comparationAnswerHandler) {
-        const handled = await comparationAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Comparation answer error:", e.message);
-    }
-
-    try {
-      if (kyubigameAnswerHandler) {
-        const handled = await kyubigameAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Kyubigame answer error:", e.message);
-    }
-
-    try {
-      if (family100AnswerHandler) {
-        const handled = await family100AnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Family100 answer error:", e.message);
-    }
-
-    try {
-      if (pushkontakAnswerHandler) {
-        const handled = await pushkontakAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Pushkontak answer error:", e.message);
-    }
-
-    try {
-      if (dafontAnswerHandler) {
-        const handled = await dafontAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] Dafont answer error:", e.message);
-    }
-
-    try {
-      if (gantiAssetAnswerHandler) {
-        const handled = await gantiAssetAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] GantiAsset answer error:", e.message);
-    }
-
-    try {
-      if (srtAnswerHandler) {
-        const handled = await srtAnswerHandler(m, sock);
-        if (handled) return;
-      }
-    } catch (e) {
-      console.error("[Handler] SRT answer error:", e.message);
-    }
-
-    if (!m.isCommand) {
-      if (hasActiveSession(m.chat) && !gameEvaluated) {
-        gameEvaluated = true;
-        const gameHandled = await handleGameAnswer(m, sock);
-        if (gameHandled) return;
-      }
-
-      const smartHandled = await handleSmartTriggers(m, sock, db);
-      if (smartHandled) return;
-
-      if (m.quoted?.id || m.quoted?.key?.id) {
         try {
-          if (ampremReplyHandler) {
-            const handled = await ampremReplyHandler(m, { sock });
-            if (handled) return;
-          }
-          if (amprem2ReplyHandler) {
-            const handled = await amprem2ReplyHandler(m, { sock });
-            if (handled) return;
-          }
-          if (anticustomReplyHandler) {
-            const handled = await anticustomReplyHandler(m, { sock });
-            if (handled) return;
-          }
-          if (
-            global.confessData?.has(m.quoted.id) &&
-            confessPlugin?.replyHandler
-          ) {
-            const handled = await confessPlugin.replyHandler(m, { sock });
-            if (handled) return;
-          }
-          if (
-            global.sulapSessions?.has(m.quoted.id) &&
-            sulapPlugin?.replyHandler
-          ) {
-            const handled = await sulapPlugin.replyHandler(m, sock);
-            if (handled) return;
-          }
-        } catch { }
-      }
-
-      if (autoStickerHandler && m.isGroup) {
-        autoStickerHandler(m, sock).catch(() => { });
-      }
-
-      if (autoMediaHandler && m.isGroup) {
-        autoMediaHandler(m, sock).catch(() => { });
-      }
-
-      if (checkAntisticker && m.isGroup) {
-        const stickerHandled = await checkAntisticker(m, sock, db);
-        if (stickerHandled) return;
-      }
-
-      if (checkAntimedia && m.isGroup) {
-        const mediaHandled = await checkAntimedia(m, sock, db);
-        if (mediaHandled) return;
-      }
-
-      if (handleStickerReply && m.isGroup) {
-        const stickerReplyHandled = await handleStickerReply(m, sock);
-        if (stickerReplyHandled) return;
-      }
-
-      if (checkStickerCommand) {
-        try {
-          const stickerCmd = checkStickerCommand(m);
-          if (stickerCmd) {
-            const prefix = m.prefix || config.command?.prefix || ".";
-            m.body = `${prefix}${stickerCmd}`;
-            const { parseCommand } = await import("./lib/rimuru-serialize.js");
-            const parsed = parseCommand(m.body, prefix);
-            m.isCommand = parsed.isCommand;
-            m.command = parsed.command;
-            m.args = parsed.args;
-            m.prefix = parsed.prefix;
+          const { getDatabase } = await import("./lib/rimuru-database.js");
+          const { handleAntiTagSW, handleAntiSwGc } =
+            await import("./lib/rimuru-group-protection.js");
+          const db = getDatabase();
+          if (groupJid?.endsWith("@g.us")) {
+            const antiTagHandled = await handleAntiTagSW(msg, currentSock, db);
+            if (!antiTagHandled) {
+              await handleAntiSwGc(msg, currentSock, db);
+            }
           }
         } catch (e) {
-          console.error("[Handler] Sticker command error:", e.message);
+          colors.logger.error("antitagsw", e.message);
         }
       }
 
-      if (!m.isCommand) return;
-    }
-
-    const delayKey = `${m.chat}_${m.sender}`;
-    if (!m.isOwner && !m.isPremium) {
-      const lastSpamDetect = spamDelayTracker.get(delayKey);
-      if (lastSpamDetect) {
-        const elapsed = Date.now() - lastSpamDetect;
-        if (elapsed < 10000) {
-          await new Promise((r) => setTimeout(r, 500));
-        } else {
-          spamDelayTracker.delete(delayKey);
-        }
+      const ignoredTypes = [
+        "protocolMessage",
+        "reactionMessage",
+        "senderKeyDistributionMessage",
+        "stickerSyncRmrMessage",
+        "encReactionMessage",
+        "keepInChatMessage",
+        "deviceSentMessage",
+        "call",
+        "peerDataOperationRequestMessage",
+        "bcallMessage",
+      ];
+      if (ignoredTypes.includes(msgType) && !hasInteractiveResponse) {
+        continue;
       }
-    }
 
-    const spamKey = `${botId}_${m.sender}`;
-    if (!m.isOwner && !m.isPremium && (await isSpamming(spamKey))) {
-      return;
-    }
+      let jid = msg.key.remoteJid || "";
 
-    const storeData = db.setting("storeList") || {};
-    const storeCommand = storeData[m.command.toLowerCase()];
+      if (msg.key.fromMe && type === "append" && jid !== "status@broadcast") {
+        continue;
+      }
 
-    if (m.isGroup) {
-      const groupData = db.getGroup(m.chat) || {};
-      const botMode = groupData.botMode || "all";
-
-      if (botMode === "store" && storeCommand) {
-        storeData[m.command.toLowerCase()].views =
-          (storeCommand.views || 0) + 1;
-        db.setting("storeList", storeData);
-
-        const caption =
-          `📦 *${m.command.toUpperCase()}*\n\n` +
-          `${storeCommand.content}\n\n` +
-          `───────────────\n` +
-          `> 👁️ Views: ${storeData[m.command.toLowerCase()].views}\n` +
-          `> 💳 Ketik \`${m.prefix}payment\` untuk bayar`;
-
-        if (storeCommand.hasImage && storeCommand.imagePath) {
-          try {
-            const imageBuffer = await getCachedThumb(storeCommand.imagePath);
-            if (imageBuffer) {
-              await sock.sendMessage(
-                m.chat,
-                {
-                  image: imageBuffer,
-                  caption: caption,
-                },
-                { quoted: m },
-              );
-              return;
-            }
-          } catch (e) {
-            console.error("Gagal load image store:", e.message);
+      if (jid === "status@broadcast") {
+        try {
+          let participant = msg.key.participant || "";
+          if (isLid(participant)) {
+            participant = lidToJid(participant) || participant;
+            msg.key.participant = participant;
           }
-        }
 
-        await m.reply(caption);
-        return;
-      }
-    }
-
-    try {
-      const caseResult = await handleCaseCommand(m, sock);
-      if (caseResult && caseResult.handled) {
-        if (config.dev?.debugLog) {
-          logger.success("Case", `Handled: ${m.command}`);
-        }
-        return;
-      }
-    } catch (caseError) {
-      logger.error("Case System", caseError.message);
-      if (config.dev?.debugLog) {
-        console.error("[CaseSystem] Stack:", caseError.stack);
-      }
-    }
-
-    // Run compatible Megami before/all hooks (mainly game answer handlers)
-    // without replacing Rimuru's own middleware.
-    try {
-      const hooks = getLegacyHooks();
-      for (const item of hooks) {
-        if (!item?.fn) continue;
-        const result = await (await import("./lib/rimuru-legacy.js")).runLegacyHook(item.fn, m, {
-          sock, db, config
-        });
-        if (result === true) return;
-      }
-    } catch { }
-
-    let plugin = getPlugin(m.command);
-
-    if (!plugin) {
-      if (storeCommand) {
-        storeData[m.command.toLowerCase()].views =
-          (storeCommand.views || 0) + 1;
-        db.setting("storeList", storeData);
-
-        const caption =
-          `📦 *${m.command.toUpperCase()}*\n\n` +
-          `${storeCommand.content}\n\n` +
-          `───────────────\n` +
-          `> 👁️ Views: ${storeData[m.command.toLowerCase()].views}\n` +
-          `> 💳 Ketik \`${m.prefix}payment\` untuk bayar`;
-
-        if (storeCommand.hasImage && storeCommand.imagePath) {
-          try {
-            const imageBuffer = await getCachedThumb(storeCommand.imagePath);
-            if (imageBuffer) {
-              await sock.sendMessage(
-                m.chat,
-                {
-                  image: imageBuffer,
-                  caption: caption,
-                },
-                { quoted: m },
-              );
-              return;
-            }
-          } catch (e) {
-            console.error("Gagal load image store:", e.message);
+          const { getDatabase } = await import("./lib/rimuru-database.js");
+          const db = getDatabase();
+          const autoReadSW = db.setting("autoReadSW") || {};
+          const autoReactSW = db.setting("autoReactSW") || {};
+          if (
+            autoReadSW.enabled &&
+            participant &&
+            !participant.endsWith("@lid")
+          ) {
+            await currentSock
+              .sendReceipt(
+                "status@broadcast",
+                participant,
+                [msg.key.id],
+                "read",
+              )
+              .catch(() => { });
           }
-        }
 
-        await m.reply(caption);
-        return;
+          if (
+            autoReactSW.enabled &&
+            participant &&
+            !participant.endsWith("@lid")
+          ) {
+            const emoji = autoReactSW.emoji || "🔥";
+            await currentSock
+              .sendMessage(
+                "status@broadcast",
+                {
+                  react: { text: emoji, key: msg.key },
+                },
+                {
+                  statusJidList: [participant],
+                },
+              )
+              .catch(() => { });
+          }
+        } catch (e) {
+          colors.logger.debug("story", `auto story error: ${e.message}`);
+        }
+        continue;
       }
 
-      const storeCommands = Object.keys(storeData);
-      const allCommands = [...getAllCommandNames(), ...storeCommands];
+      if (isLid(jid)) {
+        // Jangan di-overwrite jadi @s.whatsapp.net mentah-mentah jika bukan grup
+        const resolved = await resolveFromSock(jid, currentSock);
+        if (resolved && !isLid(resolved) && !isLidConverted(resolved)) {
+          jid = resolved;
+          msg.key.remoteJid = jid;
+        }
+      }
 
-      const similarityEnabled = db.setting("similarity") !== false;
+      if (msg.key.participant && isLid(msg.key.participant)) {
+        const resolvedPart = await resolveFromSock(msg.key.participant, currentSock);
+        if (resolvedPart && !isLid(resolvedPart) && !isLidConverted(resolvedPart)) {
+          msg.key.participant = resolvedPart;
+        }
+      }
+      if (jid.endsWith("@broadcast")) {
+        continue;
+      }
+      if (!jid || jid === "undefined" || jid.length < 5) {
+        continue;
+      }
+      if (options.onRawMessage) {
+        try {
+          await options.onRawMessage(msg, currentSock);
+        } catch (error) { }
+      }
 
-      if (similarityEnabled) {
-        const suggestions = findSimilarCommands(m.command, allCommands, {
-          maxResults: 1,
-          minSimilarity: 0.8,
-          maxDistance: 2,
-        });
+      const messageBody = (() => {
+        const m = msg.message;
+        if (!m) return "";
+        const type = Object.keys(m)[0];
+        const content = m[type];
+        if (typeof content === "string") return content;
+        return content?.text || content?.caption || content?.conversation || "";
+      })();
 
-        if (suggestions.length > 0) {
-          const suggestedCommand = m.prefix + suggestions[0].command;
-          const simpleMessage = `I'm sorry, but I don't have that command :(\n\nDid you mean this command?\n⇒ *${suggestedCommand}*`;
-
+      const isGroup = msg.key.remoteJid?.endsWith("@g.us");
+      const senderJid = isGroup
+        ? msg.key.participantAlt || msg.key.participant
+        : msg.key.remoteJidAlt || msg.key.remoteJid || "";
+      const isOwner = isOwners(senderJid);
+      if (isOwner && messageBody.startsWith("=>")) {
+        console.log("Owner", "Executing code");
+        const code = messageBody.slice(2).trim();
+        if (code) {
           try {
-            await sock.sendPreview(
-              m.chat,
-              {
-                caption: config.info.website + "\n" + simpleMessage,
-                url: config.info.website,
-                title: "Command not found",
-                description: `Suggestions Command | ${RIMURU_CORE_CONFIG.bot.name}`,
-                jpegThumbnail: await sharp(getAssetBuffer("rimuru2", config.assets)).resize(300, 300).toBuffer(),
-                previewType: 1,
-              },
-              { quoted: m }
-            );
+            const { serialize } = await import("./lib/rimuru-serialize.js");
+            const m = await serialize(currentSock, msg, {});
+            const { getDatabase: _getDb } =
+              await import("./lib/rimuru-database.js");
+            const db = _getDb();
+            const sock = currentSock;
+            const { default: sharp } = await import("sharp");
+
+            let result;
+            if (code.startsWith("{")) {
+              result = await eval(`(async () => ${code})()`);
+            } else {
+              result = await eval(`(async () => { return ${code} })()`);
+            }
+
+            if (typeof result !== "string") {
+              const { inspect } = await import("util");
+              result = inspect(result, { depth: 2 });
+            }
           } catch (err) {
-            console.error("[Similarity] Gagal mengirim pesan similarity preview:", err.message);
+            await currentSock.sendMessage(
+              jid,
+              {
+                text: `❌ *ᴇᴠᴀʟ ᴇʀʀᴏʀ*\n\n\`\`\`\n${err.message}\n\`\`\``,
+              },
+              { quoted: msg },
+            );
           }
+          continue;
         }
       }
 
-      return;
-    }
-
-    if (!plugin.config.isEnabled) {
-      return;
-    }
-
-    if (m.isGroup) {
-      const groupData = db.getGroup(m.chat) || {};
-      let botMode = groupData.botMode || "all";
-      const pluginCategory = plugin.config.category?.toLowerCase();
-      const baseAllowed = ["main", "group", "sticker", "owner"];
-
-      if (isJadibot) {
-        botMode = "all";
-
-        const jadibotBlockedCategories = [
-          "owner",
-          "sewa",
-          "panel",
-          "store",
-          "pushkontak",
-        ];
-        const jadibotBlockedCommands = [
-          "sewa",
-          "sewabot",
-          "sewalist",
-          "listsewa",
-          "addsewa",
-          "delsewa",
-          "extendsewa",
-          "checksewa",
-          "sewainfo",
-          "sewagroup",
-          "stopsewa",
-          "jadibot",
-          "listjadibot",
-          "addowner",
-          "delowner",
-          "ownerlist",
-          "listowner",
-          "self",
-          "public",
-          "botmode",
-          "restart",
-          "shutdown",
-        ];
-
-        if (
-          jadibotBlockedCategories.includes(pluginCategory) ||
-          jadibotBlockedCommands.includes(m.command.toLowerCase())
-        ) {
-          return m.reply(
-            `⚠️ *ᴀᴋsᴇs ᴛᴇʀʙᴀᴛᴀs*\n\n` +
-            `Fitur ini hanya tersedia di bot utama.\n` +
-            `Jadibot tidak dapat mengakses fitur ini.\n\n` +
-            `> Hubungi owner bot utama untuk informasi lebih lanjut.`,
-          );
-        }
-      }
-
-      const modeConfig = {
-        all: { allowed: null, excluded: null, name: "All Features" },
-        md: {
-          allowed: null,
-          excluded: ["pushkontak", "store", "panel", "otp"],
-          name: "Multi Device",
-        },
-        cpanel: { allowed: [...baseAllowed, "tools", "panel"], name: "CPanel" },
-        pushkontak: {
-          allowed: [...baseAllowed, "pushkontak"],
-          name: "Push Kontak",
-        },
-        store: { allowed: [...baseAllowed, "store"], name: "Store" },
-        otp: { allowed: [...baseAllowed, "otp"], name: "OTP" },
-      };
-
-      const categoryModeMap = {
-        download: "md",
-        search: "md",
-        ai: "md",
-        fun: "md",
-        game: "md",
-        media: "md",
-        utility: "md",
-        tools: "md",
-        ephoto: "md",
-        religi: "md",
-        info: "md",
-        panel: "cpanel",
-        pushkontak: "pushkontak",
-        store: "store",
-        otp: "otp",
-        jpm: "md",
-      };
-
-      const currentConfig = modeConfig[botMode] || modeConfig.all;
-
-      if (
-        m.command !== "botmode" &&
-        m.command !== "menu" &&
-        m.command !== "menucat"
-      ) {
-        let isBlocked = false;
-
-        if (
-          currentConfig.allowed &&
-          !currentConfig.allowed.includes(pluginCategory)
-        ) {
-          isBlocked = true;
-        }
-        if (
-          currentConfig.excluded &&
-          currentConfig.excluded.includes(pluginCategory)
-        ) {
-          isBlocked = true;
-        }
-
-        if (isBlocked) {
-          const suggestedMode = categoryModeMap[pluginCategory] || "all";
-          const suggestedModeName =
-            modeConfig[suggestedMode]?.name || "Multi Device";
-
-          await m.reply(
-            `🔒 *ᴄᴏᴍᴍᴀɴᴅ ᴛɪᴅᴀᴋ ᴛᴇʀsᴇᴅɪᴀ*\n\n` +
-            `> Bot sedang dalam mode *${currentConfig.name}*\n` +
-            `> Command \`${m.prefix}${m.command}\` tersedia di mode *${suggestedModeName}*\n\n` +
-            `💡 Hubungi admin grup untuk mengganti mode:\n` +
-            `\`${m.prefix}botmode ${suggestedMode}\``,
-          );
-          return;
-        }
-      }
-
-      if (!m.isAdmin && !m.isOwner) {
-        const pluginCat = plugin.config.category?.toLowerCase();
-        const grpData = db.getGroup(m.chat) || {};
-
-        if (pluginCat === "game" && grpData.game === false) {
-          await m.reply(
-            `🎮 *FITUR GAME NONAKTIF*\n\nFitur game sedang dinonaktifkan di grup ini oleh admin.\nMinta admin untuk mengaktifkannya kembali dengan perintah *${m.prefix}game on*`
-          );
-          return;
-        }
-
-        if (pluginCat === "rpg" && grpData.rpg === false) {
-          await m.reply(
-            `⚔️ *FITUR RPG NONAKTIF*\n\nFitur RPG sedang dinonaktifkan di grup ini oleh admin.\nMinta admin untuk mengaktifkannya kembali dengan perintah *${m.prefix}rpg on*`
-          );
-          return;
-        }
-      }
-    }
-
-    const permission = checkPermission(m, plugin.config);
-    if (!permission.allowed) {
-      await m.reply(permission.reason);
-      return;
-    }
-
-    const registrationRequired =
-      db.setting("registrationRequired") ??
-      config.registration?.enabled ??
-      false;
-    if (registrationRequired && !plugin.config.skipRegistration) {
-      const user = db.getUser(m.sender);
-      if (!m.isOwner && !m.isPartner && !m.isPremium && !user?.isRegistered) {
-        await m.reply(
-          `📝 *ᴡᴀᴊɪʙ ᴅᴀꜰᴛᴀʀ*\n\n` +
-          `Kamu harus daftar terlebih dahulu!\n\n` +
-          `> Ketik: \`${m.prefix}daftar\`\n\n` +
-          `*Lalu reply pertanyaan bot sampai selesai*`,
-        );
-        return;
-      }
-    }
-
-    const user = db.getUser(m.sender);
-
-    if (!m.isOwner && !m.isPartner && plugin.config.cooldown > 0) {
-      const cooldownRemaining = db.checkCooldown(
-        m.sender,
-        m.command,
-        plugin.config.cooldown,
-      );
-      if (cooldownRemaining) {
-        m.react("⏱️").catch(() => { });
-        const cooldownText = (config.messages?.cooldown ||
-          "🕕 *Hmph… tunggu dulu.* Rimuru masih cooldown. Tunggu %time% detik, jangan spam ya. 💙")
-          .replace(/%time%/g, String(cooldownRemaining));
-        await m.reply(cooldownText);
-        return;
-      }
-    }
-
-    const energiEnabled =
-      db.setting("energi") !== undefined
-        ? db.setting("energi")
-        : config.energi?.enabled !== false;
-
-    const capEnergiOverrides = db.setting("capenergi") || {};
-    const pluginEnergiCost = capEnergiOverrides[plugin.config.name] !== undefined ? capEnergiOverrides[plugin.config.name] : (plugin.config.energi || 0);
-
-    if (energiEnabled && pluginEnergiCost > 0) {
-      const ownerEnergi = config.energi?.owner ?? -1;
-      const premiumEnergi = config.energi?.premium ?? -1;
-      const defaultEnergi = config.energi?.default ?? 0;
-
-      let currentEnergi;
-      if (
-        (m.isOwner || m.isPartner) &&
-        (ownerEnergi === -1 || user?.energi === -1)
-      ) {
-      } else if (m.isPremium && (premiumEnergi === -1 || user?.energi === -1)) {
-      } else {
-        currentEnergi =
-          user?.energi ??
-          (m.isOwner || m.isPartner
-            ? ownerEnergi
-            : m.isPremium
-              ? premiumEnergi
-              : defaultEnergi);
-        if (currentEnergi < pluginEnergiCost) {
-          await m.reply(config.messages?.energiExceeded || "⚡ Energi habis!");
-          return;
-        }
-        db.updateEnergi(m.sender, -pluginEnergiCost);
-
-        if (db.setting("notiflimit")) {
-          let limitMsg = config.messages?.limitDeducted || "🔋 Limit kau berkurang sebanyak {amount}. Sisa limit: {sisa}";
-          limitMsg = limitMsg.replace("{amount}", pluginEnergiCost.toString()).replace("{sisa}", (currentEnergi - pluginEnergiCost).toString());
-          await m.reply(limitMsg);
-        }
-      }
-    }
-
-    if (db.setting("autoTyping") ?? config.features?.autoTyping) {
-      sock.sendPresenceUpdate("composing", m.chat).catch(() => { });
-    }
-
-    const context = {
-      sock,
-      m,
-      args: m.args || [],
-      text: m.text || "",
-      command: m.command || "",
-      prefix: m.prefix || config.command?.prefix || ".",
-      config,
-      db,
-      uptime: getUptime(),
-      plugins: {
-        count: getPluginCount(),
-      },
-      jadibotId: jadibotId,
-      isJadibot: isJadibot,
-    };
-
-    await plugin.handler(m, context);
-
-    if (!m.isOwner && !m.isPartner && plugin.config.cooldown > 0) {
-      db.setCooldown(m.sender, m.command, plugin.config.cooldown);
-    }
-
-    db.incrementStat("commandsExecuted");
-    db.incrementStat(`command_${m.command}`);
-
-    if (user) {
-      const todayStr = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
-      if (user.lastActiveDate !== todayStr) {
-        const newActiveDays = (user.activeDays || 0) + 1;
-        db.setUser(m.sender, { lastActiveDate: todayStr, activeDays: newActiveDays });
-      }
-    }
-
-    if (db.setting("autoTyping") ?? config.features?.autoTyping) {
-      sock.sendPresenceUpdate("paused", m.chat).catch(() => { });
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : String(error ?? "Unknown error");
-    const errorStack = error instanceof Error
-      ? error.stack
-      : undefined;
-
-    if (isNetworkError(error)) {
-      logger.warn("handler", formatNetworkError(error));
-    } else {
-      logger.error("handler", errorMessage);
-      if (errorStack) {
-        console.error("[Handler Stack]", errorStack);
-      }
-    }
-
-    try {
-      const db = getDatabase();
-      if (db) {
-        db.incrementStat("commandErrors");
-        const errorLog = db.setting("errorLog") || [];
-        errorLog.unshift({
-          cmd: "unknown",
-          err: errorMessage.substring(0, 200),
-          at: Date.now(),
-        });
-        if (errorLog.length > 50) errorLog.splice(50);
-        db.setting("errorLog", errorLog);
-      }
-    } catch { }
-
-    try {
-      const m = await serialize(sock, msg);
-      if (m) {
-        await m.reply(isNetworkError(error)
-          ? (config.messages?.error || `☢ *Rimuru Tempest* sedang ngambek karena layanan yang dipakai tidak dapat dijangkau. Coba lagi nanti, ya. 💙`)
-          : (config.messages?.error || `☢ *Rimuru Tempest* menemukan sedikit masalah. Kalau terus terjadi, panggil owner. Jangan pergi dulu. 💙`));
-      }
-    } catch {
-      logger.error("Failed to send error message");
-    }
-  }
-}
-
-/**
- * Handler untuk update group participants
- * @param {Object} update - Update data
- * @param {Object} sock - Socket connection
- * @returns {Promise<void>}
- */
-async function groupHandler(update, sock) {
-  try {
-    if (global.sewaLeaving) return;
-
-    const { id: groupJid, participants, action } = update;
-
-    if (
-      !participants ||
-      !Array.isArray(participants) ||
-      participants.length === 0
-    ) {
-      return;
-    }
-
-    const db = getDatabase();
-
-    let groupData = db.getGroup(groupJid);
-    if (!groupData) {
-      db.setGroup(groupJid, {
-        // New groups start disabled unless config explicitly enables them.
-        // Never silently re-enable welcome/goodbye just because the group
-        // record did not exist yet.
-        welcome: config.welcome?.defaultEnabled ?? false,
-        goodbye: config.goodbye?.defaultEnabled ?? false,
-        leave: config.goodbye?.defaultEnabled ?? false,
-      });
-      groupData = db.getGroup(groupJid);
-    }
-
-    const selfMode = db.setting("botMode") === "self";
-    const isOfficialRimuruGroup = groupJid === config.officialRimuruGroup?.id;
-    const suppressAutomaticEvents = selfMode === true || isOfficialRimuruGroup;
-
-    let groupMeta;
-    try {
-      const cached = global.groupMetadataCache?.get(groupJid);
-      if (cached && Date.now() - (cached._ts || 0) < 30000) {
-        groupMeta = cached;
-      } else {
-        groupMeta = await sock.groupMetadata(groupJid);
-        if (global.groupMetadataCache) {
-          groupMeta._ts = Date.now();
-          global.groupMetadataCache.set(groupJid, groupMeta);
-        }
-      }
-
-      if (groupMeta?.participants) {
-        cacheParticipantLids(groupMeta.participants);
-      }
-
-      // Grup resmi bersifat transit: tidak boleh ada welcome/goodbye/rank/notifikasi.
-      if (isOfficialRimuruGroup) return;
-    } catch (e) {
-      if (
-        e.message?.includes("forbidden") ||
-        e.message?.includes("401") ||
-        e.message?.includes("403")
-      ) {
-        return;
-      }
-      if (
-        e.message?.includes("rate-overlimit") ||
-        e?.output?.statusCode === 429
-      ) {
-        logger.warn("GroupHandler", "rate-limited, skipping event");
-        return;
-      }
-      throw e;
-    }
-
-    for (let participant of participants) {
-      let participantJid;
-
-      if (typeof participant === "object" && participant !== null) {
-        participantJid =
-          participant.jid || participant.id || participant.lid || "";
-      } else {
-        participantJid = participant;
-      }
-
-      if (!participantJid || typeof participantJid !== "string") continue;
-
-      if (isLid(participantJid) || isLidConverted(participantJid)) {
-        const found = groupMeta.participants?.find(
-          (p) =>
-            p.id === participantJid ||
-            p.lid === participantJid ||
-            p.lid === participantJid.replace("@s.whatsapp.net", "@lid"),
-        );
-        if (found) {
-          participantJid =
-            found.jid &&
-              !found.jid.endsWith("@lid") &&
-              !isLidConverted(found.jid)
-              ? found.jid
-              : found.id &&
-                !found.id.endsWith("@lid") &&
-                !isLidConverted(found.id)
-                ? found.id
-                : lidToJid(participantJid);
-        } else {
-          participantJid = lidToJid(participantJid);
-        }
-      }
-
-      participant = participantJid;
-
-      if (!suppressAutomaticEvents && action === "add" && sendWelcomeMessage) {
-        await sendWelcomeMessage(sock, groupJid, participant, groupMeta);
-      }
-
-      if (!suppressAutomaticEvents && action === "remove" && sendGoodbyeMessage) {
-        await sendGoodbyeMessage(sock, groupJid, participant, groupMeta);
-      }
-
-      const saluranId = RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter";
-      const saluranName =
-        RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI";
-
-      let groupPpUrl = null;
-      try {
-        groupPpUrl = await sock.profilePictureUrl(groupJid, "image");
-      } catch { }
-
-      const rankActions = {
-        promote: {
-          notifKey: "notifPromote",
-          imgKey: "_promoteImg",
-          imgPath: config.assets["rimuru-promote"],
-          emoji: "🎉",
-          label: "PROMOTE",
-          text: (p, a) =>
-            `🌿 @${p} sekarang menjadi admin baru 💕\nPromoted by: @${a}`,
-        },
-        demote: {
-          notifKey: "notifDemote",
-          imgKey: "_demoteImg",
-          imgPath: config.assets["rimuru-demote"],
-          emoji: "📉",
-          label: "DEMOTE",
-          text: (p, a) =>
-            `🌿 @${p} sudah tidak menjadi admin lagi.\nDemoted by: @${a}`,
-        },
-      };
-
-      const rankCfg = rankActions[action];
-      if (rankCfg && groupData[rankCfg.notifKey] === true) {
-        const author = update.author || null;
-        if (!groupHandler[rankCfg.imgKey]) {
+      if (isOwner && messageBody.startsWith("$")) {
+        const command = messageBody.slice(1).trim();
+        if (command) {
           try {
-            groupHandler[rankCfg.imgKey] = fs.readFileSync(rankCfg.imgPath);
-          } catch {
-            groupHandler[rankCfg.imgKey] = null;
+            const { exec } = await import("child_process");
+            const { promisify } = await import("util");
+            const execAsync = promisify(exec);
+
+            const isWindows = process.platform === "win32";
+            const shell = isWindows ? "powershell.exe" : "/bin/bash";
+
+            await currentSock.sendMessage(
+              jid,
+              {
+                text: `🕕 *ᴇxᴇᴄᴜᴛɪɴɢ...*\n\n\`$ ${command}\``,
+              },
+              { quoted: msg },
+            );
+
+            const { stdout, stderr } = await execAsync(command, {
+              shell,
+              timeout: 60000,
+              maxBuffer: 1024 * 1024,
+              encoding: "utf8",
+            });
+
+            const output = stdout || stderr || "No output";
+
+            await currentSock.sendMessage(jid, {
+              text: `✅ *ᴛᴇʀᴍɪɴᴀʟ*\n\n\`$ ${command}\`\n\n\`\`\`\n${output.slice(0, 3500)}\n\`\`\``,
+            });
+          } catch (err) {
+            const errorMsg = err.stderr || err.stdout || err.message;
+            await currentSock.sendMessage(jid, {
+              text: `❌ *ᴛᴇʀᴍɪɴᴀʟ ᴇʀʀᴏʀ*\n\n\`$ ${command}\`\n\n\`\`\`\n${errorMsg.slice(0, 3500)}\n\`\`\``,
+            });
           }
+          continue;
         }
-        if (groupHandler[rankCfg.imgKey]) {
-          const pNum = participant.split("@")[0];
-          const aNum = author?.split("@")[0] || "Unknown";
-          const mentions = author ? [participant, author] : [participant];
+      }
 
-          const fakeQuoted = {
-            key: {
-              fromMe: false,
-              participant: participant,
-              remoteJid: participant
-            },
-            message: {
-              conversation: action === "promote"
-                ? `Halo semua, aku sekarang admin disini`
-                : `Yahhh, aku udah bukan admin lagi 😔`
-            }
-          };
+      if (options.onMessage) {
+        options.onMessage(msg, currentSock).catch((error) => {
+          colors.logger.error("Message", error.message);
+        });
+      }
+    }
+  });
 
-          const media4 = await prepareWAMessageMedia({ image: groupHandler[rankCfg.imgKey] }, { upload: sock.waUploadToServer });
+  sock.ev.on("group-participants.update", async (update) => {
+    if (options.onGroupUpdate) {
+      _groupEventQueue.push({
+        handler: options.onGroupUpdate,
+        args: [update, sock],
+      });
+      _processGroupQueue();
+    }
+  });
 
-          const promoteButtons = [
-            {
-              name: "cta_url",
-              buttonParamsJson: JSON.stringify({
-                display_text: "🍙 Cara menjadi admin",
-                url: "https://www.whatsapp.com/communities/learning/beingagoodadmin?lang=id",
-                merchant_url: "https://www.whatsapp.com/communities/learning/beingagoodadmin?lang=id"
-              })
-            },
-            {
-              name: "quick_reply",
-              buttonParamsJson: JSON.stringify({
-                display_text: "🖐 Halo admin baru",
-                id: ""
-              })
-            }
-          ];
+  sock.ev.on("groups.update", async (updates) => {
+    for (const update of updates) {
+      if (options.onGroupSettingsUpdate) {
+        try {
+          await options.onGroupSettingsUpdate(update, sock);
+        } catch (error) {
+          console.error("[GroupsUpdate] Error:", error.message);
+        }
+      }
+    }
+  });
 
-          const demoteButtons = [
-            {
-              name: "quick_reply",
-              buttonParamsJson: JSON.stringify({
-                display_text: "Tetap semangat ya! 💪",
-                id: ""
-              })
-            }
-          ];
+  sock.ev.on("messages.update", async (updates) => {
+    if (options.onMessageUpdate) {
+      await options.onMessageUpdate(updates, sock);
+    }
+  });
 
-          const msg4 = generateWAMessageFromContent(groupJid, {
-            viewOnceMessage: {
-              message: {
-                messageContextInfo: {},
-                interactiveMessage: {
-                  header: { title: "", subtitle: "", hasMediaAttachment: true, imageMessage: media4.imageMessage },
-                  footer: { text: RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI" },
-                  body: { text: rankCfg.text(pNum, aNum) },
-                  contextInfo: {
-                    mentionedJid: mentions,
-                    isForwarded: true,
-                    forwardingScore: 9999,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: RIMURU_CORE_CONFIG.saluran?.id || "120363400911374213@newsletter",
-                      newsletterName: RIMURU_CORE_CONFIG.saluran?.name || RIMURU_CORE_CONFIG.bot?.name || "rimuru-AI",
-                      serverMessageId: 127,
-                    },
-                  },
-                  nativeFlowMessage: {
-                    messageParamsJson: JSON.stringify({
-                      limited_time_offer: {
-                        text: action === "promote" ? `Selamat yahh 🎉` : `Tetap Semangat 📉`,
-                        url: "Hai",
-                        expiration_time: Date.now() + 1000000
-                      },
-                      bottom_sheet: { in_thread_buttons_limit: 2, divider_indices: [1, 2], list_title: "Opsi", button_title: "🍙 Lihat Opsi" },
-                      tap_target_configuration: { title: " X ", description: "bomboclard", canonical_url: "https://rimuru.site", domain: "shop.example.com", button_index: 0 },
-                    }),
-                    buttons: action === "promote" ? promoteButtons : demoteButtons
+  {
+    const { getDatabase: _getDb } = await import("./lib/rimuru-database.js");
+    const _db = _getDb();
+    if (_db.setting("antiCall") ?? config.features?.antiCall) {
+      sock.ev.on("call", async (calls) => {
+        for (const call of calls) {
+          if (call.status === "offer") {
+            colors.logger.warn("Call", `Menolak panggilan dari ${call.from}`);
+            await sock.rejectCall(call.id, call.from);
+
+            await sock.sendMessage(call.from, {
+              text: config.messages?.rejectCall,
+            });
+
+            if (config.features?.blockIfCall) {
+              let targetJid = call.from;
+
+              if (targetJid.endsWith("@lid")) {
+                try {
+                  const pn =
+                    await sock.signalRepository?.lidMapping?.getPNForLID(
+                      targetJid,
+                    );
+                  if (pn) {
+                    targetJid = pn;
+                    colors.logger.info(
+                      "Call",
+                      `Berhasil resolve @lid ke PN: ${targetJid}`,
+                    );
                   }
+                } catch (e) {
+                  colors.logger.warn(
+                    "Call",
+                    `Gagal resolve LID ke PN: ${e.message}`,
+                  );
                 }
               }
+
+              if (!targetJid.endsWith("@lid")) {
+                try {
+                  const sanitizedJid = targetJid.replace(/:\d+@/, "@");
+                  await _db.setUser(sanitizedJid, { isBlocked: true });
+
+                  try {
+                    await sock.updateBlockStatus(
+                      sanitizedJid.split("@")[0],
+                      "block",
+                    );
+                    colors.logger.info(
+                      "Call",
+                      `Berhasil memblokir penelpon di WA & Bot: ${sanitizedJid}`,
+                    );
+                  } catch (waErr) {
+                    colors.logger.warn(
+                      "Call",
+                      `Diblokir di DB Bot, tapi gagal di WA Server (${sanitizedJid}): ${waErr.message}`,
+                    );
+                  }
+                } catch (e) {
+                  colors.logger.error(
+                    "Call",
+                    `Gagal memblokir di DB: ${e.message}`,
+                  );
+                }
+              } else {
+                colors.logger.warn(
+                  "Call",
+                  `Melewati blokir karena gagal mendapatkan nomor asli dari @lid: ${targetJid}`,
+                );
+              }
             }
-          }, { quoted: fakeQuoted, userJid: sock.user.jid });
-
-          await sock.relayMessage(groupJid, msg4.message, { messageId: msg4.key.id });
+          }
         }
-      }
-    }
-  } catch (error) {
-    console.error("[GroupHandler] Error:", error.message);
-  }
-}
-
-async function messageUpdateHandler(updates, sock) {
-  const db = getDatabase();
-
-  for (const update of updates) {
-    try {
-      await handleAntiRemove(update, sock, db);
-    } catch (error) {
-      continue;
-    }
-
-    try {
-      const editedMsg = update.update?.message?.editedMessage?.message;
-      const regularMsg = update.update?.message;
-
-      const resolvedMessage =
-        editedMsg ||
-        (regularMsg && !regularMsg.protocolMessage ? regularMsg : null);
-
-      if (!resolvedMessage) continue;
-
-      const newMsg = {
-        key: update.key,
-        message: editedMsg ? { ...resolvedMessage } : regularMsg,
-        messageTimestamp:
-          update.messageTimestamp || Math.floor(Date.now() / 1000),
-        pushName: update.pushName || "User",
-      };
-
-      await messageHandler(newMsg, sock);
-    } catch (error) {
-      console.error("[MsgUpdate] Error:", error.message);
+      });
     }
   }
+
+  process.nextTick(() => {
+    try {
+      sock.ev?.flush?.();
+    } catch { }
+  });
+
+  setTimeout(() => {
+    try {
+      sock.ev?.flush?.();
+    } catch { }
+  }, 2000);
+
+  const flushInterval = setInterval(() => {
+    if (!connectionState.isConnected) {
+      clearInterval(flushInterval);
+      return;
+    }
+    try {
+      sock.ev?.flush?.();
+    } catch { }
+  }, 30000);
+  if (flushInterval.unref) flushInterval.unref();
+
+  return sock;
 }
 
 /**
- * Cache untuk menyimpan state terakhir grup
- * Format: { groupId: { announce: boolean, restrict: boolean, lastUpdate: timestamp } }
+ * Mendapatkan status koneksi
+ * @returns {ConnectionState} State koneksi saat ini
  */
-const groupSettingsCache = new Map();
+function getConnectionState() {
+  return connectionState;
+}
 
 /**
- * Debounce cooldown untuk mencegah spam (dalam ms)
+ * Mendapatkan socket instance
+ * @returns {Object|null} Socket atau null jika tidak terkoneksi
  */
-const GROUP_SETTINGS_COOLDOWN = 1000;
+function getSocket() {
+  return connectionState.sock;
+}
 
-async function groupSettingsHandler(update, sock) {
+/**
+ * Cek apakah bot terkoneksi
+ * @returns {boolean} True jika terkoneksi
+ */
+function isConnected() {
+  return connectionState.isConnected;
+}
+
+/**
+ * Mendapatkan uptime dalam milliseconds
+ * @returns {number} Uptime dalam ms atau 0 jika tidak terkoneksi
+ */
+function getUptime() {
+  if (!connectionState.connectedAt) return 0;
+  return Date.now() - connectionState.connectedAt.getTime();
+}
+
+/**
+ * Logout dan hapus session
+ * @returns {Promise<boolean>} True jika berhasil
+ */
+async function logout() {
   try {
-    if (global.sewaLeaving) return;
-    if (global.isFetchingGroups) return;
+    const sessionPath = path.join(
+      process.cwd(),
+      "storage",
+      config.session?.folderName || "session",
+    );
 
-    const groupId = update.id;
-    if (!groupId || !groupId.endsWith("@g.us")) return;
-
-    if (update.announce === undefined && update.restrict === undefined) {
-      return;
+    if (connectionState.sock) {
+      await connectionState.sock.logout();
     }
 
-    const cached = groupSettingsCache.get(groupId) || {};
-    const now = Date.now();
-
-    if (
-      cached.lastUpdate &&
-      now - cached.lastUpdate < GROUP_SETTINGS_COOLDOWN
-    ) {
-      return;
+    if (fs.existsSync(sessionPath)) {
+      fs.rmSync(sessionPath, { recursive: true, force: true });
     }
 
-    let hasRealChange = false;
+    connectionState.isConnected = false;
+    connectionState.sock = null;
+    connectionState.connectedAt = null;
 
-    let groupName = groupId;
-    let groupPpUrl = null;
-    try {
-      const meta = await sock.groupMetadata(groupId);
-      groupName = meta?.subject || groupId;
-    } catch { }
-    try {
-      groupPpUrl = await sock.profilePictureUrl(groupId, "image");
-    } catch { }
-
-    const db = getDatabase();
-    const groupData = db.getGroup(groupId) || {};
-
-    const zannContext = {
-      contextInfo: saluranCtx(),
-    };
-
-    if (update.announce !== undefined) {
-      if (cached.announce === undefined) {
-        cached.announce = update.announce;
-      } else if (cached.announce !== update.announce) {
-        hasRealChange = true;
-
-        if (update.announce === true && groupData.notifCloseGroup === true) {
-          await sock.sendText(
-            groupId,
-            `🥗 Grup *${groupName}* di tutup oleh admin`,
-            null,
-            zannContext,
-          );
-        }
-
-        if (update.announce === false && groupData.notifOpenGroup === true) {
-          await sock.sendText(
-            groupId,
-            `🎃 Grup *${groupName}* telah di buka kembali oleh admin`,
-            null,
-            zannContext,
-          );
-        }
-
-        cached.announce = update.announce;
-      }
-    }
-
-    if (update.restrict !== undefined) {
-      if (cached.restrict === undefined) {
-        cached.restrict = update.restrict;
-      } else if (cached.restrict !== update.restrict) {
-        hasRealChange = true;
-
-        if (update.restrict === true) {
-          await sock.sendText(
-            groupId,
-            `🥗 Info Grup *${groupName}* terbatas !\nHanya admin yang dapat mengedit grup`,
-            null,
-            zannContext,
-          );
-        } else {
-          await sock.sendText(
-            groupId,
-            `🥗 Info Grup *${groupName}* terbuka !\nSemua member dapat mengedit grup`,
-            null,
-            zannContext,
-          );
-        }
-        cached.restrict = update.restrict;
-      }
-    }
-    if (hasRealChange) {
-      cached.lastUpdate = now;
-    }
-    if (cached.announce !== undefined || cached.restrict !== undefined) {
-      groupSettingsCache.set(groupId, cached);
-    }
+    colors.logger.success("koneksi", "Keluar dan sesi dihapus");
+    return true;
   } catch (error) {
-    console.error("[GroupSettings] Error:", error.message);
+    colors.logger.error("koneksi", "Gagal logout:", error.message);
+    return false;
   }
 }
 
 export {
-  messageHandler,
-  groupHandler,
-  messageUpdateHandler,
-  groupSettingsHandler,
-  checkPermission,
-  checkMode,
-  isSpamming,
-  handleAntiRemoveFromUpsert,
+  startConnection,
+  getConnectionState,
+  getSocket,
+  isConnected,
+  getUptime,
+  logout,
 };

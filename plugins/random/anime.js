@@ -1,16 +1,13 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import axios from "axios";
 import te from "../../src/lib/rimuru-error.js";
 import { saluranCtx } from "../../src/lib/rimuru-context.js";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "ourin";
+import { prepareWAMessageMedia, generateWAMessageFromContent } from "rimuru";
 
 const nexrayTypes = [
   "waifu", "neko", "shinobu", "megumin", "bully", "cuddle", "cry", "hug",
   "awoo", "kiss", "lick", "pat", "smug", "bonk", "yeet", "blush", "smile",
   "wave", "highfive", "handhold", "nom", "bite", "glomp", "slap", "kill",
-  "happy", "rwink", "poke", "dance", "cringe"
+  "happy", "wink", "poke", "dance", "cringe"
 ];
 
 const pluginConfig = {
@@ -45,9 +42,8 @@ async function handler(m, { sock }) {
     }
 
     if (nexrayTypes.includes(cmd)) {
-      const apiType = cmd === "rwink" ? "wink" : cmd;
       m.react("🖼️");
-      const res = await axios.get(`https://api.nexray.eu.cc/random/anime?type=${apiType}`, {
+      const res = await axios.get(`https://api.nexray.eu.cc/random/anime?type=${cmd}`, {
         responseType: "arraybuffer"
       });
       const buffer = Buffer.from(res.data);

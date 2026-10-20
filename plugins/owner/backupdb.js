@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { sendStoreBackup, SCHEMA_VERSION } from '../../src/lib/rimuru-store-backup.js'
 const pluginConfig = {
     name: 'backupdb',
@@ -16,7 +13,7 @@ const pluginConfig = {
 async function handler(m, { sock }) {
     const backupContents = [
         '📁 database/*.json (semua file JSON)',
-        '📁 database/cpanel/* (data cPanel)',
+        '📁 database/cpanel/* (data CPanel)',
         '📄 storage/database.json (main database)',
         '📄 db.json (root database)',
         '📄 database/main/*.json (main database)',

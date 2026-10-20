@@ -1,19 +1,15 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import FormData from "form-data";
 import fetch from "node-fetch";
 import mime from "mime-types";
 import { fileTypeFromBuffer } from "file-type";
-import { downloadMediaMessage, getContentType, generateWAMessageFromContent, proto, generateWAMessage } from "ourin";
+import { downloadMediaMessage, getContentType, generateWAMessageFromContent, proto, generateWAMessage } from "rimuru";
 import te from "../../src/lib/rimuru-error.js";
 import uploadImage from "../../src/scraper/imgdrop.js";
 import config from "../../config.js";
 
 const pluginConfig = {
   name: "tourl",
-  alias: ["upload", "catbox", "url"],
+  alias: ["upload", "catbox", "url", "rtourl"],
   category: "tools",
   description: "Upload media ke multiple host dan dapatkan URL",
   usage: ".tourl (reply/kirim media)",
@@ -607,11 +603,12 @@ async function handler(m, { sock }) {
   } else if (m.message) {
     const type = getContentType(m.message);
     if (!type || type === "conversation" || type === "extendedTextMessage") {
+      const commandLabel = `${m.prefix || "."}${m.command || "tourl"}`;
       let txt = `📤 *MEDIA UPLOADER* 📤\n\n`;
       txt += `Halo kak! Butuh link untuk media kamu? Aku bisa bantu uploadin ke berbagai server gratisan loh!\n\n`;
       txt += `*Cara Pakai:*\n`;
-      txt += `👉 Kirim media dengan caption \`${m.prefix}tourl\`\n`;
-      txt += `👉 Atau reply media yang udah ada dengan \`${m.prefix}tourl\``;
+      txt += `👉 Kirim media dengan caption \`${commandLabel}\`\n`;
+      txt += `👉 Atau reply media yang udah ada dengan \`${commandLabel}\``;
       return m.reply(txt);
     }
 
@@ -691,7 +688,7 @@ async function handler(m, { sock }) {
           },
           interactiveMessage: proto.Message.InteractiveMessage.create({
             body: proto.Message.InteractiveMessage.Body.create({ text: text }),
-            footer: proto.Message.InteractiveMessage.Footer.create({ text: RIMURU_CORE_CONFIG.bot.name }),
+            footer: proto.Message.InteractiveMessage.Footer.create({ text: config.bot.name }),
             header: proto.Message.InteractiveMessage.Header.create({
               title: "T O U R L",
               hasMediaAttachment: !!headerMedia,

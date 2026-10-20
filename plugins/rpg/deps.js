@@ -1,3 +1,19 @@
+const pluginConfig = {
+  name: "deps",
+  alias: [],
+  category: "rpg",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: true,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
@@ -143,9 +159,4 @@ let handler = async (m) => {
     await m.reply(txt)
 }
 
-handler.help = ['deps']
-handler.tags = ['owner']
-handler.command = /^deps$/i
-handler.owner = true
-
-export default handler
+export { pluginConfig as config, handler };

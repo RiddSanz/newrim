@@ -2,9 +2,27 @@ export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimur
 
 
 import axios from 'axios'
-import { generateWAMessageContent } from "@itsliaaa/baileys"
+import { generateWAMessageContent } from "rimuru"
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "clip",
+  alias: [],
+  category: "search",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
     // Validasi jika user tidak memasukkan kata kunci
     if (!text) return m.reply(`Gunakan format: *${usedPrefix + command} <pencarian>* \n\nContoh: \n.clip genshin edit \n.clip anime  \n.clip luffy gear 5`)
 
@@ -72,10 +90,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['clip <query>']
-handler.tags = ['search']
-handler.command = /^(clip)$/i // Perintahnya cuma .clip
-handler.limit = true
 handler.register = true
 
-export default handler
+export { pluginConfig as config, handler };

@@ -1,9 +1,6 @@
-import { RIMURU_DEVELOPER } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import _sharp from 'sharp'
 import axios from "axios";
+import * as cheerio from "cheerio";
 import config from "../../config.js";
 
 function getSharp() {
@@ -31,40 +28,99 @@ const pluginConfig = {
 
 class StickerAPI {
   async search(query, page = 1) {
+    if (!query) throw new Error("Query kosong");
+
+    // Primary endpoint (kept for compatibility with the old implementation).
     try {
-      if (!query) throw new Error("Query kosong");
-      const res = await axios
-        .post("https://getstickerpack.com/api/v1/stickerdb/search", {
-          query,
-          page,
-        })
-        .then((r) => r.data);
-      const data = res.data.map((item) => ({
-        name: item.title,
+      const res = await axios.post(
+        "https://getstickerpack.com/api/v1/stickerdb/search",
+        { query, page },
+        { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } },
+      );
+      const body = res.data || {};
+      const raw = Array.isArray(body.data) ? body.data : [];
+      const data = raw.map((item) => ({
+        name: item.title || item.name,
         slug: item.slug,
         url: `https://getstickerpack.com/stickers/${item.slug}`,
-        image: `https://s3.getstickerpack.com/${item.cover_image || item.tray_icon_large}`,
-        download: item.download_counter,
-      }));
-      return { status: true, data, total: res.meta.total };
+        image: item.cover_image || item.tray_icon_large
+          ? `https://s3.getstickerpack.com/${item.cover_image || item.tray_icon_large}`
+          : null,
+        download: item.download_counter || 0,
+      })).filter((x) => x.slug);
+      if (data.length) return { status: true, data, total: body.meta?.total || data.length };
+    } catch {}
+
+    // Fallback to the current public Sticker Maker page when the old API is unavailable.
+    try {
+      const url = `https://getstickerpack.com/stickers?page=${Math.max(1, page)}&query=${encodeURIComponent(query)}`;
+      const { data: html } = await axios.get(url, {
+        timeout: 20000,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/131 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+      const $ = cheerio.load(html);
+      const data = [];
+      const seen = new Set();
+      $("a[href^='/stickers/']").each((_, el) => {
+        const href = $(el).attr("href") || "";
+        const slug = href.split("/stickers/")[1]?.split("?")[0]?.replace(/^\/+|\/+$/g, "");
+        if (!slug || slug.includes("page=") || seen.has(slug)) return;
+        const name = $(el).text().replace(/\s+/g, " ").trim();
+        if (!name) return;
+        seen.add(slug);
+        data.push({
+          name,
+          slug,
+          url: `https://getstickerpack.com/stickers/${slug}`,
+          image: null,
+          download: 0,
+        });
+      });
+      return { status: true, data: data.slice(0, 10), total: data.length };
     } catch (e) {
       return { status: false, msg: e.message };
     }
   }
 
   async detail(slug) {
+    const match = String(slug).match(/stickers\/([a-zA-Z0-9-]+)$/);
+    const id = match ? match[1] : String(slug).replace(/^\/+|\/+$/g, "");
+
     try {
-      const match = slug.match(/stickers\/([a-zA-Z0-9-]+)$/);
-      const id = match ? match[1] : slug;
       const res = await axios
-        .get(`https://getstickerpack.com/api/v1/stickerdb/stickers/${id}`)
+        .get(`https://getstickerpack.com/api/v1/stickerdb/stickers/${id}`, { timeout: 15000 })
         .then((r) => r.data.data);
-      const stickers = res.images.map((item) => ({
+      const stickers = (res.images || []).map((item) => ({
         index: item.sticker_index,
         image: `https://s3.getstickerpack.com/${item.url}`,
         animated: item.is_animated !== 0,
-      }));
-      return { status: true, title: res.title, stickers };
+      })).filter((x) => x.image);
+      if (stickers.length) return { status: true, title: res.title, stickers };
+    } catch {}
+
+    // Current public page fallback.
+    try {
+      const { data: html } = await axios.get(`https://getstickerpack.com/stickers/${id}`, {
+        timeout: 20000,
+        headers: { "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/131 Safari/537.36" },
+      });
+      const $ = cheerio.load(html);
+      const stickers = [];
+      $("img").each((_, el) => {
+        const alt = ($(el).attr("alt") || "").toLowerCase();
+        if (!alt.includes("sticker image")) return;
+        const image = $(el).attr("src") || $(el).attr("data-src") || $(el).attr("data-lazy-src");
+        if (image && /^https?:\/\//i.test(image)) stickers.push({
+          index: stickers.length + 1,
+          image,
+          animated: /\.(gif|webp)(?:\?|$)/i.test(image),
+        });
+      });
+      const title = $("h1").first().text().replace(/\s+/g, " ").trim() || id;
+      return { status: true, title, stickers };
     } catch (e) {
       return { status: false, msg: e.message };
     }
@@ -154,8 +210,8 @@ async function handler(m, { sock }) {
       return m.reply(`── .✦ ──\n\n> Gagal mendownload sticker .☘︎ ݁˖`);
     }
 
-    const packname = randPick.name || config.sticker?.packname || "rimuru-AI";
-    const author = RIMURU_DEVELOPER || config.sticker?.author || "Bot";
+    const packname = randPick.name || config.sticker?.packname || "Rimuru-AI";
+    const author = config.bot?.developer || config.sticker?.author || "Bot";
 
     try {
       await sock.sendStickerPack(m.chat, stickerBuffers, m, {

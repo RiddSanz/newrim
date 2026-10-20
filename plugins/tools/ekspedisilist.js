@@ -1,7 +1,24 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { conn }) => {
+const pluginConfig = {
+  name: "ekspedisilist",
+  alias: [],
+  category: "tools",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { sock }) {
+    const conn = sock;
   const ekspedisi = [
     'shopee-express', 'ninja', 'lion-parcel', 'pos-indonesia', 'tiki',
     'acommerce', 'gtl-goto-logistics', 'paxel', 'sap-express', 'indah-logistik-cargo',
@@ -15,9 +32,4 @@ let handler = async (m, { conn }) => {
   await conn.reply(m.chat, teks, m)
 }
 
-handler.help = ['ekspedisilist']
-handler.tags = ['tools']
-handler.command = /^ekspedisilist$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

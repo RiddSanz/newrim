@@ -14,7 +14,7 @@
  * Contributors: ~ Ahmad tumbuh kembang
  *
  * WhatsApp: wa.me/6285188349341
- * Channel: https://whatsapp.com/channel/0029VbCV1ck8fewpdNb2TY2k
+ * Channel: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P
  *
  * Copyright (c) 2026 Nixel
  *
@@ -31,7 +31,7 @@
 
 const VERSION = '4.6';
 
-import { generateWAMessageFromContent, prepareWAMessageMedia } from 'ourin';
+import { generateWAMessageFromContent, prepareWAMessageMedia } from 'rimuru';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';

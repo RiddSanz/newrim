@@ -1,7 +1,3 @@
-import { RIMURU_CORE_CONFIG } from "../../rimuru.js";
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 const pluginConfig = {
   name: ["buatsaluran", "createsaluran", "createnewsletter"],
   alias: [],
@@ -50,7 +46,7 @@ async function handler(m, { sock }) {
         (description ? `> Deskripsi: ${description}\n` : "") +
         `> ID: ${saluranId}\n` +
         `> Subscribers: ${result?.subscribers || 0}\n\n` +
-        `_Saluran ini bisa dikonfigurasi di RIMURU_CORE_CONFIG.saluran.id_`,
+        `_Saluran ini bisa dikonfigurasi di config.saluran.id_`,
     );
   } catch (err) {
     return m.reply(`❌ Gagal membuat saluran: ${err.message}`);

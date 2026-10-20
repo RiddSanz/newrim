@@ -1,7 +1,23 @@
 export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
 
-let handler = async (m, { text }) => {
+const pluginConfig = {
+  name: "suratcinta",
+  alias: [],
+  category: "fun",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 0,
+  isEnabled: true,
+};
+
+async function handler(m, { text }) {
   if (!text) return m.reply('💌 Masukkan nama orang yang mau kamu kirimi surat cinta palsu.\n\nContoh: .suratcinta Hilman')
 
   const target = text
@@ -37,9 +53,4 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-handler.help = ['suratcinta <nama>']
-handler.tags = ['fun']
-handler.command = /^suratcinta$/i
-handler.limit = false
-
-export default handler
+export { pluginConfig as config, handler };

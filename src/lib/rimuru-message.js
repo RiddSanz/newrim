@@ -1,4 +1,4 @@
-import { generateWAMessageFromContent, proto } from "ourin";
+import { generateWAMessageFromContent, proto } from "rimuru";
 import fs from "fs";
 import path from "path";
 import { saluranCtx } from "./rimuru-context.js";

@@ -1,6 +1,3 @@
-export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
-
-
 import { getFullSchedulerStatus, formatTimeRemaining, getMsUntilTime } from '../../src/lib/rimuru-scheduler.js'
 import { initSholatScheduler, stopSholatScheduler } from '../../src/lib/rimuru-sholat-scheduler.js'
 import { getDatabase } from '../../src/lib/rimuru-database.js'

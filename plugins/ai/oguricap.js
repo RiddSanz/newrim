@@ -5,7 +5,25 @@ import fetch from "node-fetch"
 
 let sessions = {}
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+const pluginConfig = {
+  name: "oguri",
+  alias: ["oguricap"],
+  category: "ai",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, text, prefix, command }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
   if (!text) {
     return m.reply(`🐎 *Oguri Cap AI*\n\nContoh:\n${usedPrefix + command} kamu mau makan apa hari ini?`)
   }
@@ -93,9 +111,4 @@ Selalu balas sebagai Oguri Cap. Jangan keluar karakter.
   }
 }
 
-handler.help = ['oguri <teks>', 'oguricap <teks>']
-handler.tags = ['ai']
-handler.command = /^(oguri|oguricap)$/i
-handler.limit = true
-
-export default handler
+export { pluginConfig as config, handler };

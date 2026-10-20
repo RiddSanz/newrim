@@ -45,7 +45,7 @@ async function redNote(url) {
     }
 }
 
-let handler = async (m, { text, conn }) => {
+let handler = async (m, { text, sock }) => {
     if (!text) return m.reply("Mana Url Nyah!");
 
     const result = await redNote(text);
@@ -53,17 +53,17 @@ let handler = async (m, { text, conn }) => {
 
     let { media } = result;
 
-    await conn.sendMessage(m.chat, {
+    await sock.sendMessage(m.chat, {
         sticker: { url: "https://files.catbox.moe/0ksa1n.webp" }
     }, { quoted: m });
 
     if (media.videoUrl) {
-        await conn.sendMessage(m.chat, {
+        await sock.sendMessage(m.chat, {
             video: { url: media.videoUrl }
         });
     } else if (media.images.length > 0) {
         for (let img of media.images) {
-            await conn.sendMessage(m.chat, {
+            await sock.sendMessage(m.chat, {
                 image: { url: img }
             });
         }
@@ -72,9 +72,22 @@ let handler = async (m, { text, conn }) => {
     }
 };
 
-handler.help = ['xhs'];
-handler.tags = ['downloader']
-handler.command = ['xhs'];
-handler.limit = true;
 
 export default handler;
+const pluginConfig = {
+  name: 'xhs',
+  alias: [],
+  category: 'download',
+  description: 'Downloader XHS/RedNote untuk video atau gambar.',
+  usage: '.xhs <url>',
+  example: '.xhs <url>',
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 5,
+  energi: 1,
+  isEnabled: true,
+};
+
+export { pluginConfig as config, handler };
